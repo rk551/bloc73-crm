@@ -1675,6 +1675,149 @@ closeGraefWeek=function(){
   if(active==='tours') renderContent();
 })();
 
+
+// === v38: CRM-Kalender anklickbar, löschbar, Dubletten im Kalender ausblenden ===
+(function(){
+  'use strict';
+  window.cal38Month = window.cal38Month || new Date().toISOString().slice(0,7);
+  window.cal38Events = [];
+
+  function s38(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function n38(v){ try{return norm(v||'');}catch(e){return String(v||'').toLowerCase().trim();} }
+  function ymd38(d){ return String(d||'').slice(0,10); }
+  function monthTitle38(ym){ const [y,m]=String(ym).split('-').map(Number); return new Date(y,m-1,1).toLocaleString('de-DE',{month:'long',year:'numeric'}); }
+  function shiftMonth38(ym,delta){ const [y,m]=String(ym).split('-').map(Number); const d=new Date(y,m-1+delta,1); return d.toISOString().slice(0,7); }
+  function dateInMonth38(date,ym){ return ymd38(date).startsWith(ym); }
+  function niceType38(e){ return e.type||e.sourceLabel||'Termin'; }
+
+  function rawCalendarEvents38(){
+    const out=[];
+    (db.calendar||[]).forEach(e=>{ if(e.date) out.push({kind:'calendar', source:'calendar', sourceLabel:'CRM-Kalender', id:e.id, title:e.title||'Termin', date:e.date, time:e.time||'', customer:e.customer||'', type:e.type||'Termin', notes:e.notes||'', discussion:e.discussion||''}); });
+    (db.tasks||[]).forEach(t=>{ if(t.due) out.push({kind:'task', source:'tasks', sourceLabel:'Aufgabe', id:t.id, title:t.title||('Aufgabe: '+(t.customer||'')), date:t.due, time:'', customer:t.customer||'', type:'Aufgabe', notes:t.notes||'', discussion:t.discussion||''}); });
+    (db.offers||[]).forEach(o=>{ if(o.followDate) out.push({kind:'offer', source:'offers', sourceLabel:'Angebot', id:o.id, title:'Angebot nachfassen: '+(o.title||o.customer||''), date:o.followDate, time:'', customer:o.customer||'', type:'Angebot', notes:o.notes||'', discussion:o.discussion||''}); });
+    return out;
+  }
+
+  function groupedCalendarEvents38(){
+    const map=new Map();
+    rawCalendarEvents38().forEach(e=>{
+      const key=[ymd38(e.date),n38(e.title),n38(e.customer)].join('|');
+      if(!map.has(key)) map.set(key,{...e,sources:[{source:e.source,id:e.id,sourceLabel:e.sourceLabel,kind:e.kind}]});
+      else{
+        const g=map.get(key);
+        g.sources.push({source:e.source,id:e.id,sourceLabel:e.sourceLabel,kind:e.kind});
+        if(!g.time && e.time) g.time=e.time;
+        if(!g.notes && e.notes) g.notes=e.notes;
+        if(!g.discussion && e.discussion) g.discussion=e.discussion;
+      }
+    });
+    return Array.from(map.values()).sort((a,b)=>String(a.date+a.time+a.title).localeCompare(String(b.date+b.time+b.title)));
+  }
+
+  function ensureCalendarDialog38(){
+    if(document.getElementById('calDialog38')) return;
+    const dlg=document.createElement('dialog');
+    dlg.id='calDialog38';
+    dlg.innerHTML=`<div class="modal-head"><h3 id="calTitle38">Kalendereintrag</h3><button class="x" onclick="closeCalendarEvent38()">×</button></div><div class="modal-body" id="calBody38"></div><div class="modal-foot" id="calFoot38"></div>`;
+    document.body.appendChild(dlg);
+  }
+
+  function addCalendarStyle38(){
+    if(document.getElementById('style38')) return;
+    const st=document.createElement('style');
+    st.id='style38';
+    st.textContent=`
+      .cal-event38{cursor:pointer;border:1px solid #514325;background:#2a2418;color:#ffe2a0;transition:.15s}
+      .cal-event38:hover{border-color:#d6a84e;background:#3a2e17;transform:translateY(-1px)}
+      .cal-day38.today{border-color:#d6a84e;box-shadow:0 0 0 1px rgba(214,168,78,.35)}
+      .cal-list38{display:grid;gap:10px;margin-top:14px}.cal-row38{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:12px;border:1px solid #303030;border-radius:14px;background:#141414}.cal-row38:hover{border-color:#d6a84e}.cal-row38 b{display:block}.cal-empty38{padding:18px;border:1px dashed #444;border-radius:14px;color:#999}.cal-toolbar38{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.cal-badges38{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.cal-detail38{display:grid;gap:10px}.cal-detail38 .line{padding:10px;border:1px solid #333;border-radius:12px;background:#101010}.cal-source38{font-size:12px;color:#bdbdbd}
+      @media(max-width:720px){.cal-row38{grid-template-columns:1fr}.cal-row38 .row-actions{justify-content:flex-start}}
+    `;
+    document.head.appendChild(st);
+  }
+
+  window.setCalendarMonth38=function(delta){ window.cal38Month=shiftMonth38(window.cal38Month,delta); renderContent(); };
+  window.setCalendarToday38=function(){ window.cal38Month=new Date().toISOString().slice(0,7); renderContent(); };
+
+  function eventChip38(e,idx){
+    const label=(e.time?e.time+' · ':'')+e.title;
+    const src=e.sources&&e.sources.length>1?` · ${e.sources.length} Quellen`:'';
+    return `<div class="event cal-event38" title="${s38(label)}${src}" onclick="openCalendarEvent38(${idx})">${s38(label)}${src}</div>`;
+  }
+
+  window.calendarHTML=function(){
+    addCalendarStyle38();
+    ensureCalendarDialog38();
+    const ym=window.cal38Month||new Date().toISOString().slice(0,7);
+    const [yy,mm]=ym.split('-').map(Number);
+    const first=new Date(yy,mm-1,1);
+    const last=new Date(yy,mm,0);
+    const todayIso=today();
+    const events=groupedCalendarEvents38().filter(e=>dateInMonth38(e.date,ym));
+    window.cal38Events=events;
+    let days=[];
+    for(let i=1;i<=last.getDate();i++){
+      const iso=new Date(yy,mm-1,i,12,0,0).toISOString().slice(0,10);
+      const ev=events.map((e,idx)=>({e,idx})).filter(x=>ymd38(x.e.date)===iso);
+      days.push(`<div class="day cal-day38 ${iso===todayIso?'today':''}"><b>${i}</b>${ev.map(x=>eventChip38(x.e,x.idx)).join('')}</div>`);
+    }
+    const list=events.length?events.map((e,idx)=>`<div class="cal-row38"><div><b>${formatDate(e.date)}</b><span class="muted small">${s38(e.time||'')}</span></div><div><b>${s38(e.title)}</b><div class="muted small">${s38(e.customer||'')} ${e.sources?.length>1?' · Dublette zusammengeführt':''}</div><div class="cal-badges38">${pill(niceType38(e))}${(e.sources||[]).map(src=>pill(src.sourceLabel)).join('')}</div></div><div class="row-actions"><button class="btn primary" onclick="openCalendarEvent38(${idx})">Öffnen</button><button class="btn danger" onclick="deleteCalendarEvent38(${idx})">Löschen</button></div></div>`).join(''):`<div class="cal-empty38">Keine Termine in ${s38(monthTitle38(ym))}.</div>`;
+    return `<div class="panel"><div class="panel-head"><div><h3>CRM-Kalender · ${s38(monthTitle38(ym))}</h3><div class="muted">Termine sind jetzt anklickbar. Dubletten aus Aufgabe + Kalender werden als ein Eintrag angezeigt.</div></div><div class="cal-toolbar38"><button class="btn" onclick="setCalendarMonth38(-1)">← Monat</button><button class="btn" onclick="setCalendarToday38()">Heute</button><button class="btn" onclick="setCalendarMonth38(1)">Monat →</button><button class="btn primary" onclick="openModal('calendar')">+ Termin</button></div></div><div class="panel-body"><div class="calendar-grid">${days.join('')}</div><h3 style="margin-top:18px">Terminliste</h3><div class="cal-list38">${list}</div></div></div>`;
+  };
+
+  window.openCalendarEvent38=function(idx){
+    ensureCalendarDialog38();
+    const e=window.cal38Events?.[idx];
+    if(!e){ alert('Kalendereintrag nicht gefunden.'); return; }
+    document.getElementById('calTitle38').textContent=e.title||'Kalendereintrag';
+    const sources=(e.sources||[]).map(src=>`<span class="pill">${s38(src.sourceLabel)}</span>`).join(' ');
+    document.getElementById('calBody38').innerHTML=`<div class="cal-detail38"><div class="line"><b>Datum</b><br>${formatDate(e.date)} ${s38(e.time||'')}</div><div class="line"><b>Kunde / Bezug</b><br>${s38(e.customer||'—')}</div><div class="line"><b>Typ</b><br>${s38(niceType38(e))}</div><div class="line"><b>Was wurde besprochen?</b><br>${s38(e.discussion||'—')}</div><div class="line"><b>Notiz</b><br>${s38(e.notes||'—')}</div><div class="line"><b>Quelle</b><br>${sources||'—'}${(e.sources||[]).length>1?'<div class="hint">Dieser Termin wurde aus mehreren Quellen zusammengeführt. Löschen entfernt ihn aus allen Kalender-Quellen.</div>':''}</div></div>`;
+    const first=e.sources?.[0]||{};
+    document.getElementById('calFoot38').innerHTML=`<button class="btn" onclick="closeCalendarEvent38()">Schließen</button><button class="btn" onclick="editCalendarSource38(${idx})">Bearbeiten</button><button class="btn danger" onclick="deleteCalendarEvent38(${idx})">Aus Kalender löschen</button>`;
+    document.getElementById('calDialog38').showModal();
+  };
+
+  window.closeCalendarEvent38=function(){ const d=document.getElementById('calDialog38'); if(d&&d.open)d.close(); };
+
+  window.editCalendarSource38=function(idx){
+    const e=window.cal38Events?.[idx]; if(!e)return;
+    const src=(e.sources||[])[0];
+    closeCalendarEvent38();
+    if(src?.source==='calendar') openModal('calendar',src.id);
+    else if(src?.source==='tasks') openModal('tasks',src.id);
+    else if(src?.source==='offers') openModal('offers',src.id);
+  };
+
+  window.deleteCalendarEvent38=function(idx){
+    const e=window.cal38Events?.[idx]; if(!e){alert('Kalendereintrag nicht gefunden.');return;}
+    const label=(e.title||'Termin')+' · '+formatDate(e.date);
+    const msg='Kalendereintrag wirklich entfernen?\n\n'+label+'\n\nWenn dieser Termin aus Aufgabe oder Angebot kommt, wird nur das Datum aus dieser Quelle entfernt. Der Kunde, die Aufgabe oder das Angebot bleiben bestehen.';
+    if(!confirm(msg)) return;
+    (e.sources||[]).forEach(src=>{
+      if(src.source==='calendar') db.calendar=(db.calendar||[]).filter(x=>String(x.id)!==String(src.id));
+      if(src.source==='tasks'){
+        const t=(db.tasks||[]).find(x=>String(x.id)===String(src.id));
+        if(t){ t.due=''; t.updatedAt=new Date().toISOString(); }
+      }
+      if(src.source==='offers'){
+        const o=(db.offers||[]).find(x=>String(x.id)===String(src.id));
+        if(o){ o.followDate=''; o.updatedAt=new Date().toISOString(); }
+      }
+    });
+    persist();
+    closeCalendarEvent38();
+    renderContent();
+    renderNav();
+  };
+
+  // sicherstellen, dass nach Speichern aus dem Standard-Modal der Kalender aktualisiert bleibt
+  const saveRecordBase38=saveRecord;
+  window.saveRecord=async function(e){ await saveRecordBase38(e); if(active==='calendar') renderContent(); };
+
+  addCalendarStyle38();
+  if(active==='calendar') renderContent();
+})();
+
 </script>
 </body>
 </html>
