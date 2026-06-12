@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v39 · Herstellerkatalog & Ultra-Realistic Prompts</title>
+  <title>BLOC73 CRM · v40 · Herstellerkatalog & Ultra-Realistic Prompts</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -1913,6 +1913,115 @@ closeGraefWeek=function(){
   };
   try{ renderContent = window.renderContent; }catch(e){}
   ensureStyle39();
+  if(active==='calendar') window.renderContent();
+})();
+
+
+// === v40: Kalender Vorwärts-Button endgültig robust machen ===
+(function(){
+  'use strict';
+  const pad40=n=>String(n).padStart(2,'0');
+  const esc40=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt40=d=>{ try{return formatDate(d);}catch(e){return d||'';} };
+  const todayIso40=()=>{ const d=new Date(); return d.getFullYear()+'-'+pad40(d.getMonth()+1)+'-'+pad40(d.getDate()); };
+  const todayYM40=()=>{ const d=new Date(); return d.getFullYear()+'-'+pad40(d.getMonth()+1); };
+  function parseYM40(ym){
+    const m=String(ym||'').match(/^(\d{4})-(\d{2})$/);
+    if(m) return [Number(m[1]),Number(m[2])];
+    const d=new Date(); return [d.getFullYear(),d.getMonth()+1];
+  }
+  function ymFromDate40(d){ return d.getFullYear()+'-'+pad40(d.getMonth()+1); }
+  function addMonths40(ym,delta){
+    const [y,m]=parseYM40(ym);
+    const d=new Date(y,m-1,1,12,0,0);
+    d.setMonth(d.getMonth()+Number(delta||0));
+    return ymFromDate40(d);
+  }
+  function getYM40(){
+    if(window.crmCalendarYM40) return window.crmCalendarYM40;
+    try{ window.crmCalendarYM40=localStorage.getItem('bloc73_calendar_month_v40')||localStorage.getItem('bloc73_calendar_month')||todayYM40(); }
+    catch(e){ window.crmCalendarYM40=todayYM40(); }
+    return window.crmCalendarYM40;
+  }
+  function setYM40(ym){
+    window.crmCalendarYM40=ym;
+    try{ localStorage.setItem('bloc73_calendar_month_v40',ym); localStorage.setItem('bloc73_calendar_month',ym); }catch(e){}
+    const c=document.getElementById('content');
+    if(c && active==='calendar'){
+      c.innerHTML=window.calendarHTML();
+      if(typeof afterRender==='function') afterRender();
+    }else if(typeof renderContent==='function') renderContent();
+  }
+  window.calendarMove40=function(delta){ setYM40(addMonths40(getYM40(),delta)); };
+  window.calendarPrev40=function(){ window.calendarMove40(-1); };
+  window.calendarNext40=function(){ window.calendarMove40(1); };
+  window.calendarToday40=function(){ setYM40(todayYM40()); };
+  function dateOnly40(v){ return String(v||'').slice(0,10); }
+  function normKey40(v){ try{return norm(v||'');}catch(e){return String(v||'').toLowerCase().trim();} }
+  function monthTitle40(ym){ const [y,m]=parseYM40(ym); return new Date(y,m-1,1,12,0,0).toLocaleString('de-DE',{month:'long',year:'numeric'}); }
+  function ensureStyle40(){
+    if(document.getElementById('style40')) return;
+    const st=document.createElement('style'); st.id='style40'; st.textContent=`
+      .cal-head40{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+      .cal-controls40{display:flex;gap:8px;flex-wrap:wrap}.cal-controls40 .btn{min-width:96px}
+      .cal-grid40{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.cal-week40{font-size:12px;color:#aaa;text-align:center;padding:6px}.cal-day40{min-height:98px;border:1px solid #303030;background:#111;border-radius:14px;padding:9px;overflow:hidden}.cal-day40.empty{opacity:.35}.cal-day40.today{border-color:#d6a84e;box-shadow:0 0 0 1px rgba(214,168,78,.35)}.cal-date40{font-weight:800;margin-bottom:6px}.cal-event40{cursor:pointer;border:1px solid #514325;background:#2a2418;color:#ffe2a0;border-radius:10px;padding:6px;margin:5px 0;font-size:12px}.cal-event40:hover{border-color:#d6a84e;background:#3a2e17}.cal-list40{display:grid;gap:10px;margin-top:14px}.cal-row40{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:12px;border:1px solid #303030;border-radius:14px;background:#141414}.cal-empty40{padding:18px;border:1px dashed #444;border-radius:14px;color:#999}@media(max-width:760px){.cal-grid40{grid-template-columns:1fr}.cal-week40{display:none}.cal-row40{grid-template-columns:1fr}.cal-controls40 .btn{flex:1}}
+    `; document.head.appendChild(st);
+  }
+  function rawEvents40(){
+    const out=[];
+    (db.calendar||[]).forEach(e=>{ if(e.date) out.push({src:'calendar',srcLabel:'CRM-Kalender',id:e.id,title:e.title||'Termin',date:dateOnly40(e.date),time:e.time||'',customer:e.customer||'',type:e.type||'Termin',notes:e.notes||'',discussion:e.discussion||''}); });
+    (db.tasks||[]).forEach(t=>{ if(t.due) out.push({src:'tasks',srcLabel:'Aufgabe',id:t.id,title:t.title||('Aufgabe: '+(t.customer||'')),date:dateOnly40(t.due),time:'',customer:t.customer||'',type:'Aufgabe',notes:t.notes||'',discussion:t.discussion||''}); });
+    (db.offers||[]).forEach(o=>{ if(o.followDate) out.push({src:'offers',srcLabel:'Angebot',id:o.id,title:'Angebot nachfassen: '+(o.title||o.customer||''),date:dateOnly40(o.followDate),time:'',customer:o.customer||'',type:'Angebot',notes:o.notes||'',discussion:o.discussion||''}); });
+    const map=new Map();
+    out.forEach(e=>{
+      const key=[e.date,normKey40(e.title),normKey40(e.customer)].join('|');
+      if(!map.has(key)) map.set(key,{...e,sources:[{src:e.src,srcLabel:e.srcLabel,id:e.id}]});
+      else{ const g=map.get(key); g.sources.push({src:e.src,srcLabel:e.srcLabel,id:e.id}); if(!g.time&&e.time)g.time=e.time; if(!g.notes&&e.notes)g.notes=e.notes; if(!g.discussion&&e.discussion)g.discussion=e.discussion; }
+    });
+    return [...map.values()].sort((a,b)=>String(a.date+a.time+a.title).localeCompare(String(b.date+b.time+b.title)));
+  }
+  function ensureDialog40(){
+    if(document.getElementById('calDialog40')) return;
+    const dlg=document.createElement('dialog'); dlg.id='calDialog40'; dlg.innerHTML=`<div class="modal-head"><h3 id="calTitle40">Kalendereintrag</h3><button class="x" onclick="closeCalendar40()">×</button></div><div class="modal-body" id="calBody40"></div><div class="modal-foot" id="calFoot40"></div>`; document.body.appendChild(dlg);
+  }
+  function sourcePills40(e){ return (e.sources||[]).map(s=>`<span class="pill">${esc40(s.srcLabel)}</span>`).join(' '); }
+  window.openCalendar40=function(idx){
+    ensureDialog40(); const e=window.crmCalendarEvents40?.[idx]; if(!e){alert('Kalendereintrag nicht gefunden.');return;}
+    document.getElementById('calTitle40').textContent=e.title||'Kalendereintrag';
+    document.getElementById('calBody40').innerHTML=`<div class="cal-detail39"><div class="line"><b>Datum</b><br>${fmt40(e.date)} ${esc40(e.time||'')}</div><div class="line"><b>Kunde / Bezug</b><br>${esc40(e.customer||'—')}</div><div class="line"><b>Typ</b><br>${esc40(e.type||'Termin')}</div><div class="line"><b>Was wurde besprochen?</b><br>${esc40(e.discussion||'—')}</div><div class="line"><b>Notiz</b><br>${esc40(e.notes||'—')}</div><div class="line"><b>Quelle</b><br>${sourcePills40(e)||'—'}</div></div>`;
+    document.getElementById('calFoot40').innerHTML=`<button class="btn" onclick="closeCalendar40()">Schließen</button><button class="btn" onclick="editCalendar40(${idx})">Bearbeiten</button><button class="btn danger" onclick="deleteCalendar40(${idx})">Aus Kalender löschen</button>`;
+    document.getElementById('calDialog40').showModal();
+  };
+  window.closeCalendar40=function(){ const d=document.getElementById('calDialog40'); if(d&&d.open)d.close(); };
+  window.editCalendar40=function(idx){ const e=window.crmCalendarEvents40?.[idx]; if(!e)return; const s=(e.sources||[])[0]; closeCalendar40(); if(s?.src==='calendar')openModal('calendar',s.id); else if(s?.src==='tasks')openModal('tasks',s.id); else if(s?.src==='offers')openModal('offers',s.id); };
+  window.deleteCalendar40=function(idx){
+    const e=window.crmCalendarEvents40?.[idx]; if(!e){alert('Kalendereintrag nicht gefunden.');return;}
+    if(!confirm('Kalendereintrag wirklich entfernen?\n\n'+(e.title||'Termin')+' · '+fmt40(e.date))) return;
+    (e.sources||[]).forEach(s=>{
+      if(s.src==='calendar') db.calendar=(db.calendar||[]).filter(x=>String(x.id)!==String(s.id));
+      if(s.src==='tasks'){ const t=(db.tasks||[]).find(x=>String(x.id)===String(s.id)); if(t){t.due='';t.updatedAt=new Date().toISOString();} }
+      if(s.src==='offers'){ const o=(db.offers||[]).find(x=>String(x.id)===String(s.id)); if(o){o.followDate='';o.updatedAt=new Date().toISOString();} }
+    });
+    persist(); closeCalendar40(); setYM40(getYM40()); if(typeof renderNav==='function')renderNav();
+  };
+  window.calendarHTML=function(){
+    ensureStyle40(); ensureDialog40();
+    const ym=getYM40(); const [yy,mm]=parseYM40(ym); const first=new Date(yy,mm-1,1,12,0,0); const last=new Date(yy,mm,0,12,0,0); const startOffset=(first.getDay()+6)%7; const todayIso=todayIso40();
+    const events=rawEvents40().filter(e=>dateOnly40(e.date).startsWith(ym)); window.crmCalendarEvents40=events;
+    const cells=[]; ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(w=>cells.push(`<div class="cal-week40">${w}</div>`));
+    for(let i=0;i<startOffset;i++) cells.push('<div class="cal-day40 empty"></div>');
+    for(let day=1;day<=last.getDate();day++){
+      const iso=yy+'-'+pad40(mm)+'-'+pad40(day); const ev=events.map((e,idx)=>({e,idx})).filter(x=>x.e.date===iso);
+      cells.push(`<div class="cal-day40 ${iso===todayIso?'today':''}"><div class="cal-date40">${day}</div>${ev.map(x=>`<div class="cal-event40" onclick="openCalendar40(${x.idx})">${esc40((x.e.time?x.e.time+' · ':'')+x.e.title)}${x.e.sources?.length>1?' · '+x.e.sources.length+' Quellen':''}</div>`).join('')}</div>`);
+    }
+    const list=events.length?events.map((e,idx)=>`<div class="cal-row40"><div><b>${fmt40(e.date)}</b><div class="muted small">${esc40(e.time||'')}</div></div><div><b>${esc40(e.title)}</b><div class="muted small">${esc40(e.customer||'')} ${e.sources?.length>1?' · Dublette zusammengeführt':''}</div><div style="margin-top:6px">${typeof pill==='function'?pill(e.type||'Termin'):`<span class="pill">${esc40(e.type||'Termin')}</span>`} ${sourcePills40(e)}</div></div><div class="row-actions"><button class="btn primary" onclick="openCalendar40(${idx})">Öffnen</button><button class="btn danger" onclick="deleteCalendar40(${idx})">Löschen</button></div></div>`).join(''):`<div class="cal-empty40">Keine Termine in ${esc40(monthTitle40(ym))}.</div>`;
+    return `<div class="panel"><div class="panel-head cal-head40"><div><h3>CRM-Kalender · ${esc40(monthTitle40(ym))}</h3><div class="muted">v40: Vorwärts/Zurück fest verdrahtet.</div></div><div class="cal-controls40"><button type="button" class="btn" onclick="calendarMove40(-1)">← Zurück</button><button type="button" class="btn" onclick="calendarToday40()">Heute</button><button type="button" class="btn primary" onclick="calendarMove40(1)">Vor →</button><button type="button" class="btn" onclick="openModal('calendar')">+ Termin</button></div></div><div class="panel-body"><div class="calendar-grid cal-grid40">${cells.join('')}</div><h3 style="margin-top:18px">Terminliste</h3><div class="cal-list40">${list}</div></div></div>`;
+  };
+  try{ calendarHTML=window.calendarHTML; }catch(e){}
+  const previousRender40=window.renderContent||renderContent;
+  window.renderContent=function(){ const c=document.getElementById('content'); if(c && active==='calendar'){ c.innerHTML=window.calendarHTML(); if(typeof afterRender==='function')afterRender(); return; } return previousRender40(); };
+  try{ renderContent=window.renderContent; }catch(e){}
+  ensureStyle40();
   if(active==='calendar') window.renderContent();
 })();
 
