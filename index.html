@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v61 · stabil + CSV + Word</title>
+  <title>BLOC73 CRM · v63 · stabil + CSV + Word</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -3169,17 +3169,18 @@ closeGraefWeek=function(){
 
 
 <script>
-/* === v61: Stabile Reparatur + Woche CSV + Word-Briefe + Backup + TomTom Kunden === */
+/* === v63: Stabiler v61-Fix – HTML/JS Fehler behoben, Struktur unverändert === */
 (function(){
   'use strict';
-  const V61='v61';
+  const V61='v63';
   const QR61='data:image/png;base64,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';
   const SITE61='https://bloc73machinery.com/';
   function h61(v){return String(v??'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+  function txt61(v){return String(v??'').replace(/[\r\n]+/g,' ').trim();}
   function date61(v){try{return v?new Date(String(v)+'T12:00:00').toLocaleDateString('de-DE'):'';}catch(e){return String(v||'');}}
   function isoToday61(){return new Date().toISOString().slice(0,10);}
   function safeName61(v){return String(v||'BLOC73').replace(/[^a-z0-9äöüÄÖÜß_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,80)||'BLOC73';}
-  function csv61(v){return '"'+String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')+'"';}
+  function csv61(v){return '"'+String(v??'').replace(/"/g,'""').replace(/[\r\n]+/g,' ')+'"';}
   function download61(content,name,type){
     if(typeof download==='function') return download(content,name,type||'text/plain;charset=utf-8');
     const blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
@@ -3210,8 +3211,9 @@ closeGraefWeek=function(){
     rows.forEach(function(r){
       lines.push([week,date61(start),weekday61(r.tourDate),date61(r.tourDate),r.order||'',r.company||'',(r.isExistingCustomer||r.bestandskunde)?'Ja':'Nein',r.target||'',r.address||[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '),r.phone||'',r.website||'',r.status||'',r.visitedAt?date61(r.visitedAt):'',r.graefInfo||'Nein',r.discussion||'',r.notes||''].map(csv61).join(';'));
     });
-    download61('\ufeff'+lines.join('\n'),'BLOC73_Tagestouren_'+week+'_'+start+'.csv','text/csv;charset=utf-8');
+    download61('﻿'+lines.join('\n'),'BLOC73_Tagestouren_'+week+'_'+start+'.csv','text/csv;charset=utf-8');
   };
+  // Tourenplanung: CSV-Button sauber ergänzen, ohne die stabile Planung zu verändern.
   const baseTourHTML61=(typeof window.tourHTML==='function'?window.tourHTML:(typeof tourHTML==='function'?tourHTML:null));
   if(baseTourHTML61){
     window.tourHTML=function(){
@@ -3274,7 +3276,7 @@ closeGraefWeek=function(){
   };
   window.downloadTourLetterWord61=function(id){const r=(db.tours||[]).find(function(x){return String(x.id)===String(id);}); if(!r)return alert('Tour-Eintrag nicht gefunden.'); window.downloadWordLetters61([r],'BLOC73_Brief_'+safeName61(r.company||'Kunde'));};
   window.downloadVisibleTourLettersWord61=function(){window.downloadWordLetters61(visibleTourRows61(),'BLOC73_Briefe_sichtbare_Tour');};
-  window.downloadTourLettersByDateWord61=function(){const def=isoToday61(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden? Format: JJJJ-MM-TT',def); if(!d)return; window.downloadWordLetters61((db.tours||[]).filter(function(r){return isOpenTour61(r)&&String(r.tourDate||'')===String(d);}), 'BLOC73_Briefe_'+d);};
+  window.downloadTourLettersByDateWord61=function(){const def=isoToday61(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden? Format: JJJJ-MM-TT',def); if(!d)return; window.downloadWordLetters61((db.tours||[]).filter(function(r){return isOpenTour61(r)&&String(r.tourDate||'')===String(d);}),'BLOC73_Briefe_'+d);};
   window.downloadTourLettersByWeekWord61=function(){const def=monday61(isoToday61()); const d=prompt('Wochenstart Montag für Word-Briefe eingeben. Format: JJJJ-MM-TT',def); if(!d)return; const start=monday61(d); const end=addDays61(start,6); window.downloadWordLetters61((db.tours||[]).filter(function(r){return isOpenTour61(r)&&String(r.tourDate||'')>=start&&String(r.tourDate||'')<=end;}),'BLOC73_Briefe_Woche_'+start);};
   function copyText61(text,label){
     if(navigator.clipboard&&window.isSecureContext) navigator.clipboard.writeText(text).then(function(){alert((label||'Text')+' kopiert.');}).catch(function(){prompt('Bitte manuell kopieren:',text);});
@@ -3283,43 +3285,96 @@ closeGraefWeek=function(){
   window.openCustomerTomTom61=function(id){
     const r=(db.customers||[]).find(function(x){return String(x.id)===String(id);}); if(!r)return;
     const q=[r.company,r.address,[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-    copyText61(q,'Adresse'); window.location.href='tomtomgo://x-callback-url/navigate?destination='+encodeURIComponent(q); setTimeout(function(){window.open('https://plan.tomtom.com/de/','_blank','noopener');},900);
+    copyText61(q,'Adresse');
+    const app='tomtomgo://x-callback-url/navigate?destination='+encodeURIComponent(q);
+    window.location.href=app;
+    setTimeout(function(){window.open('https://plan.tomtom.com/de/','_blank','noopener');},900);
   };
   window.openCustomerTomTomPlan61=function(id){
     const r=(db.customers||[]).find(function(x){return String(x.id)===String(id);}); if(!r)return;
     const q=[r.company,r.address,[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     copyText61(q,'Adresse'); window.open('https://plan.tomtom.com/de/','_blank','noopener');
   };
+  // Backup stabil und zerstörungsfrei.
   function moduleKeys61(){return ['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','marketingDrafts','webHits','deletedLeads','deletedOffers'];}
   function normalizeBackup61(parsed){
-    let data=parsed; if(parsed&&parsed._bloc73Backup&&parsed.data) data=parsed.data; else if(parsed&&parsed.data&&typeof parsed.data==='object'&&(parsed.data.customers||parsed.data.tours||parsed.data.leads)) data=parsed.data; else if(parsed&&parsed.db&&typeof parsed.db==='object') data=parsed.db;
-    if(!data||typeof data!=='object') throw new Error('Backup-Struktur nicht erkannt.'); const base=(typeof freshDB==='function')?freshDB():{}; const out=Object.assign({},base,data);
-    moduleKeys61().forEach(function(k){if(!Array.isArray(out[k])) out[k]=[];}); if((!out.products||!out.products.length)&&base.products) out.products=base.products; return out;
+    let data=parsed;
+    if(parsed&&parsed._bloc73Backup&&parsed.data) data=parsed.data;
+    else if(parsed&&parsed.data&&typeof parsed.data==='object'&&(parsed.data.customers||parsed.data.tours||parsed.data.leads)) data=parsed.data;
+    else if(parsed&&parsed.db&&typeof parsed.db==='object') data=parsed.db;
+    if(!data||typeof data!=='object') throw new Error('Backup-Struktur nicht erkannt.');
+    const base=(typeof freshDB==='function')?freshDB():{};
+    const out=Object.assign({},base,data);
+    moduleKeys61().forEach(function(k){if(!Array.isArray(out[k])) out[k]=[];});
+    if((!out.products||!out.products.length)&&base.products) out.products=base.products;
+    return out;
   }
   function summary61(data){return 'Kunden: '+(data.customers||[]).length+'\nLeads: '+(data.leads||[]).length+'\nAngebote: '+(data.offers||[]).length+'\nTagestouren: '+(data.tours||[]).length+'\nBesuchte Kunden: '+(data.visited||[]).length+'\nGRAEF: '+(data.graef||[]).length;}
-  window.exportBackup=function(){try{persist();}catch(e){} const safe=normalizeBackup61(db||{}); const payload={_bloc73Backup:{version:V61,exportedAt:new Date().toISOString(),app:'BLOC73 CRM',customers:(safe.customers||[]).length,records:moduleKeys61().reduce(function(n,k){return n+(Array.isArray(safe[k])?safe[k].length:0);},0)},data:safe}; try{localStorage.setItem('bloc73_backup_last_export',new Date().toISOString());}catch(e){} download61(JSON.stringify(payload,null,2),'bloc73_crm_backup_'+isoToday61()+'_'+V61+'.json','application/json');};
+  window.exportBackup=function(){
+    try{persist();}catch(e){}
+    const safe=normalizeBackup61(db||{});
+    const payload={_bloc73Backup:{version:V61,exportedAt:new Date().toISOString(),app:'BLOC73 CRM',customers:(safe.customers||[]).length,records:moduleKeys61().reduce(function(n,k){return n+(Array.isArray(safe[k])?safe[k].length:0);},0)},data:safe};
+    try{localStorage.setItem('bloc73_backup_last_export',new Date().toISOString());}catch(e){}
+    download61(JSON.stringify(payload,null,2),'bloc73_crm_backup_'+isoToday61()+'_'+V61+'.json','application/json');
+  };
   window.importBackupFile61=function(file){
     if(!file)return; const reader=new FileReader();
-    reader.onload=function(){try{const parsed=JSON.parse(String(reader.result||'')); const data=normalizeBackup61(parsed); if(!confirm('Backup gefunden. Enthalten:\n\n'+summary61(data)+'\n\nAktuelle Daten auf diesem Gerät ersetzen?'))return; db=data; persist(); try{localStorage.setItem('bloc73_backup_last_import',new Date().toISOString());}catch(e){} renderNav(); renderContent(); alert('Backup erfolgreich geladen.\n\n'+summary61(db));}catch(err){alert('Backup konnte nicht geladen werden:\n\n'+(err&&err.message?err.message:String(err)));}};
+    reader.onload=function(){
+      try{
+        const parsed=JSON.parse(String(reader.result||''));
+        const data=normalizeBackup61(parsed);
+        if(!confirm('Backup gefunden. Enthalten:\n\n'+summary61(data)+'\n\nAktuelle Daten auf diesem Gerät ersetzen?'))return;
+        db=data; persist();
+        try{localStorage.setItem('bloc73_backup_last_import',new Date().toISOString());}catch(e){}
+        renderNav(); renderContent();
+        alert('Backup erfolgreich geladen.\n\n'+summary61(db));
+      }catch(err){
+        alert('Backup konnte nicht geladen werden:\n\n'+(err&&err.message?err.message:String(err)));
+      }
+    };
     reader.onerror=function(){alert('Datei konnte nicht gelesen werden.');}; reader.readAsText(file);
   };
-  window.importBackup=function(e){const input=e&&e.target; const file=input&&input.files&&input.files[0]; if(input)input.value=''; window.importBackupFile61(file);}; window.importBackup41=window.importBackup; try{importBackup=window.importBackup;importBackup41=window.importBackup;exportBackup=window.exportBackup;}catch(e){}
-  window.backupCenterHTML41=function(){const data=normalizeBackup61(db||{}); const rows=moduleKeys61().map(function(k){return '<div class="backup-row41"><strong>'+h61((modules&&modules[k]&&modules[k].title)||k)+'</strong><span>'+((data[k]||[]).length)+' Datensätze</span></div>';}).join(''); return '<div class="grid"><div class="panel" style="grid-column:span 12"><div class="panel-head"><div><h3>Backup-Zentrale · v61</h3><div class="muted">Stabile Sicherung und Wiederherstellung aller CRM-Daten.</div></div><div class="toolbar"><button class="btn primary" onclick="exportBackup()">Backup JSON herunterladen</button><label class="btn ok">Backup laden<input type="file" accept="application/json,.json" hidden onchange="importBackup(event)"></label></div></div><div class="panel-body"><div class="notice"><b>v61 geprüft:</b> Backup enthält Kunden, Leads, Angebote, Aufgaben, Kalender, Tagestouren, besuchte Kunden, GRAEF, Produkte und Marketing.</div><div style="height:14px"></div><div class="backup-list41">'+rows+'</div></div></div></div>';}; try{backupCenterHTML41=window.backupCenterHTML41;}catch(e){}
+  window.importBackup=function(e){const input=e&&e.target; const file=input&&input.files&&input.files[0]; if(input)input.value=''; window.importBackupFile61(file);};
+  window.importBackup41=window.importBackup;
+  try{importBackup=window.importBackup;importBackup41=window.importBackup;exportBackup=window.exportBackup;}catch(e){}
+  const prevBackupCenter61=window.backupCenterHTML41;
+  window.backupCenterHTML41=function(){
+    const data=normalizeBackup61(db||{}); const rows=moduleKeys61().map(function(k){return '<div class="backup-row41"><strong>'+h61((modules&&modules[k]&&modules[k].title)||k)+'</strong><span>'+((data[k]||[]).length)+' Datensätze</span></div>';}).join('');
+    return '<div class="grid"><div class="panel" style="grid-column:span 12"><div class="panel-head"><div><h3>Backup-Zentrale · v61</h3><div class="muted">Stabile Sicherung und Wiederherstellung aller CRM-Daten.</div></div><div class="toolbar"><button class="btn primary" onclick="exportBackup()">Backup JSON herunterladen</button><label class="btn ok">Backup laden<input type="file" accept="application/json,.json" hidden onchange="importBackup(event)"></label></div></div><div class="panel-body"><div class="notice"><b>v61 geprüft:</b> Backup enthält Kunden, Leads, Angebote, Aufgaben, Kalender, Tagestouren, besuchte Kunden, GRAEF, Produkte und Marketing.</div><div style="height:14px"></div><div class="backup-list41">'+rows+'</div></div></div></div>';
+  };
+  try{backupCenterHTML41=window.backupCenterHTML41;}catch(e){}
+  // Row/List Overrides zuletzt setzen, damit keine ältere Funktion dazwischenfunkt.
   const prevRow61=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
   window.rowHTML=function(m,r){
+    const P=(typeof pill==='function')?pill:function(v){return '<span class="pill">'+h61(v||'')+'</span>';};
+    const idArg=JSON.stringify(r&&r.id?String(r.id):'');
+    const addr=(r&&r.address)||[r&&r.street,[r&&r.zip,r&&r.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const routeArg=JSON.stringify(addr || (r&&r.company) || '');
     if(m==='customers'){
-      const id=JSON.stringify(r.id); const route=JSON.stringify(r.address||[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(' ')||r.company||'');
-      return '<tr><td><b>'+h61(r.company||'')+'</b><br><span class="muted small">'+h61(r.phone||'')+'</span></td><td>'+pill(r.target||'')+'</td><td>'+pill(r.status||'')+'</td><td>'+h61(r.address||[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '))+'</td><td><div class="row-actions"><button class="btn primary" onclick="openCustomerTomTom61('+id+')">TomTom App</button><button class="btn" onclick="openCustomerTomTomPlan61('+id+')">Plan.TomTom</button><button class="btn" onclick="openMapsFor('+route+')">Route</button><button class="btn" onclick="openModal(\'customers\','+id+')">Bearbeiten</button><button class="btn danger" onclick="deleteRecord(\'customers\','+id+')">Löschen</button></div></td></tr>';
+      return `<tr><td><b>${h61(r.company||'')}</b><br><span class="muted small">${h61(r.phone||'')}</span></td><td>${P(r.target||'')}</td><td>${P(r.status||'')}</td><td>${h61(addr)}</td><td><div class="row-actions"><button class="btn primary" onclick='openCustomerTomTom61(${idArg})'>TomTom App</button><button class="btn" onclick='openCustomerTomTomPlan61(${idArg})'>Plan.TomTom</button><button class="btn" onclick='openMapsFor(${routeArg})'>Route</button><button class="btn" onclick='openModal("customers",${idArg})'>Bearbeiten</button><button class="btn danger" onclick='deleteRecord("customers",${idArg})'>Löschen</button></div></td></tr>`;
     }
     if(m==='tours'){
-      const id=JSON.stringify(r.id); const route=JSON.stringify(r.address||r.company||''); const label=(r.isExistingCustomer||r.bestandskunde)?'<span class="badge ok">Bestandskunde</span>':'';
-      return '<tr><td>'+h61(date61(r.tourDate))+'</td><td>'+h61(r.order||'')+'</td><td><b>'+h61(r.company||'')+'</b><br><span class="muted small">'+h61(r.address||[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '))+'</span><br>'+label+'</td><td>'+pill(r.status||'Geplant')+'</td><td>'+pill(r.graefInfo||'Nein')+'</td><td>'+h61((r.discussion||'').slice(0,120))+'</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited('+id+')">Besucht</button><button class="btn primary" onclick="markTourLead('+id+')">Lead</button><button class="btn" onclick="markTourFollowUp('+id+')">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef('+id+')">GRAEF</button><button class="btn" onclick="editTourAddress61('+id+')">Adresse bearbeiten</button><button class="btn primary" onclick="downloadTourLetterWord61('+id+')">Brief Word</button><button class="btn danger" onclick="markTourNoInterest('+id+')">Kein Interesse</button><button class="btn danger" onclick="markTourGone('+id+')">Nicht vorhanden</button><button class="btn" onclick="openMapsFor('+route+')">Route</button><button class="btn primary" onclick="openTomTomApp49('+id+')">TomTom App</button><button class="btn" onclick="openModal(\'tours\','+id+')">Bearbeiten</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47('+id+')">Tour löschen</button></div></td></tr>';
+      const label=(r.isExistingCustomer||r.bestandskunde)?'<span class="badge ok">Bestandskunde</span>':'';
+      return `<tr><td>${h61(date61(r.tourDate))}</td><td>${h61(r.order||'')}</td><td><b>${h61(r.company||'')}</b><br><span class="muted small">${h61(addr)}</span><br>${label}</td><td>${P(r.status||'Geplant')}</td><td>${P(r.graefInfo||'Nein')}</td><td>${h61((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick='markTourVisited(${idArg})'>Besucht</button><button class="btn primary" onclick='markTourLead(${idArg})'>Lead</button><button class="btn" onclick='markTourFollowUp(${idArg})'>Wiedervorlage</button><button class="btn warn" onclick='markTourGraef(${idArg})'>GRAEF</button><button class="btn" onclick='editTourAddress61(${idArg})'>Adresse bearbeiten</button><button class="btn primary" onclick='downloadTourLetterWord61(${idArg})'>Brief Word</button><button class="btn danger" onclick='markTourNoInterest(${idArg})'>Kein Interesse</button><button class="btn danger" onclick='markTourGone(${idArg})'>Nicht vorhanden</button><button class="btn" onclick='openMapsFor(${routeArg})'>Route</button><button class="btn primary" onclick='openTomTomApp49(${idArg})'>TomTom App</button><button class="btn" onclick='openModal("tours",${idArg})'>Bearbeiten</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick='deleteTourOnly47(${idArg})'>Tour löschen</button></div></td></tr>`;
     }
     return prevRow61?prevRow61(m,r):'';
-  }; try{rowHTML=window.rowHTML;}catch(e){}
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
   const prevList61=window.listHTML || (typeof listHTML==='function'?listHTML:null);
-  window.listHTML=function(m){let html=prevList61?prevList61(m):''; if(m==='tours'){html=html.replace('Briefe sichtbare Tour','Word sichtbare Tour').replace('Briefe nach Datum','Word nach Datum').replace('Briefe Woche','Word Woche'); html=html.replace(/onclick="printVisibleTourLetters52\(\)"/g,'onclick="downloadVisibleTourLettersWord61()"').replace(/onclick="printTourLettersByDate52\(\)"/g,'onclick="downloadTourLettersByDateWord61()"').replace(/onclick="printTourLettersByWeek52\(\)"/g,'onclick="downloadTourLettersByWeekWord61()"'); if(!html.includes('exportTourWeekCSV61')){html=html.replace('<button class="btn" onclick="exportCSV(\'tours\')">CSV alle Tourdaten</button>','<button class="btn" onclick="exportCSV(\'tours\')">CSV alle Tourdaten</button><button class="btn ok" onclick="exportTourWeekCSV61()">Woche CSV</button>');} html=html.replace('A4-Briefdruck:', 'Word-Briefe:').replace('A4-Briefe','Word-Briefe').replace('Brief A4','Brief Word');} return html;}; try{listHTML=window.listHTML;}catch(e){}
-  try{document.title='BLOC73 CRM · v61 · stabil + CSV + Word'; const p=document.querySelector('.brand p'); if(p)p.textContent='v61 · stabil geprüft';}catch(e){}
+  window.listHTML=function(m){
+    let html=prevList61?prevList61(m):'';
+    if(m==='tours'){
+      html=html.replace('Briefe sichtbare Tour','Word sichtbare Tour').replace('Briefe nach Datum','Word nach Datum').replace('Briefe Woche','Word Woche');
+      html=html.replace(/onclick="printVisibleTourLetters52\(\)"/g,'onclick="downloadVisibleTourLettersWord61()"').replace(/onclick="printTourLettersByDate52\(\)"/g,'onclick="downloadTourLettersByDateWord61()"').replace(/onclick="printTourLettersByWeek52\(\)"/g,'onclick="downloadTourLettersByWeekWord61()"');
+      if(!html.includes('exportTourWeekCSV61')){
+        html=html.replace("<button class=\"btn\" onclick=\"exportCSV('tours')\">CSV alle Tourdaten</button>","<button class=\"btn\" onclick=\"exportCSV('tours')\">CSV alle Tourdaten</button><button class=\"btn ok\" onclick=\"exportTourWeekCSV61()\">Woche CSV</button>");
+      }
+      html=html.replace('A4-Briefdruck:', 'Word-Briefe:').replace('A4-Briefe','Word-Briefe').replace('Brief A4','Brief Word');
+    }
+    return html;
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{document.title='BLOC73 CRM · v63 · stabil + CSV + Word'; const p=document.querySelector('.brand p'); if(p)p.textContent='v61 · stabil geprüft';}catch(e){}
   try{if(active==='tourplanner'||active==='tours'||active==='customers'||active==='backup')renderContent();}catch(e){}
 })();
 </script>
