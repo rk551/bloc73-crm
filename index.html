@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v56 · Dauerhafte Arbeitsversion</title>
+  <title>BLOC73 CRM · v57 · TomTom Kunden repariert</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -32,7 +32,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v56 · Dauerhafte Arbeitsversion</p></div></div>
+    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v57 · TomTom Kunden repariert</p></div></div>
     <div class="nav" id="nav"></div>
     <div class="footer">Single-User HTML CRM<br>Daten lokal im Browser + Backup</div>
   </aside>
@@ -3193,8 +3193,7 @@ closeGraefWeek=function(){
     const full=clean54(r.address||r.adresse||'');
     let out={company:company||'Kunde',street,zip,city,full};
     if((!out.street||(!out.zip&&!out.city))&&full){
-      const parts=full.split(/[
-,]+/).map(x=>x.trim()).filter(Boolean);
+      const parts=full.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean);
       for(const p of parts){
         const m=p.match(/^(\d{5})\s+(.+)$/);
         if(m){out.zip=out.zip||m[1];out.city=out.city||m[2];continue;}
@@ -3275,10 +3274,8 @@ closeGraefWeek=function(){
   }
   window.downloadTourLetterWord54=function(id){const r=getTour54(id); if(!r)return alert('Tour-Eintrag nicht gefunden.'); makeWordDoc54([r],'BLOC73_Brief_'+(r.company||'Kunde'));};
   window.downloadVisibleTourLettersWord54=function(){makeWordDoc54(visibleTourRows54(),'BLOC73_Besuchsbriefe_sichtbare_Tour');};
-  window.downloadTourLettersByDateWord54=function(){const def=visibleTourRows54()[0]?.tourDate||today54(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden?
-Format: JJJJ-MM-TT',def); if(!d)return; makeWordDoc54((db.tours||[]).filter(r=>isOpenTour54(r)&&String(r.tourDate||'')===String(d)).sort((a,b)=>(+a.order||0)-(+b.order||0)),'BLOC73_Besuchsbriefe_'+d);};
-  window.downloadTourLettersByWeekWord54=function(){const def=mondayOf54(visibleTourRows54()[0]?.tourDate||today54()); const d=prompt('Wochenstart Montag für Word-Briefe eingeben.
-Format: JJJJ-MM-TT',def); if(!d)return; const start=new Date(d+'T12:00:00'), end=new Date(start); end.setDate(start.getDate()+6); const rows=(db.tours||[]).filter(r=>{const x=new Date(String(r.tourDate||'')+'T12:00:00'); return isOpenTour54(r)&&x>=start&&x<=end;}).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||''))||((+a.order||0)-(+b.order||0))); makeWordDoc54(rows,'BLOC73_Besuchsbriefe_Woche_'+d);};
+  window.downloadTourLettersByDateWord54=function(){const def=visibleTourRows54()[0]?.tourDate||today54(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden?\nFormat: JJJJ-MM-TT',def); if(!d)return; makeWordDoc54((db.tours||[]).filter(r=>isOpenTour54(r)&&String(r.tourDate||'')===String(d)).sort((a,b)=>(+a.order||0)-(+b.order||0)),'BLOC73_Besuchsbriefe_'+d);};
+  window.downloadTourLettersByWeekWord54=function(){const def=mondayOf54(visibleTourRows54()[0]?.tourDate||today54()); const d=prompt('Wochenstart Montag für Word-Briefe eingeben.\nFormat: JJJJ-MM-TT',def); if(!d)return; const start=new Date(d+'T12:00:00'), end=new Date(start); end.setDate(start.getDate()+6); const rows=(db.tours||[]).filter(r=>{const x=new Date(String(r.tourDate||'')+'T12:00:00'); return isOpenTour54(r)&&x>=start&&x<=end;}).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||''))||((+a.order||0)-(+b.order||0))); makeWordDoc54(rows,'BLOC73_Besuchsbriefe_Woche_'+d);};
   const prevRow54=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
   window.rowHTML=function(m,r){
     if(m==='tours'){
@@ -3381,11 +3378,69 @@ Format: JJJJ-MM-TT',def); if(!d)return; const start=new Date(d+'T12:00:00'), end
   };
   try{listHTML=window.listHTML;}catch(e){}
 
-  try{document.title='BLOC73 CRM · v56 · Dauerhafte Arbeitsversion';}catch(e){}
-  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v56 · Dauerhafte Arbeitsversion';}catch(e){}
+  try{document.title='BLOC73 CRM · v57 · TomTom Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v57 · TomTom Kunden repariert';}catch(e){}
   try{renderNav(); renderContent();}catch(e){}
 })();
 
+</script>
+
+
+<script>
+/* === v57: Reparatur TomTom im Kundenmodul ===
+   Fix: vorheriger Brief/Adress-Code hatte einen JavaScript-Syntaxfehler.
+   Dadurch wurde die spätere Kunden-TomTom-Erweiterung nicht geladen.
+*/
+(function(){
+  function h57(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  function q57(v){return JSON.stringify(String(v??''));}
+  function bestCustomerAddress57(c){
+    return String(c.address||[c.street||c.strasse||c['straße']||'', [c.zip||c.plz||'', c.city||c.ort||''].filter(Boolean).join(' ')].filter(Boolean).join(', ')||c.company||'').trim();
+  }
+  async function copyText57(text){try{await navigator.clipboard.writeText(text);return true;}catch(e){try{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();return true;}catch(_){return false;}}}
+  window.openTomTomCustomer57=async function(id){
+    const c=(db.customers||[]).find(x=>String(x.id)===String(id));
+    if(!c)return alert('Kunde nicht gefunden.');
+    const addr=bestCustomerAddress57(c);
+    await copyText57(addr);
+    alert('Kundenadresse wurde kopiert:\n\n'+addr+'\n\nTomTom wird jetzt geöffnet. Falls iOS die Übergabe blockiert: TomTom-App öffnen und Adresse einfügen.');
+    const encoded=encodeURIComponent(addr);
+    try{window.location.href='tomtomgo://x-callback-url/navigate?destination='+encoded;}catch(e){}
+    setTimeout(()=>{try{window.open('https://plan.tomtom.com/search/'+encoded,'_blank');}catch(e){}},700);
+  };
+  window.openPlanTomTomCustomer57=async function(id){
+    const c=(db.customers||[]).find(x=>String(x.id)===String(id));
+    if(!c)return alert('Kunde nicht gefunden.');
+    const addr=bestCustomerAddress57(c);
+    await copyText57(addr);
+    window.open('https://plan.tomtom.com/search/'+encodeURIComponent(addr),'_blank');
+  };
+  const prevRow57=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='customers'){
+      const id=q57(r.id);
+      const addr=bestCustomerAddress57(r);
+      const tel=r.phone?`<br><span class="muted small">${h57(r.phone)}</span>`:'';
+      const email=r.email?`<br><span class="muted small">${h57(r.email)}</span>`:'';
+      return `<tr><td><b>${h57(r.company||'')}</b>${tel}${email}</td><td>${pill(r.target)}</td><td>${pill(r.status)}</td><td>${h57(addr)}</td><td><div class="row-actions"><button class="btn primary" onclick="openTomTomCustomer57(${id})">TomTom App</button><button class="btn" onclick="openPlanTomTomCustomer57(${id})">Plan.TomTom</button><button class="btn" onclick="openMapsFor(${q57(addr)})">Route</button><button class="btn" onclick="openModal('customers',${id})">Bearbeiten</button><button class="btn danger" onclick="deleteRecord('customers',${id})">Löschen</button></div></td></tr>`;
+    }
+    return prevRow57?prevRow57(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+  const prevList57=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    if(m==='customers'){
+      const q=(document.getElementById('listQ')?.value||'').toLowerCase().trim();
+      const rows=(db.customers||[]).filter(r=>!q||JSON.stringify(r).toLowerCase().includes(q));
+      return `<div class="panel"><div class="panel-head"><div><h3>Kunden</h3><div class="muted">v57: TomTom im Kundenmodul repariert und sichtbar.</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Kunden suchen …" oninput="renderContent()"><button class="btn primary" onclick="openModal('customers')">+ Kunde</button><button class="btn" onclick="exportCSV('customers')">CSV Export</button></div></div><div class="panel-body"><div class="notice"><b>TomTom:</b> Im Kundenmodul gibt es jetzt pro Kunde <b>TomTom App</b>, <b>Plan.TomTom</b> und <b>Route</b>. Kundendaten bleiben dauerhaft gespeichert.</div></div><div class="table-wrap"><table><thead>${tableHead('customers')}</thead><tbody id="tableBody">${tableRows('customers',rows)}</tbody></table></div></div>`;
+    }
+    return prevList57?prevList57(m):'';
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{document.title='BLOC73 CRM · v57 · TomTom Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p');if(p)p.textContent='v57 · TomTom Kunden repariert';}catch(e){}
+  try{renderNav();renderContent();}catch(e){}
+})();
 </script>
 
 </body>
