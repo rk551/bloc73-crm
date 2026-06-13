@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v41 · Herstellerkatalog & Ultra-Realistic Prompts</title>
+  <title>BLOC73 CRM · v55 · Leerstart ohne Kundendaten</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -32,7 +32,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v36 · Herstellerkatalog & Ultra-Realistic Prompts</p></div></div>
+    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v55 · Leerstart ohne Kundendaten</p></div></div>
     <div class="nav" id="nav"></div>
     <div class="footer">Single-User HTML CRM<br>Daten lokal im Browser + Backup</div>
   </aside>
@@ -83,6 +83,30 @@ const productSeed=[
 ];
 function freshDB(){return {customers:[],offers:[],tasks:[],calendar:[],tours:[],visited:[],graef:[],products:productSeed.map((p,i)=>({id:uid(),product:p[0],manufacturer:p[1],area:p[2],page:p[3],image:'',notes:p[4],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()})),webHits:[]};}
 let db=loadDB();
+
+// v55: Jungfräulicher Start – alle Kundendaten entfernen, CRM-Funktionen behalten.
+(function cleanCustomerDataV55(){
+  const flag='bloc73_crm_v55_jungfraeulich_done';
+  try{
+    if(localStorage.getItem(flag)) return;
+    const keepProducts = Array.isArray(db.products) && db.products.length ? db.products : freshDB().products;
+    const clean = freshDB();
+    Object.keys(db||{}).forEach(k=>{
+      if(Array.isArray(db[k]) && k !== 'products') clean[k]=[];
+    });
+    clean.products = keepProducts;
+    db = clean;
+    // Alte Kundensicherungen/Archivspuren aus früheren Testversionen entfernen.
+    ['bloc73_v46_removed_customers_backup','bloc73_v46_customers_cleared_once'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+    // Hochgeladene Angebots-/Kundendokumente aus dem lokalen Datei-Speicher entfernen.
+    try{ indexedDB.deleteDatabase('bloc73_crm_files_v10'); }catch(e){}
+    persist();
+    localStorage.setItem(flag,new Date().toISOString());
+  }catch(e){
+    console.warn('v55 Leerstart konnte nicht vollständig ausgeführt werden',e);
+  }
+})();
+
 function uid(){return 'id_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)}
 function loadDB(){try{const raw=localStorage.getItem(STORE_KEY);const parsed=raw?JSON.parse(raw):null;const base=parsed||freshDB();Object.keys(freshDB()).forEach(k=>{if(!Array.isArray(base[k]))base[k]=[]}); if(!base.products.length) base.products=freshDB().products; return base;}catch(e){return freshDB();}}
 function persist(){localStorage.setItem(STORE_KEY,JSON.stringify(db));}
@@ -2015,7 +2039,7 @@ closeGraefWeek=function(){
       cells.push(`<div class="cal-day40 ${iso===todayIso?'today':''}"><div class="cal-date40">${day}</div>${ev.map(x=>`<div class="cal-event40" onclick="openCalendar40(${x.idx})">${esc40((x.e.time?x.e.time+' · ':'')+x.e.title)}${x.e.sources?.length>1?' · '+x.e.sources.length+' Quellen':''}</div>`).join('')}</div>`);
     }
     const list=events.length?events.map((e,idx)=>`<div class="cal-row40"><div><b>${fmt40(e.date)}</b><div class="muted small">${esc40(e.time||'')}</div></div><div><b>${esc40(e.title)}</b><div class="muted small">${esc40(e.customer||'')} ${e.sources?.length>1?' · Dublette zusammengeführt':''}</div><div style="margin-top:6px">${typeof pill==='function'?pill(e.type||'Termin'):`<span class="pill">${esc40(e.type||'Termin')}</span>`} ${sourcePills40(e)}</div></div><div class="row-actions"><button class="btn primary" onclick="openCalendar40(${idx})">Öffnen</button><button class="btn danger" onclick="deleteCalendar40(${idx})">Löschen</button></div></div>`).join(''):`<div class="cal-empty40">Keine Termine in ${esc40(monthTitle40(ym))}.</div>`;
-    return `<div class="panel"><div class="panel-head cal-head40"><div><h3>CRM-Kalender · ${esc40(monthTitle40(ym))}</h3><div class="muted">v41: Kalender stabil + Backup-Zentrale.</div></div><div class="cal-controls40"><button type="button" class="btn" onclick="calendarMove40(-1)">← Zurück</button><button type="button" class="btn" onclick="calendarToday40()">Heute</button><button type="button" class="btn primary" onclick="calendarMove40(1)">Vor →</button><button type="button" class="btn" onclick="openModal('calendar')">+ Termin</button></div></div><div class="panel-body"><div class="calendar-grid cal-grid40">${cells.join('')}</div><h3 style="margin-top:18px">Terminliste</h3><div class="cal-list40">${list}</div></div></div>`;
+    return `<div class="panel"><div class="panel-head cal-head40"><div><h3>CRM-Kalender · ${esc40(monthTitle40(ym))}</h3><div class="muted">v45: Stabil · Import mit Adressen · Leads mit Angeboten · Auswertung.</div></div><div class="cal-controls40"><button type="button" class="btn" onclick="calendarMove40(-1)">← Zurück</button><button type="button" class="btn" onclick="calendarToday40()">Heute</button><button type="button" class="btn primary" onclick="calendarMove40(1)">Vor →</button><button type="button" class="btn" onclick="openModal('calendar')">+ Termin</button></div></div><div class="panel-body"><div class="calendar-grid cal-grid40">${cells.join('')}</div><h3 style="margin-top:18px">Terminliste</h3><div class="cal-list40">${list}</div></div></div>`;
   };
   try{ calendarHTML=window.calendarHTML; }catch(e){}
   const previousRender40=window.renderContent||renderContent;
@@ -2113,8 +2137,6 @@ closeGraefWeek=function(){
     reader.onload=()=>{try{const parsed=JSON.parse(reader.result); const data=parsed && parsed._bloc73Backup ? parsed.data : parsed; if(!data || typeof data!=='object')throw new Error('Kein CRM-Backup'); if(!confirm('Aktuelle CRM-Daten durch dieses Backup ersetzen?'))return; db=data; Object.keys(freshDB()).forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];}); localStorage.setItem(metaKeys41.import,nowIso41()); persist(); renderNav(); renderContent(); alert('Backup wurde geladen.');}catch(err){alert('Backup konnte nicht geladen werden: '+err.message);}};
     reader.readAsText(f);
   };
-  window.importBackup=window.importBackup41;
-  try{importBackup=window.importBackup41;}catch(e){}
   window.exportAllCSV41=function(){
     modulesList41().forEach(k=>{if(Array.isArray(db[k]) && db[k].length){try{exportCSV(k);}catch(e){}}});
   };
@@ -2167,6 +2189,1140 @@ closeGraefWeek=function(){
   try{renderNav(); if(active==='backup')renderContent();}catch(e){}
 })();
 
+
+/* === v45: sicherer Kundenimport, Lead-Angebote und Auswertung - baut auf stabiler v41 auf === */
+(function(){
+  const V45='v45';
+  const importState45={rows:[],mapped:[],filename:''};
+  function h45(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function n45(s){try{return norm(s||'');}catch(e){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}}
+  function now45(){return new Date().toISOString();}
+  function today45(){try{return today();}catch(e){return new Date().toISOString().slice(0,10);}}
+  function uid45(){try{return uid();}catch(e){return 'id_'+Math.random().toString(36).slice(2)+Date.now();}}
+  function euro45(v){const n=Number(String(v||'').replace(',','.'))||0;return n.toLocaleString('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0});}
+  function ensure45(){
+    ['customers','leads','offers','visited','calendar','tasks','graef','tours'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
+    modules.customerImport={title:'Kunden-Import',sub:'CSV/KML-Kunden mit vollständiger Adresse importieren.'};
+    modules.analytics={title:'Auswertung',sub:'Laufende Angebote, Besuchsquote und Erfolgsquote.'};
+    if(modules.leads){
+      modules.leads.sub='Leads mit laufenden Angeboten, Wiedervorlage und direkter Angebotserstellung.';
+      if(!modules.leads.fields.some(f=>f[0]==='leadValue')) modules.leads.fields.splice(4,0,['leadValue','Potenzial netto','number']);
+    }
+    if(modules.offers){
+      if(!modules.offers.fields.some(f=>f[0]==='leadId')) modules.offers.fields.push(['leadId','Lead-ID intern','text']);
+      if(!modules.offers.fields.some(f=>f[0]==='source')) modules.offers.fields.push(['source','Quelle','text']);
+    }
+    if(modules.customers){
+      const afterCompany=1;
+      if(!modules.customers.fields.some(f=>f[0]==='street')) modules.customers.fields.splice(afterCompany,0,['street','Straße','text']);
+      if(!modules.customers.fields.some(f=>f[0]==='zip')) modules.customers.fields.splice(afterCompany+1,0,['zip','PLZ','text']);
+      if(!modules.customers.fields.some(f=>f[0]==='city')) modules.customers.fields.splice(afterCompany+2,0,['city','Ort','text']);
+    }
+    if(Array.isArray(navOrder)){
+      if(!navOrder.includes('customerImport')){
+        const i=navOrder.indexOf('customers'); navOrder.splice(i>-1?i+1:2,0,'customerImport');
+      }
+      if(!navOrder.includes('analytics')){
+        const i=navOrder.indexOf('dashboard'); navOrder.splice(i>-1?i+1:1,0,'analytics');
+      }
+    }
+  }
+  ensure45();
+
+  function csvRows45(text){
+    text=String(text||'').replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+    const first=(text.split('\n').find(l=>l.trim())||'');
+    const delimiter=(first.split(';').length>=first.split(',').length)?';':',';
+    const rows=[]; let row=[], cell='', inQ=false;
+    for(let i=0;i<text.length;i++){
+      const ch=text[i], next=text[i+1];
+      if(ch==='"'){
+        if(inQ && next==='"'){cell+='"';i++;}
+        else inQ=!inQ;
+      }else if(ch===delimiter && !inQ){row.push(cell); cell='';}
+      else if(ch==='\n' && !inQ){row.push(cell); if(row.some(x=>String(x).trim()!=='')) rows.push(row); row=[]; cell='';}
+      else cell+=ch;
+    }
+    row.push(cell); if(row.some(x=>String(x).trim()!=='')) rows.push(row);
+    if(!rows.length)return [];
+    const headers=rows[0].map(x=>String(x||'').trim());
+    return rows.slice(1).map(r=>{const o={}; headers.forEach((k,i)=>o[k]=String(r[i]??'').trim()); return o;});
+  }
+  function getVal45(o,names){
+    const keys=Object.keys(o||{}); const lookup={}; keys.forEach(k=>lookup[n45(k)]=k);
+    for(const name of names){ const k=lookup[n45(name)]; if(k!==undefined && String(o[k]||'').trim())return String(o[k]).trim(); }
+    return '';
+  }
+  function inferTarget45(x){const s=n45([x.company,x.notes,x.address].join(' ')); if(s.includes('metzger')||s.includes('fleisch'))return 'Metzgerei'; if(s.includes('klinik')||s.includes('krankenhaus')||s.includes('klinikum'))return 'Krankenhaus'; if(s.includes('pflege')||s.includes('senior')||s.includes('altenheim'))return 'Pflegeheim'; if(s.includes('hotel')||s.includes('gastro')||s.includes('restaurant')||s.includes('catering'))return 'Gastro'; return x.target||'Betrieb / BASTRA-Kunde';}
+  function mapImportRow45(o){
+    const company=getVal45(o,['Firma','Name','Firmenname','Kunde','company']);
+    const street=getVal45(o,['Straße','Strasse','street','Adresse Straße','Address Street']);
+    const zip=getVal45(o,['PLZ','Postleitzahl','zip','postal code']);
+    const city=getVal45(o,['Ort','Stadt','city','place']);
+    let address=getVal45(o,['Adresse','address','Anschrift']);
+    if(!address) address=[street,[zip,city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const phone=getVal45(o,['Telefon','Telefon 1','Tel','phone','Festnetz']);
+    const phone2=getVal45(o,['Telefon 2','Tel 2','phone2']);
+    const mobile=getVal45(o,['Handy','Mobil','Mobile','cell']);
+    const email=getVal45(o,['Email','E-Mail','Mail','email']);
+    const website=getVal45(o,['Website','Webseite','Homepage','URL','website']);
+    let notes=getVal45(o,['Notizen','Notizen 1','Notiz','notes']);
+    const n2=getVal45(o,['Notizen 2','Notiz 2']); const n3=getVal45(o,['Notizen 3','Notiz 3']);
+    notes=[notes,n2,n3].filter(Boolean).join(' | ');
+    const target=getVal45(o,['Zielgruppe','Branche','Kategorie','target']);
+    const source=getVal45(o,['Quelle','source'])||'Kunden-Import';
+    return {company,street,zip,city,address,phone,phone2,mobile,email,website,target:inferTarget45({company,notes,address,target}),status:getVal45(o,['Status'])||'Importiert',source,notes,discussion:getVal45(o,['Was wurde besprochen?','Gespräch','discussion'])};
+  }
+  function keyCustomer45(x){return n45([x.company,x.address||x.street,x.zip,x.city].join('|'))||n45([x.company,x.phone].join('|'));}
+  window.handleCustomerImport45=function(e){
+    const f=e.target.files&&e.target.files[0]; if(!f)return; importState45.filename=f.name;
+    const r=new FileReader(); r.onload=()=>{try{importState45.rows=csvRows45(r.result); importState45.mapped=importState45.rows.map(mapImportRow45).filter(x=>x.company); renderImportPreview45();}catch(err){alert('Import konnte nicht gelesen werden: '+err.message);}}; r.readAsText(f,'utf-8');
+  };
+  window.renderImportPreview45=function(){
+    const box=document.getElementById('importPreview45'); if(!box)return;
+    const rows=importState45.mapped||[];
+    const withAddr=rows.filter(r=>r.address).length;
+    box.innerHTML=`<div class="notice"><b>${rows.length}</b> importierbare Einträge erkannt · <b>${withAddr}</b> mit Adresse · Datei: ${h45(importState45.filename||'')}</div>`+
+      `<div style="height:12px"></div><div class="table-wrap"><table><thead><tr><th>Firma</th><th>Straße</th><th>PLZ</th><th>Ort</th><th>Adresse</th><th>Telefon</th><th>E-Mail</th><th>Zielgruppe</th></tr></thead><tbody>`+
+      rows.slice(0,50).map(r=>`<tr><td>${h45(r.company)}</td><td>${h45(r.street)}</td><td>${h45(r.zip)}</td><td>${h45(r.city)}</td><td>${h45(r.address||'Adresse fehlt')}</td><td>${h45(r.phone||r.mobile)}</td><td>${h45(r.email)}</td><td>${h45(r.target)}</td></tr>`).join('')+
+      `</tbody></table></div><div class="hint">Vorschau zeigt maximal 50 Einträge. Beim Import werden alle ${rows.length} Einträge verarbeitet.</div>`;
+  };
+  window.importMappedCustomers45=function(target){
+    ensure45(); const rows=importState45.mapped||[]; if(!rows.length){alert('Bitte zuerst eine CSV-Datei laden.');return;}
+    const module=target==='leads'?'leads':'customers';
+    if(!confirm(rows.length+' Einträge als '+(module==='leads'?'Leads':'Kunden')+' importieren?\n\nDubletten werden aktualisiert statt doppelt angelegt.'))return;
+    const arr=db[module]||[]; let added=0, updated=0, skipped=0;
+    rows.forEach(r=>{
+      if(!r.company){skipped++;return;}
+      const k=keyCustomer45(r);
+      const ex=arr.find(x=>keyCustomer45(x)===k || (n45(x.company)===n45(r.company) && (x.address||'') && n45(x.address)===n45(r.address)));
+      const rec={company:r.company,street:r.street,zip:r.zip,city:r.city,address:r.address,phone:r.phone||r.mobile||r.phone2,email:r.email,website:r.website,target:r.target,status:r.status||'Importiert',source:r.source,notes:r.notes,discussion:r.discussion,updatedAt:now45()};
+      if(module==='leads'){rec.status='Neu';rec.source=r.source||'Kunden-Import';rec.nextDate='';}
+      if(ex){Object.assign(ex,Object.fromEntries(Object.entries(rec).filter(([k,v])=>v!==''&&v!==undefined))); updated++;}
+      else{arr.unshift({id:uid45(),...rec,createdAt:now45()}); added++;}
+    });
+    db[module]=arr; persist(); renderNav(); alert(`Import abgeschlossen.\nNeu: ${added}\nAktualisiert: ${updated}\nÜbersprungen: ${skipped}`); setActive(module);
+  };
+  window.customerImportHTML45=function(){
+    return `<div class="grid"><div class="panel" style="grid-column:span 12"><div class="panel-head"><div><h3>Kunden-Import v45</h3><div class="muted">CSV/KML-Export aus Maps oder Kundenliste importieren. Adresse wird aus Straße + PLZ + Ort sauber übernommen.</div></div><div class="toolbar"><label class="btn primary">CSV auswählen<input type="file" accept=".csv,text/csv" hidden onchange="handleCustomerImport45(event)"></label></div></div><div class="panel-body"><div class="notice"><b>Wichtig:</b> Nutze die bereinigte CSV. Der Import übernimmt Firma, Straße, PLZ, Ort, komplette Adresse, Telefon, E-Mail, Zielgruppe und Notizen.</div><div style="height:12px"></div><div class="actions"><button class="btn primary" onclick="importMappedCustomers45('customers')">Als Kunden importieren</button><button class="btn" onclick="importMappedCustomers45('leads')">Als Leads importieren</button></div><div style="height:14px"></div><div id="importPreview45"><div class="empty">Noch keine CSV geladen.</div></div></div></div></div>`;
+  };
+
+  function runningOffersForLead45(lead){return (db.offers||[]).filter(o=>(o.leadId&&o.leadId===lead.id)||n45(o.customer)===n45(lead.company)).filter(o=>!['Gewonnen','Verloren'].includes(o.status||''));}
+  window.createOfferFromLead45=function(id){
+    ensure45(); const l=(db.leads||[]).find(x=>x.id===id); if(!l)return;
+    const product=prompt('Für welches Produkt / welche Maschine soll das Angebot vorbereitet werden?', '')||'';
+    const value=prompt('Angebotswert netto eintragen, falls bekannt. Sonst leer lassen.', l.leadValue||'')||'';
+    const o={id:uid45(),title:'Angebot: '+(l.company||'Lead'),customer:l.company||'',product,value,status:'Entwurf',offerDate:today45(),followDate:l.nextDate||'',icloudLink:'',notes:l.notes||'',discussion:l.discussion||'',leadId:l.id,source:'Lead',createdAt:now45(),updatedAt:now45()};
+    db.offers.unshift(o); l.status='Angebot nötig'; l.updatedAt=now45(); persist(); renderNav(); setActive('offers'); setTimeout(()=>openModal('offers',o.id),100);
+  };
+  window.leadsHTML45=function(){
+    ensure45(); const q=n45(document.getElementById('leadQ45')?.value||''); const rows=(db.leads||[]).filter(l=>!q||n45(JSON.stringify(l)).includes(q));
+    return `<div class="panel"><div class="panel-head"><div><h3>Leads · Angebote</h3><div class="muted">Leads können direkt Angebote bekommen. Laufende Angebote bleiben sichtbar.</div></div><div class="toolbar"><input class="input" id="leadQ45" placeholder="Lead suchen …" oninput="renderContent()"><button class="btn primary" onclick="openModal('leads')">+ Lead</button><button class="btn" onclick="exportCSV('leads')">CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>Firma</th><th>Zielgruppe</th><th>Status</th><th>Adresse</th><th>Laufende Angebote</th><th>Aktion</th></tr></thead><tbody>${rows.length?rows.map(l=>{const offs=runningOffersForLead45(l);return `<tr><td><b>${h45(l.company)}</b><div class="muted small">${h45(l.phone||'')} ${l.email?'· '+h45(l.email):''}</div></td><td>${h45(l.target||'')}</td><td>${h45(l.status||'')}</td><td>${h45(l.address||'')}</td><td>${offs.length?offs.map(o=>`<span class="pill">${h45(o.status||'Entwurf')} · ${h45(o.title||'Angebot')} ${o.value?'· '+euro45(o.value):''}</span>`).join('<br>'):'<span class="muted">Keine laufenden Angebote</span>'}</td><td><div class="row-actions"><button class="btn primary" onclick="createOfferFromLead45('${h45(l.id)}')">+ Angebot</button><button class="btn" onclick="openModal('leads','${h45(l.id)}')">Bearbeiten</button>${l.address?`<button class="btn" onclick="openMapsFor('${h45(l.address)}')">Route</button>`:''}</div></td></tr>`}).join(''):`<tr><td colspan="6"><div class="empty">Noch keine Leads.</div></td></tr>`}</tbody></table></div></div>`;
+  };
+
+  function countBy45(rows,key,fn){const m={};(rows||[]).forEach(r=>{const k=fn?fn(r):(r[key]||'Ohne Angabe');m[k]=(m[k]||0)+1;});return m;}
+  function bars45(map){const entries=Object.entries(map).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);const max=Math.max(1,...entries.map(x=>x[1]));return entries.length?entries.map(([k,v])=>`<div class="bar45"><span>${h45(k)}</span><b>${v}</b><i style="width:${Math.max(4,Math.round(v/max*100))}%"></i></div>`).join(''):'<div class="empty">Keine Daten.</div>';}
+  function analyticsStats45(){
+    const running=(db.offers||[]).filter(o=>['Entwurf','Gesendet','Nachfassen','Verhandlung'].includes(o.status||''));
+    const runningValue=running.reduce((s,o)=>s+(Number(String(o.value||'').replace(',','.'))||0),0);
+    const visited=db.visited||[];
+    const positiveKeys=new Set([...(db.leads||[]).map(l=>n45(l.company)),...(db.graef||[]).map(g=>n45(g.company)),...(db.offers||[]).map(o=>n45(o.customer)),...(db.calendar||[]).map(c=>n45(c.customer))].filter(Boolean));
+    const positive=visited.filter(v=>{const s=n45([v.status,v.notes,v.discussion].join(' '));return positiveKeys.has(n45(v.company))||s.includes('lead')||s.includes('wiedervorlage')||s.includes('graef')||s.includes('interesse');}).length;
+    const success=visited.length?Math.round(positive/visited.length*100):0;
+    return {running,runningValue,visited,positive,success};
+  }
+  window.analyticsHTML45=function(){
+    const s=analyticsStats45(); const offerStatus=countBy45(db.offers||[],'status'); const visitTarget=countBy45(db.visited||[],'target'); const visitStatus=countBy45(db.visited||[],'status');
+    return `<div class="grid"><div class="panel" style="grid-column:span 12"><div class="panel-head"><div><h3>Auswertung v45</h3><div class="muted">Laufende Angebote, Besuchsleistung und Erfolgsquote.</div></div><div class="toolbar"><button class="btn" onclick="exportCSV('offers')">Angebote CSV</button><button class="btn" onclick="exportCSV('visited')">Besuchte CSV</button></div></div><div class="panel-body"><div class="kpis"><div class="kpi"><b>${s.running.length}</b><span>laufende Angebote</span></div><div class="kpi"><b>${euro45(s.runningValue)}</b><span>laufender Angebotswert</span></div><div class="kpi"><b>${s.visited.length}</b><span>besuchte Kunden</span></div><div class="kpi"><b>${s.success}%</b><span>Erfolgsquote Besuche</span></div></div><div class="notice"><b>Erfolgsquote:</b> positive Folgemaßnahmen / besuchte Kunden. Positiv sind Lead, GRAEF-Info, Wiedervorlage, Angebot oder erkennbare Interessensnotiz.</div></div></div><div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>Angebote nach Status</h3></div><div class="panel-body">${bars45(offerStatus)}</div></div><div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>Besuche nach Zielgruppe</h3></div><div class="panel-body">${bars45(visitTarget)}</div></div><div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>Besuchsergebnisse</h3></div><div class="panel-body">${bars45(visitStatus)}</div></div><div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>Laufende Angebote</h3></div><div class="panel-body backup-list41">${s.running.length?s.running.slice(0,20).map(o=>`<div class="backup-row41"><strong>${h45(o.customer||o.title)}</strong><span>${h45(o.status)} · ${euro45(o.value)}</span></div>`).join(''):'<div class="empty">Keine laufenden Angebote.</div>'}</div></div></div>`;
+  };
+  function style45(){ if(document.getElementById('style45'))return; const s=document.createElement('style'); s.id='style45'; s.textContent=`.bar45{position:relative;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #2d2d2d}.bar45 i{grid-column:1/-1;display:block;height:9px;border-radius:999px;background:linear-gradient(90deg,#d6b46a,#6f5427)}.bar45 span{font-weight:700}.bar45 b{color:#f0d28a}.import-ok45{color:#74d99f}.import-bad45{color:#ff6b6b}`; document.head.appendChild(s); }
+  style45();
+  const oldRenderContent45=window.renderContent||renderContent;
+  window.renderContent=function(){
+    const c=document.getElementById('content');
+    if(active==='customerImport'){c.innerHTML=window.customerImportHTML45(); return;}
+    if(active==='analytics'){c.innerHTML=window.analyticsHTML45(); return;}
+    if(active==='leads'){c.innerHTML=window.leadsHTML45(); return;}
+    return oldRenderContent45();
+  };
+  try{renderContent=window.renderContent;}catch(e){}
+  const oldNavCount45=window.navCount||navCount;
+  window.navCount=function(k){ if(k==='customerImport')return ''; if(k==='analytics')return ''; return oldNavCount45(k); };
+  try{navCount=window.navCount;}catch(e){}
+  const oldSetActive45=window.setActive||setActive;
+  window.setActive=function(k){ ensure45(); return oldSetActive45(k); };
+  try{setActive=window.setActive;}catch(e){}
+  ensure45(); try{renderNav(); if(['customerImport','analytics','leads'].includes(active))renderContent();}catch(e){}
+})();
+
+
+/* === v46: Kundenliste leer, Funktionen unverändert, Bestandskunden-Markierung in Tourenplanung === */
+(function upgradeV46CleanCustomersAndExistingMarker(){
+  const FLAG='bloc73_v46_customers_cleared_once';
+  const BACKUP='bloc73_v46_removed_customers_backup';
+  function n46(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+  function onlyDigits46(v){return String(v||'').replace(/\D+/g,'');}
+  function companyKey46(v){return n46(v).replace(/\b(gmbh|ug|kg|ag|ohg|eg|mbh|co|und|u|&|inh|in|der|die|das)\b/g,' ').replace(/\s+/g,' ').trim();}
+  function addrKey46(v){return n46(v).replace(/\b(strasse|straße|str|platz|pl|weg|allee|chaussee)\b/g,' ').replace(/\s+/g,' ').trim();}
+  function customerMatch46(h,c){
+    if(!h||!c)return 0;
+    const hc=companyKey46(h.company), cc=companyKey46(c.company);
+    const ha=addrKey46(h.address), ca=addrKey46(c.address);
+    const hp=onlyDigits46(h.phone), cp=onlyDigits46(c.phone);
+    let score=0;
+    if(hc && cc && hc===cc)score+=60;
+    else if(hc && cc && (hc.includes(cc)||cc.includes(hc)))score+=38;
+    if(ha && ca && ha===ca)score+=45;
+    else if(ha && ca && (ha.includes(ca)||ca.includes(ha)))score+=20;
+    if(hp && cp && hp.length>5 && cp.length>5 && hp.slice(-7)===cp.slice(-7))score+=35;
+    return score;
+  }
+  window.findExistingCustomerV46=function(h){
+    const rows=(db.customers||[]).map(c=>({c,score:customerMatch46(h,c)})).filter(x=>x.score>=60).sort((a,b)=>b.score-a.score);
+    return rows.length?rows[0].c:null;
+  };
+  window.isExistingCustomerV46=function(h){return !!window.findExistingCustomerV46(h);};
+
+  // Einmalige Datenvariante: Kundenstamm leeren, aber Sicherheitskopie im Browser behalten.
+  try{
+    if(!localStorage.getItem(FLAG)){
+      const existingCustomers=Array.isArray(db.customers)?db.customers:[];
+      if(existingCustomers.length){
+        localStorage.setItem(BACKUP, JSON.stringify({createdAt:new Date().toISOString(), customers:existingCustomers}));
+        db.customers=[];
+        persist();
+      }
+      localStorage.setItem(FLAG,new Date().toISOString());
+    }
+  }catch(e){}
+
+  // Sicherheitsfunktion: falls die entfernte Kundenliste wiederhergestellt werden muss.
+  window.restoreRemovedCustomersV46=function(){
+    try{
+      const raw=localStorage.getItem(BACKUP); if(!raw){alert('Keine v46-Kundensicherung gefunden.');return;}
+      const data=JSON.parse(raw); const rows=data.customers||[];
+      if(!rows.length){alert('Die v46-Kundensicherung ist leer.');return;}
+      if(!confirm(rows.length+' entfernte Kunden wieder in den Kundenstamm übernehmen?'))return;
+      db.customers=rows; persist(); renderNav(); renderContent(); alert('Kunden wurden wiederhergestellt.');
+    }catch(err){alert('Wiederherstellung nicht möglich: '+err.message);}
+  };
+  window.resetV46CustomerClearFlag=function(){
+    try{localStorage.removeItem(FLAG);alert('v46-Löschmarkierung entfernt. Beim nächsten Laden wird der Kundenstamm erneut geleert.');}catch(e){}
+  };
+
+  const oldDuplicateDetails46=window.duplicateDetails || (typeof duplicateDetails==='function'?duplicateDetails:null);
+  window.duplicateDetails=function(h){
+    const out=oldDuplicateDetails46?oldDuplicateDetails46(h):[];
+    const c=window.findExistingCustomerV46(h);
+    if(c){out.unshift(`Bestandskunde: ${c.company||''}${c.status?' · '+c.status:''}${c.address?' · '+c.address:''}`);}
+    return [...new Set(out)];
+  };
+  try{duplicateDetails=window.duplicateDetails;}catch(e){}
+
+  const oldHitCard46=window.hitCard || (typeof hitCard==='function'?hitCard:null);
+  window.hitCard=function(h,i){
+    const processed=typeof isProcessed==='function'?isProcessed(h):false;
+    const graef=typeof isGraef==='function'?isGraef(h):false;
+    const best=window.findExistingCustomerV46(h);
+    const dup=window.duplicateDetails(h)||[];
+    const bestBox=best?`<div class="notice"><b>Bestandskunde erkannt:</b><br>${esc(best.company||'')}${best.status?' · '+esc(best.status):''}${best.address?' · '+esc(best.address):''}${best.phone?' · Tel. '+esc(best.phone):''}</div>`:'';
+    return `<div class="hit"><div class="hit-head"><div><h3>${esc(h.company)}</h3><div class="muted small">${esc(h.address||'Adresse fehlt')} · ${esc(h.distance||'')}</div></div><div>${best?pill('Bestandskunde'):''} ${processed?pill('Bearbeitet'):''} ${graef?pill('GRAEF informiert'):''} ${dup.length?pill('Doppelbesuch prüfen'):''}</div></div><div class="hit-meta">${pill(h.target)}${h.phone?pill(h.phone):''}${h.website?pill('Website'):''}</div>${bestBox}${dup.length?`<div class="notice"><b>Abgleich:</b><br>${esc(dup.join('\n')).replaceAll('\n','<br>')}</div>`:''}<div class="field"><label>Was wurde besprochen?</label><textarea id="hitTalk_${i}" placeholder="Kurznotiz zum Gespräch, Bedarf, Einwand, Interesse, nächster Schritt …">${esc(h.discussion||'')}</textarea></div><div class="row-actions"><button class="btn" onclick="openHitMaps(${i})">Route</button>${h.phone?`<a class="btn" href="tel:${esc(h.phone)}">Anrufen</a>`:''}${h.website?`<button class="btn" onclick="openUrl('${esc(h.website)}')">Website</button>`:''}<button class="btn primary" onclick="addHitAsLead(${i})">Lead</button><button class="btn" onclick="addHitToCalendar(${i})">Wiedervorlage</button><button class="btn ok" onclick="markHitVisited(${i})">Besucht</button><button class="btn warn" onclick="markHitGraef(${i})">GRAEF</button><button class="btn danger" onclick="markHitNoInterest(${i})">Kein Interesse</button><button class="btn danger" onclick="markHitGone(${i})">Nicht vorhanden</button><button class="btn" onclick="addHitAsCustomer(${i})">Als Kunde</button></div></div>`;
+  };
+  try{hitCard=window.hitCard;}catch(e){}
+
+  const oldRowHTML46=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const best=window.findExistingCustomerV46(r);
+      return `<tr><td>${formatDate(r.tourDate)}</td><td>${esc(r.order||'')}</td><td><b>${esc(r.company)}</b><br><span class="muted small">${esc(r.address||'')}</span><br>${best?pill('Bestandskunde'):pill('Neukunde')}</td><td>${pill(r.status)}</td><td>${pill(r.graefInfo||'Nein')}</td><td>${esc((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited('${r.id}')">Besucht</button><button class="btn primary" onclick="markTourLead('${r.id}')">Lead</button><button class="btn" onclick="markTourFollowUp('${r.id}')">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef('${r.id}')">GRAEF</button><button class="btn danger" onclick="markTourNoInterest('${r.id}')">Kein Interesse</button><button class="btn danger" onclick="markTourGone('${r.id}')">Nicht vorhanden</button><button class="btn" onclick="openMapsFor('${esc(r.address||r.company)}')">Route</button><button class="btn" onclick="openModal('tours','${r.id}')">Bearbeiten</button><button class="btn danger" onclick="deleteTourRecord('${r.id}')">Abschluss</button></div></td></tr>`;
+    }
+    return oldRowHTML46?oldRowHTML46(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+
+  // Dashboard-Hinweis ohne Funktionsänderung.
+  const oldDashboardHTML46=window.dashboardHTML || (typeof dashboardHTML==='function'?dashboardHTML:null);
+  window.dashboardHTML=function(){
+    const base=oldDashboardHTML46?oldDashboardHTML46():'';
+    return `<div class="notice"><b>v46 Kundenstamm leer:</b> Der Kundenstamm wurde für diese Variante einmalig geleert. Touren, Leads, Kalender, GRAEF, besuchte Kunden und Funktionen bleiben erhalten. In der Tourenplanung werden Bestandskunden markiert, sobald im Kundenmodul wieder passende Kunden vorhanden sind. <button class="btn" onclick="restoreRemovedCustomersV46()">Entfernte Kunden wiederherstellen</button></div><div style="height:14px"></div>`+base;
+  };
+  try{dashboardHTML=window.dashboardHTML;}catch(e){}
+
+  try{renderNav();renderContent();}catch(e){}
+})();
+
+
+
+/* === v47: Tagestour-Löschbutton wieder sichtbar, ohne Tour-/Lead-/GRAEF-Logik zu verändern === */
+(function(){
+  'use strict';
+  function safe47(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  window.deleteTourOnly47=function(id){
+    const t=(db.tours||[]).find(x=>String(x.id)===String(id));
+    if(!t){ alert('Tour-Eintrag nicht gefunden.'); return; }
+    const msg='Tourzeile wirklich löschen?\n\n'+(t.company||'Betrieb')+(t.tourDate?' · '+formatDate(t.tourDate):'')+'\n\nEs wird nur diese geplante Zeile aus Tagestouren gelöscht. Leads, GRAEF-Informationen, Wiedervorlagen, Kalender, Besuchshistorie und Kundendaten bleiben erhalten.';
+    if(!confirm(msg)) return;
+    db.tours=(db.tours||[]).filter(x=>String(x.id)!==String(id));
+    persist();
+    renderNav();
+    renderContent();
+    alert('Tourzeile gelöscht. CRM-Daten bleiben erhalten.');
+  };
+
+  const previousRowHTML47 = window.rowHTML || (typeof rowHTML==='function' ? rowHTML : null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const best=(typeof window.findExistingCustomerV46==='function') ? window.findExistingCustomerV46(r) : null;
+      const id=JSON.stringify(r.id||'').replace(/"/g,'&quot;');
+      const route=JSON.stringify(r.address||r.company||'').replace(/"/g,'&quot;');
+      return `<tr><td>${formatDate(r.tourDate)}</td><td>${safe47(r.order||'')}</td><td><b>${safe47(r.company||'')}</b><br><span class="muted small">${safe47(r.address||'')}</span><br>${best?pill('Bestandskunde'):pill('Neukunde')}</td><td>${pill(r.status||'Geplant')}</td><td>${pill(r.graefInfo||'Nein')}</td><td>${safe47((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited(${id})">Besucht</button><button class="btn primary" onclick="markTourLead(${id})">Lead</button><button class="btn" onclick="markTourFollowUp(${id})">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef(${id})">GRAEF</button><button class="btn danger" onclick="markTourNoInterest(${id})">Kein Interesse</button><button class="btn danger" onclick="markTourGone(${id})">Nicht vorhanden</button><button class="btn" onclick="openMapsFor(${route})">Route</button><button class="btn" onclick="openModal('tours',${id})">Bearbeiten</button><button class="btn ghost" onclick="deleteTourRecord(${id})">Abschluss</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47(${id})">Tour löschen</button></div></td></tr>`;
+    }
+    return previousRowHTML47 ? previousRowHTML47(m,r) : '';
+  };
+  try{ rowHTML=window.rowHTML; }catch(e){}
+
+  const previousListHTML47 = window.listHTML || (typeof listHTML==='function' ? listHTML : null);
+  window.listHTML=function(m){
+    if(m==='tours'){
+      const rows=(db.tours||[]).filter(t=>!t.closed&&!t.hidden&&!['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'].includes(t.status||''));
+      const closed=(db.tours||[]).length-rows.length;
+      return `<div class="panel"><div class="panel-head"><div><h3>Tagestouren · aktive Planung</h3><div class="muted">v48: TomTom + separater Löschbutton. <b>Tour löschen</b> entfernt nur die geplante Tourzeile.</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Aktive Tour suchen …" oninput="filterTable('tours')"><button class="btn primary" onclick="openModal('tours')">+ Tour-Eintrag</button><button class="btn" onclick="setActive('visited')">Besuchshistorie</button><button class="btn" onclick="setActive('leads')">Leads</button><button class="btn" onclick="exportCSV('tours')">CSV alle Tourdaten</button></div></div><div class="panel-body"><div class="notice"><b>Wichtig:</b> Für normale Bearbeitung nutzt du Besucht, Lead, Wiedervorlage, GRAEF oder Abschluss. Zum reinen Entfernen einer falsch geplanten Zeile nutzt du rechts den roten Button <b>Tour löschen</b>.</div><div class="hint">Ausgeblendete abgeschlossene Tour-Einträge: ${closed}</div></div><div class="table-wrap"><table><thead>${tableHead('tours')}</thead><tbody id="tableBody">${tableRows('tours',rows)}</tbody></table></div></div>`;
+    }
+    return previousListHTML47 ? previousListHTML47(m) : '';
+  };
+  try{ listHTML=window.listHTML; }catch(e){}
+
+  try{ renderNav(); renderContent(); }catch(e){}
+})();
+
+
+
+/* === v48: TomTom-Verknüpfung für Tagestouren ===
+   Ziel: funktionierende Tourübergabe ohne die stabile v47-Tourlogik anzufassen.
+   - Einzelkunde: Adresse kopieren + Plan.TomTom öffnen
+   - Tag/Woche: GPX-Route erzeugen; fehlende Koordinaten werden bei Bedarf per Nominatim geokodiert
+   - Falls Koordinaten fehlen und nicht gefunden werden, wird der Kunde im Hinweis genannt
+*/
+(function(){
+  'use strict';
+  const TT48_PLAN_URL='https://plan.tomtom.com/';
+  function h48(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function q48(v){return JSON.stringify(String(v??'')).replace(/"/g,'&quot;');}
+  function activeRows48(){
+    return (db.tours||[]).filter(t=>!t.closed&&!t.hidden&&!['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'].includes(t.status||''));
+  }
+  function visibleRows48(){
+    const q=(document.getElementById('listQ')?.value||'').toLowerCase().trim();
+    const rows=activeRows48();
+    if(!q)return rows;
+    return rows.filter(r=>String(JSON.stringify(r)).toLowerCase().includes(q));
+  }
+  function toursForDate48(date){return activeRows48().filter(t=>String(t.tourDate||'')===String(date)).sort((a,b)=>(Number(a.order||0)-Number(b.order||0)) || (a.company||'').localeCompare(b.company||''));}
+  function toursForWeek48(start){
+    const s=mondayOfDateString(start||currentWeekStart());
+    const days=new Set([0,1,2,3,4].map(i=>addDaysToIso(s,i)));
+    return activeRows48().filter(t=>days.has(String(t.tourDate||''))).sort((a,b)=>(a.tourDate||'').localeCompare(b.tourDate||'') || (Number(a.order||0)-Number(b.order||0)) || (a.company||'').localeCompare(b.company||''));
+  }
+  function firstTourDate48(){return activeRows48().map(t=>t.tourDate).filter(Boolean).sort()[0] || today();}
+  function mondayForPrompt48(){return mondayOfDateString(firstTourDate48()||today());}
+  function getTour48(id){return (db.tours||[]).find(t=>String(t.id)===String(id));}
+  function addr48(t){return [t.company,t.address].filter(Boolean).join(', ');}
+  function sanitizeFile48(v){return String(v||'tour').replace(/[^a-zA-Z0-9äöüÄÖÜß_-]+/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');}
+  async function copyText48(text){
+    try{await navigator.clipboard.writeText(text);return true;}catch(e){
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.focus();ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(_){ok=false;}document.body.removeChild(ta);return ok;
+    }
+  }
+  window.openTomTomPlan48=function(){window.open(TT48_PLAN_URL,'_blank');};
+  window.openTourTomTomSingle48=async function(id){
+    const t=getTour48(id); if(!t){alert('Tour-Eintrag nicht gefunden.');return;}
+    const text=addr48(t);
+    await copyText48(text);
+    window.open(TT48_PLAN_URL,'_blank');
+    alert('Adresse wurde kopiert.\n\nJetzt in Plan.TomTom einfügen und als Ziel/Stop übernehmen:\n\n'+text);
+  };
+  async function geocodeTour48(t){
+    if(t.lat&&t.lon)return {lat:Number(t.lat),lon:Number(t.lon)};
+    if(t.latitude&&t.longitude)return {lat:Number(t.latitude),lon:Number(t.longitude)};
+    const query=addr48(t);
+    if(!query)return null;
+    try{
+      const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=de&q='+encodeURIComponent(query);
+      const res=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(!res.ok)return null;
+      const data=await res.json();
+      if(data&&data[0]&&data[0].lat&&data[0].lon){
+        t.lat=Number(data[0].lat); t.lon=Number(data[0].lon); t.updatedAt=new Date().toISOString();
+        return {lat:t.lat,lon:t.lon};
+      }
+    }catch(e){return null;}
+    return null;
+  }
+  function gpxEscape48(v){return String(v??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+  async function buildGpx48(rows,name){
+    const ok=[], missing=[];
+    for(const t of rows){
+      const c=await geocodeTour48(t);
+      if(c) ok.push({t,lat:c.lat,lon:c.lon}); else missing.push(t.company||t.address||'ohne Name');
+      await new Promise(r=>setTimeout(r,180));
+    }
+    if(!ok.length){alert('Keine Route erzeugt: Es wurden keine Koordinaten gefunden. Tipp: Touren aus der Umkreissuche enthalten Koordinaten; manuelle Einträge brauchen eine gut erkennbare Adresse.');return false;}
+    const now=new Date().toISOString();
+    const rtepts=ok.map((x,i)=>`    <rtept lat="${x.lat}" lon="${x.lon}">\n      <name>${gpxEscape48(String(i+1).padStart(2,'0')+' · '+(x.t.company||'Betrieb'))}</name>\n      <desc>${gpxEscape48([x.t.address,x.t.phone,x.t.target].filter(Boolean).join(' · '))}</desc>\n    </rtept>`).join('\n');
+    const gpx=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="BLOC73 CRM v49" xmlns="http://www.topografix.com/GPX/1/1">\n  <metadata>\n    <name>${gpxEscape48(name)}</name>\n    <time>${now}</time>\n  </metadata>\n  <rte>\n    <name>${gpxEscape48(name)}</name>\n${rtepts}\n  </rte>\n</gpx>\n`;
+    download(gpx, sanitizeFile48(name)+'.gpx','application/gpx+xml;charset=utf-8');
+    persist();
+    if(missing.length) alert('GPX wurde erstellt.\n\nNicht übernommen, weil keine Koordinaten gefunden wurden:\n- '+missing.join('\n- '));
+    else alert('GPX wurde erstellt. In TomTom/Plan.TomTom als Route importieren bzw. öffnen.');
+    return true;
+  }
+  window.exportTomTomDay48=async function(){
+    const def=firstTourDate48();
+    const d=prompt('Welchen Tourtag als TomTom-GPX exportieren?\nFormat: JJJJ-MM-TT',def);
+    if(!d)return;
+    const rows=toursForDate48(d);
+    if(!rows.length){alert('Keine aktiven Tour-Einträge für '+formatDate(d)+'.');return;}
+    await buildGpx48(rows,'BLOC73_TomTom_Tagestour_'+d);
+  };
+  window.exportTomTomWeek48=async function(){
+    const def=mondayForPrompt48();
+    const start=mondayOfDateString(prompt('Welche Woche als TomTom-GPX exportieren?\nBitte Montag der Woche eingeben (JJJJ-MM-TT).',def)||'');
+    if(!start)return;
+    const rows=toursForWeek48(start);
+    if(!rows.length){alert('Keine aktiven Tour-Einträge für die Woche ab '+formatDate(start)+'.');return;}
+    await buildGpx48(rows,'BLOC73_TomTom_Wochentour_'+start+'_bis_'+addDaysToIso(start,4));
+  };
+  window.copyTomTomStops48=async function(){
+    const d=prompt('Stops von welchem Tourtag kopieren?\nFormat: JJJJ-MM-TT',firstTourDate48());
+    if(!d)return;
+    const rows=toursForDate48(d);
+    if(!rows.length){alert('Keine aktiven Tour-Einträge für '+formatDate(d)+'.');return;}
+    const text=rows.map((t,i)=>`${i+1}. ${addr48(t)}${t.phone?' · Tel. '+t.phone:''}`).join('\n');
+    await copyText48(text);
+    alert('TomTom-Stops für '+formatDate(d)+' wurden kopiert.\n\nPlan.TomTom öffnen und Stops einfügen/übernehmen.');
+  };
+
+  const prevRow48=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const best=(typeof window.findExistingCustomerV46==='function') ? window.findExistingCustomerV46(r) : null;
+      const id=q48(r.id||'');
+      const route=q48(r.address||r.company||'');
+      return `<tr><td>${formatDate(r.tourDate)}</td><td>${h48(r.order||'')}</td><td><b>${h48(r.company||'')}</b><br><span class="muted small">${h48(r.address||'')}</span><br>${best?pill('Bestandskunde'):pill('Neukunde')}</td><td>${pill(r.status||'Geplant')}</td><td>${pill(r.graefInfo||'Nein')}</td><td>${h48((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited(${id})">Besucht</button><button class="btn primary" onclick="markTourLead(${id})">Lead</button><button class="btn" onclick="markTourFollowUp(${id})">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef(${id})">GRAEF</button><button class="btn danger" onclick="markTourNoInterest(${id})">Kein Interesse</button><button class="btn danger" onclick="markTourGone(${id})">Nicht vorhanden</button><button class="btn" onclick="openMapsFor(${route})">Route</button><button class="btn primary" onclick="openTourTomTomSingle48(${id})">TomTom</button><button class="btn" onclick="openModal('tours',${id})">Bearbeiten</button><button class="btn ghost" onclick="deleteTourRecord(${id})">Abschluss</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47(${id})">Tour löschen</button></div></td></tr>`;
+    }
+    return prevRow48?prevRow48(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+
+  const prevList48=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    if(m==='tours'){
+      const rows=visibleRows48();
+      const closed=(db.tours||[]).length-activeRows48().length;
+      return `<div class="panel"><div class="panel-head"><div><h3>Tagestouren · aktive Planung</h3><div class="muted">v48: TomTom-Verknüpfung. Einzelziel öffnen oder Tag/Woche als GPX exportieren.</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Aktive Tour suchen …" oninput="renderContent()"><button class="btn primary" onclick="openModal('tours')">+ Tour-Eintrag</button><button class="btn" onclick="setActive('visited')">Besuchshistorie</button><button class="btn" onclick="setActive('leads')">Leads</button><button class="btn" onclick="exportCSV('tours')">CSV alle Tourdaten</button></div></div><div class="panel-body"><div class="notice"><b>TomTom:</b> Pro Zeile öffnet <b>TomTom</b> Plan.TomTom und kopiert die Adresse. Für eine komplette Route nutzt du <b>TomTom Tag GPX</b> oder <b>TomTom Woche GPX</b>. Fehlende Koordinaten werden vor dem Export automatisch aus der Adresse gesucht.</div><div class="actions"><button class="btn primary" onclick="exportTomTomDay48()">TomTom Tag GPX</button><button class="btn" onclick="exportTomTomWeek48()">TomTom Woche GPX</button><button class="btn" onclick="copyTomTomStops48()">Stops kopieren</button><button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button></div><div class="hint" style="margin-top:10px">Ausgeblendete abgeschlossene Tour-Einträge: ${closed}. GPX enthält nur aktive, sichtbare Tourdaten nach Datum/Woche.</div></div><div class="table-wrap"><table><thead>${tableHead('tours')}</thead><tbody id="tableBody">${tableRows('tours',rows)}</tbody></table></div></div>`;
+    }
+    return prevList48?prevList48(m):'';
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{renderNav();renderContent();}catch(e){}
+})();
+
+
+/* === v49: TomTom-App-Workflow für iPhone ===
+   Professionelle iPhone-Variante:
+   - Adresse wird immer kopiert.
+   - CRM versucht zusätzlich, TomTom GO über ein mögliches URL-Scheme zu öffnen.
+   - Falls iOS/TomTom das nicht akzeptiert, bleibt Plan.TomTom + manuelle Eingabe/GPX der sichere Weg.
+*/
+(function(){
+  'use strict';
+  const TT49_PLAN_URL='https://plan.tomtom.com/';
+  function h49(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function q49(v){return JSON.stringify(String(v??'')).replace(/"/g,'&quot;');}
+  function getTour49(id){return (db.tours||[]).find(t=>String(t.id)===String(id));}
+  function addr49(t){return [t.company,t.address].filter(Boolean).join(', ');}
+  async function copyText49(text){
+    try{await navigator.clipboard.writeText(text);return true;}catch(e){
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.focus();ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(_){ok=false;}document.body.removeChild(ta);return ok;
+    }
+  }
+  window.openTomTomApp49=async function(id){
+    const t=getTour49(id); if(!t){alert('Tour-Eintrag nicht gefunden.');return;}
+    const text=addr49(t);
+    await copyText49(text);
+    const msg='Adresse wurde kopiert:\n\n'+text+'\n\nJetzt öffnet das CRM TomTom, soweit iOS/TomTom das zulässt. Falls TomTom nicht aufgeht: TomTom-App manuell öffnen und Adresse einfügen.';
+    alert(msg);
+    // iOS erlaubt nicht immer Deep Links in Drittanbieter-Navigation aus einer Website.
+    // Wir versuchen zuerst einfache TomTom-Schemes, danach bleibt Plan.TomTom als sichere Variante.
+    const encoded=encodeURIComponent(text);
+    const tries=['tomtomgo://search?query='+encoded,'tomtom://search?query='+encoded,'tomtomhome://'];
+    let i=0;
+    function tryNext(){
+      if(i<tries.length){
+        const u=tries[i++];
+        try{ window.location.href=u; }catch(e){}
+        setTimeout(tryNext,550);
+      }else{
+        setTimeout(()=>{ try{ window.open(TT49_PLAN_URL,'_blank'); }catch(e){} },350);
+      }
+    }
+    tryNext();
+  };
+  window.copyTomTomDayForApp49=async function(){
+    const d=prompt('Welchen Tourtag für die TomTom-App kopieren?\nFormat: JJJJ-MM-TT',(typeof firstTourDate48==='function'?firstTourDate48():today()));
+    if(!d)return;
+    const rows=(db.tours||[]).filter(t=>!t.closed&&!t.hidden&&String(t.tourDate||'')===String(d)).sort((a,b)=>(Number(a.order||0)-Number(b.order||0)) || (a.company||'').localeCompare(b.company||''));
+    if(!rows.length){alert('Keine aktiven Tour-Einträge für '+formatDate(d)+'.');return;}
+    const text=rows.map((t,i)=>`${i+1}. ${addr49(t)}${t.phone?' · Tel. '+t.phone:''}`).join('\n');
+    await copyText49(text);
+    alert('Tagesziele wurden kopiert.\n\nÖffne jetzt TomTom und übernimm die Ziele manuell oder nutze alternativ TomTom Tag GPX.');
+    try{window.location.href='tomtomgo://';}catch(e){}
+    setTimeout(()=>{try{window.open(TT49_PLAN_URL,'_blank');}catch(e){}},900);
+  };
+
+  const prevRow49=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const best=(typeof window.findExistingCustomerV46==='function') ? window.findExistingCustomerV46(r) : null;
+      const id=q49(r.id||'');
+      const route=q49(r.address||r.company||'');
+      return `<tr><td>${formatDate(r.tourDate)}</td><td>${h49(r.order||'')}</td><td><b>${h49(r.company||'')}</b><br><span class="muted small">${h49(r.address||'')}</span><br>${best?pill('Bestandskunde'):pill('Neukunde')}</td><td>${pill(r.status||'Geplant')}</td><td>${pill(r.graefInfo||'Nein')}</td><td>${h49((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited(${id})">Besucht</button><button class="btn primary" onclick="markTourLead(${id})">Lead</button><button class="btn" onclick="markTourFollowUp(${id})">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef(${id})">GRAEF</button><button class="btn danger" onclick="markTourNoInterest(${id})">Kein Interesse</button><button class="btn danger" onclick="markTourGone(${id})">Nicht vorhanden</button><button class="btn" onclick="openMapsFor(${route})">Route</button><button class="btn primary" onclick="openTomTomApp49(${id})">TomTom App</button><button class="btn" onclick="openTourTomTomSingle48(${id})">Plan.TomTom</button><button class="btn" onclick="openModal('tours',${id})">Bearbeiten</button><button class="btn ghost" onclick="deleteTourRecord(${id})">Abschluss</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47(${id})">Tour löschen</button></div></td></tr>`;
+    }
+    return prevRow49?prevRow49(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+
+  const prevList49=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    if(m==='tours'){
+      const active=(db.tours||[]).filter(t=>!t.closed&&!t.hidden&&!['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'].includes(t.status||''));
+      const q=(document.getElementById('listQ')?.value||'').toLowerCase().trim();
+      const rows=q?active.filter(r=>String(JSON.stringify(r)).toLowerCase().includes(q)):active;
+      const closed=(db.tours||[]).length-active.length;
+      return `<div class="panel"><div class="panel-head"><div><h3>Tagestouren · aktive Planung</h3><div class="muted">v49: TomTom iPhone-Workflow. Adresse kopieren, TomTom-App öffnen, Plan.TomTom/GPX als sichere Alternative.</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Aktive Tour suchen …" oninput="renderContent()"><button class="btn primary" onclick="openModal('tours')">+ Tour-Eintrag</button><button class="btn" onclick="setActive('visited')">Besuchshistorie</button><button class="btn" onclick="setActive('leads')">Leads</button><button class="btn" onclick="exportCSV('tours')">CSV alle Tourdaten</button></div></div><div class="panel-body"><div class="notice"><b>TomTom auf iPhone:</b> Pro Zeile nutzt du <b>TomTom App</b>. Die Adresse wird kopiert und TomTom wird geöffnet, soweit iOS/TomTom das zulässt. Für komplette Tagestouren bleibt <b>TomTom Tag GPX</b> der stabilste Weg.</div><div class="actions"><button class="btn primary" onclick="exportTomTomDay48()">TomTom Tag GPX</button><button class="btn" onclick="exportTomTomWeek48()">TomTom Woche GPX</button><button class="btn" onclick="copyTomTomStops48()">Stops kopieren</button><button class="btn" onclick="copyTomTomDayForApp49()">Tagesziele für App kopieren</button><button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button></div><div class="hint" style="margin-top:10px">Ausgeblendete abgeschlossene Tour-Einträge: ${closed}. Wenn TomTom die App-Übergabe blockiert, ist die Adresse bereits kopiert.</div></div><div class="table-wrap"><table><thead>${tableHead('tours')}</thead><tbody id="tableBody">${tableRows('tours',rows)}</tbody></table></div></div>`;
+    }
+    return prevList49?prevList49(m):'';
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{renderNav();renderContent();}catch(e){}
+})();
+
+
+
+/* === v50: Angebote sauber kategorisieren, gewonnen/verloren verschieben, PDF-Gesamtübersicht, Löschen === */
+(function(){
+  'use strict';
+  const V='v50';
+  function h50(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function q50(v){return JSON.stringify(String(v??'')).replace(/"/g,'&quot;');}
+  function now50(){return new Date().toISOString();}
+  function date50(v){return v?formatDate(v):'';}
+  function euro50(v){const n=Number(String(v||'').replace(',','.'));return isNaN(n)||!n?'':n.toLocaleString('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0});}
+  function offerValue50(o){const n=Number(String(o.value||0).replace(',','.'));return isNaN(n)?0:n;}
+  function isWon50(o){return String(o.status||'').toLowerCase()==='gewonnen';}
+  function isLost50(o){return String(o.status||'').toLowerCase()==='verloren';}
+  function isRunning50(o){return !isWon50(o)&&!isLost50(o)&&!o.deletedAt;}
+  function uid50(){return (typeof uid==='function')?uid():'id_'+Date.now()+'_'+Math.random().toString(16).slice(2);}
+  function ensureOffer50(){
+    if(!window.db) return;
+    db.offers=db.offers||[];
+    db.deletedOffers=db.deletedOffers||[];
+    const cats=['Maschinenangebot','Service / Wartung','DGUV','Ersatzteile','GRAEF','ZERMAT','Food Processing','Gebrauchttechnik','Händlerangebot','Sonstiges'];
+    if(window.modules && modules.offers){
+      const fs=modules.offers.fields||[];
+      if(!fs.some(f=>f[0]==='category')) fs.splice(3,0,['category','Kategorie','select',false,cats]);
+      const st=fs.find(f=>f[0]==='status');
+      if(st){st[4]=['Entwurf','Gesendet','Nachfassen','Verhandlung','Gewonnen','Verloren'];}
+      modules.offers.sub='Angebote nach laufend, gewonnen und verloren. Angebote bleiben gespeichert, bis sie bewusst gelöscht werden.';
+    }
+    db.offers.forEach(o=>{if(!o.category)o.category='Maschinenangebot'; if(!o.createdAt)o.createdAt=now50();});
+  }
+  ensureOffer50();
+
+  function offerBadge50(o){
+    if(isWon50(o)) return '<span class="pill ok">Gewonnen</span>';
+    if(isLost50(o)) return '<span class="pill danger">Verloren</span>';
+    return '<span class="pill info">Laufend</span>';
+  }
+  function offerRow50(o){
+    const id=q50(o.id||'');
+    return `<tr><td><b>${h50(o.title||'Angebot')}</b><div class="muted small">${h50(o.category||'Maschinenangebot')} · ${h50(o.source||'CRM')}</div></td><td>${h50(o.customer||'')}</td><td>${h50(o.product||'')}</td><td>${offerBadge50(o)}<br><span class="muted small">${h50(o.status||'Entwurf')}</span></td><td>${euro50(o.value)||'<span class="muted">—</span>'}</td><td>${date50(o.offerDate)}${o.followDate?'<br><span class="muted small">NF: '+date50(o.followDate)+'</span>':''}</td><td><div class="row-actions"><button class="btn" onclick="openModal('offers',${id})">Bearbeiten</button><button class="btn ok" onclick="setOfferStatus50(${id},'Gewonnen')">Gewonnen</button><button class="btn danger" onclick="setOfferStatus50(${id},'Verloren')">Verloren</button><button class="btn" onclick="setOfferStatus50(${id},'Nachfassen')">Laufend</button><button class="btn" onclick="setOfferCategory50(${id})">Kategorie</button>${o.icloudLink?`<button class="btn" onclick="openUrl('${h50(o.icloudLink)}')">PDF/Link</button>`:''}<button class="btn danger" onclick="deleteOffer50(${id})">Löschen</button></div></td></tr>`;
+  }
+  function groupHtml50(title,rows,kind){
+    const sum=rows.reduce((a,o)=>a+offerValue50(o),0);
+    return `<div class="panel offer-group50" style="grid-column:span 12"><div class="panel-head"><div><h3>${h50(title)}</h3><div class="muted">${rows.length} Angebote · ${euro50(sum)||'0 €'}</div></div></div><div class="table-wrap"><table><thead><tr><th>Angebot</th><th>Kunde</th><th>Produkt</th><th>Status</th><th>Wert</th><th>Datum</th><th>Aktion</th></tr></thead><tbody>${rows.length?rows.map(offerRow50).join(''):`<tr><td colspan="7"><div class="empty">Keine ${h50(title.toLowerCase())}.</div></td></tr>`}</tbody></table></div></div>`;
+  }
+  window.setOfferStatus50=function(id,status){
+    ensureOffer50();
+    const o=(db.offers||[]).find(x=>String(x.id)===String(id));
+    if(!o){alert('Angebot nicht gefunden.');return;}
+    const old=o.status||'Entwurf';
+    let note='';
+    if(status==='Verloren') note=prompt('Warum wurde das Angebot verloren? Grund optional:', o.lostReason||'')||'';
+    if(status==='Gewonnen') note=prompt('Kurznotiz zum gewonnenen Angebot optional:', o.winNote||'')||'';
+    o.status=status;
+    o.updatedAt=now50();
+    if(status==='Verloren'){o.lostReason=note;o.lostAt=today();}
+    if(status==='Gewonnen'){o.winNote=note;o.wonAt=today();}
+    o.history=o.history||[]; o.history.unshift({at:now50(),action:'Status geändert',from:old,to:status});
+    persist(); renderContent();
+  };
+  window.setOfferCategory50=function(id){
+    ensureOffer50();
+    const o=(db.offers||[]).find(x=>String(x.id)===String(id));
+    if(!o){alert('Angebot nicht gefunden.');return;}
+    const cats=['Maschinenangebot','Service / Wartung','DGUV','Ersatzteile','GRAEF','ZERMAT','Food Processing','Gebrauchttechnik','Händlerangebot','Sonstiges'];
+    const current=o.category||'Maschinenangebot';
+    const msg='Kategorie wählen:\n\n'+cats.map((c,i)=>(i+1)+' = '+c).join('\n')+'\n\nAktuell: '+current;
+    const n=prompt(msg,'');
+    if(!n)return;
+    const idx=Number(n)-1;
+    const val=cats[idx]||n;
+    o.category=val; o.updatedAt=now50();
+    persist(); renderContent();
+  };
+  window.deleteOffer50=function(id){
+    ensureOffer50();
+    const i=(db.offers||[]).findIndex(x=>String(x.id)===String(id));
+    if(i<0){alert('Angebot nicht gefunden.');return;}
+    const o=db.offers[i];
+    if(!confirm('Angebot wirklich löschen?\n\n'+(o.title||'Angebot')+' · '+(o.customer||'')+'\n\nEs wird aus der aktiven Angebotsliste entfernt und im internen Löscharchiv gespeichert.'))return;
+    o.deletedAt=now50(); o.deleteReason=prompt('Löschgrund optional:', '')||'';
+    db.deletedOffers=db.deletedOffers||[]; db.deletedOffers.unshift(o);
+    db.offers.splice(i,1);
+    persist(); renderContent();
+  };
+  window.restoreDeletedOffer50=function(id){
+    ensureOffer50();
+    const i=(db.deletedOffers||[]).findIndex(x=>String(x.id)===String(id));
+    if(i<0)return;
+    const o=db.deletedOffers.splice(i,1)[0]; delete o.deletedAt; delete o.deleteReason; o.updatedAt=now50();
+    db.offers.unshift(o); persist(); renderContent();
+  };
+
+  window.openOffersOverviewPdf50=function(){
+    ensureOffer50();
+    const all=(db.offers||[]).slice();
+    const running=all.filter(isRunning50), won=all.filter(isWon50), lost=all.filter(isLost50);
+    const deleted=(db.deletedOffers||[]).slice(0,50);
+    const groups=[['Laufende Angebote',running],['Gewonnene Angebote',won],['Verlorene Angebote',lost]];
+    const total=all.reduce((a,o)=>a+offerValue50(o),0), runVal=running.reduce((a,o)=>a+offerValue50(o),0), wonVal=won.reduce((a,o)=>a+offerValue50(o),0), lostVal=lost.reduce((a,o)=>a+offerValue50(o),0);
+    const css=`<style>body{font-family:Arial,Helvetica,sans-serif;margin:0;color:#141414;background:#fff}.head{background:#151515;color:#fff;padding:26px 32px}.head h1{margin:0;font-size:25px}.muted{color:#666}.wrap{padding:26px 32px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.kpi{border:1px solid #ddd;border-radius:12px;padding:14px}.kpi b{font-size:22px;display:block}.section{margin-top:24px;page-break-inside:auto}.card{border:1px solid #ddd;border-radius:12px;padding:13px;margin:10px 0;page-break-inside:avoid}.row{display:grid;grid-template-columns:1.2fr 1fr 1fr .7fr .8fr;gap:8px}.pill{display:inline-block;border:1px solid #aaa;border-radius:999px;padding:3px 8px;font-size:12px}h2{font-size:19px;border-bottom:2px solid #111;padding-bottom:6px}.small{font-size:12px;color:#555}@media print{.noprint{display:none}.head{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style>`;
+    const row=o=>`<div class="card"><div class="row"><div><b>${h50(o.title||'Angebot')}</b><div class="small">${h50(o.category||'Maschinenangebot')}</div></div><div>${h50(o.customer||'')}</div><div>${h50(o.product||'')}</div><div><span class="pill">${h50(o.status||'Entwurf')}</span></div><div><b>${euro50(o.value)||'—'}</b></div></div>${o.notes||o.discussion?`<div class="small" style="margin-top:8px"><b>Notiz:</b> ${h50(o.discussion||o.notes||'')}</div>`:''}${o.lostReason?`<div class="small"><b>Verloren-Grund:</b> ${h50(o.lostReason)}</div>`:''}${o.winNote?`<div class="small"><b>Gewonnen-Notiz:</b> ${h50(o.winNote)}</div>`:''}</div>`;
+    const html=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>BLOC73 Angebotsübersicht</title>${css}</head><body><div class="head"><h1>BLOC73 / AS Technical Solutions · Angebotsübersicht</h1><div>Erstellt am ${new Date().toLocaleString('de-DE')} · ${V}</div></div><div class="wrap"><div class="kpis"><div class="kpi"><b>${all.length}</b><span>Angebote gesamt</span></div><div class="kpi"><b>${euro50(runVal)||'0 €'}</b><span>Laufend</span></div><div class="kpi"><b>${euro50(wonVal)||'0 €'}</b><span>Gewonnen</span></div><div class="kpi"><b>${euro50(lostVal)||'0 €'}</b><span>Verloren</span></div></div>${groups.map(([t,rows])=>`<div class="section"><h2>${h50(t)} · ${rows.length} · ${euro50(rows.reduce((a,o)=>a+offerValue50(o),0))||'0 €'}</h2>${rows.length?rows.map(row).join(''):'<p class="muted">Keine Einträge.</p>'}</div>`).join('')}${deleted.length?`<div class="section"><h2>Gelöschte Angebote (Archiv)</h2>${deleted.map(row).join('')}</div>`:''}<p class="small">Hinweis: Gewonnene und verlorene Angebote bleiben gespeichert. Gelöschte Angebote liegen im internen Löscharchiv, solange das CRM-Backup nicht bereinigt wird.</p><button class="noprint" onclick="window.print()">Als PDF speichern / Drucken</button></div></body></html>`;
+    const w=window.open('','_blank'); if(!w){alert('Popup blockiert. Bitte Popups erlauben.');return;} w.document.open(); w.document.write(html); w.document.close(); setTimeout(()=>{try{w.focus();w.print();}catch(e){}},500);
+  };
+
+  const prevList50=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    if(m==='offers'){
+      ensureOffer50();
+      const q=(document.getElementById('offerQ50')?.value||'').toLowerCase().trim();
+      const cat=(document.getElementById('offerCat50')?.value||'Alle');
+      let rows=(db.offers||[]).slice();
+      if(q) rows=rows.filter(o=>JSON.stringify(o).toLowerCase().includes(q));
+      if(cat&&cat!=='Alle') rows=rows.filter(o=>(o.category||'Maschinenangebot')===cat);
+      rows.sort((a,b)=>String(b.offerDate||b.updatedAt||'').localeCompare(String(a.offerDate||a.updatedAt||'')));
+      const running=rows.filter(isRunning50), won=rows.filter(isWon50), lost=rows.filter(isLost50);
+      const cats=['Alle',...Array.from(new Set((db.offers||[]).map(o=>o.category||'Maschinenangebot'))).sort()];
+      return `<div class="panel"><div class="panel-head"><div><h3>Angebote · ${V}</h3><div class="muted">Laufend, gewonnen und verloren bleiben gespeichert. Nur der Löschbutton entfernt bewusst aus der aktiven Liste.</div></div><div class="toolbar"><input class="input" id="offerQ50" placeholder="Angebot, Kunde, Produkt suchen …" value="${h50(document.getElementById('offerQ50')?.value||'')}" oninput="renderContent()"><select class="input" id="offerCat50" onchange="renderContent()">${cats.map(c=>`<option ${c===cat?'selected':''}>${h50(c)}</option>`).join('')}</select><button class="btn primary" onclick="openModal('offers')">+ Angebot</button><button class="btn" onclick="openOffersOverviewPdf50()">Gesamtübersicht PDF</button><button class="btn" onclick="exportCSV('offers')">CSV</button></div></div><div class="panel-body"><div class="kpis"><div class="kpi"><b>${running.length}</b><span>Laufend · ${euro50(running.reduce((a,o)=>a+offerValue50(o),0))||'0 €'}</span></div><div class="kpi"><b>${won.length}</b><span>Gewonnen · ${euro50(won.reduce((a,o)=>a+offerValue50(o),0))||'0 €'}</span></div><div class="kpi"><b>${lost.length}</b><span>Verloren · ${euro50(lost.reduce((a,o)=>a+offerValue50(o),0))||'0 €'}</span></div><div class="kpi"><b>${(db.deletedOffers||[]).length}</b><span>gelöscht / Archiv</span></div></div></div></div><div class="grid">${groupHtml50('Laufende Angebote',running,'running')}${groupHtml50('Gewonnene Angebote',won,'won')}${groupHtml50('Verlorene Angebote',lost,'lost')}${(db.deletedOffers||[]).length?`<div class="panel" style="grid-column:span 12"><div class="panel-head"><h3>Gelöschte Angebote · Archiv</h3></div><div class="table-wrap"><table><thead><tr><th>Angebot</th><th>Kunde</th><th>Status</th><th>Gelöscht</th><th>Aktion</th></tr></thead><tbody>${db.deletedOffers.slice(0,50).map(o=>`<tr><td>${h50(o.title||'')}</td><td>${h50(o.customer||'')}</td><td>${h50(o.status||'')}</td><td>${date50((o.deletedAt||'').slice(0,10))}</td><td><button class="btn" onclick="restoreDeletedOffer50('${h50(o.id)}')">Wiederherstellen</button></td></tr>`).join('')}</tbody></table></div></div>`:''}</div>`;
+    }
+    return prevList50?prevList50(m):'';
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+
+  // Leichter Ausbau der Auswertung: Angebotsstatus berücksichtigen, ohne bestehende Tourenlogik anzufassen.
+  const prevAnalytics50=window.analyticsHTML || null;
+  window.analyticsHTML=function(){
+    ensureOffer50();
+    const offs=db.offers||[], visited=db.visited||[];
+    const running=offs.filter(isRunning50), won=offs.filter(isWon50), lost=offs.filter(isLost50);
+    const total=visited.length; const positives=visited.filter(v=>/lead|graef|wiedervorlage|angebot|interesse|gewonnen/i.test(JSON.stringify(v))).length;
+    const rate=total?Math.round(positives/total*100):0;
+    function bar(label,val,max){const p=max?Math.round(val/max*100):0;return `<div style="margin:9px 0"><div style="display:flex;justify-content:space-between"><b>${h50(label)}</b><span>${val}</span></div><div style="height:12px;background:#eee;border-radius:99px;overflow:hidden"><div style="height:12px;width:${p}%;background:#151515"></div></div></div>`;}
+    const max=Math.max(running.length,won.length,lost.length,1);
+    return `<div class="grid"><div class="panel" style="grid-column:span 12"><div class="panel-head"><div><h3>Auswertung · ${V}</h3><div class="muted">Angebote, Besuchsleistung und Erfolgsquote.</div></div><div class="toolbar"><button class="btn" onclick="setActive('offers')">Angebote öffnen</button><button class="btn" onclick="openOffersOverviewPdf50()">Angebote PDF</button></div></div><div class="panel-body"><div class="kpis"><div class="kpi"><b>${running.length}</b><span>laufende Angebote</span></div><div class="kpi"><b>${euro50(running.reduce((a,o)=>a+offerValue50(o),0))||'0 €'}</b><span>laufender Wert</span></div><div class="kpi"><b>${total}</b><span>besuchte Kunden</span></div><div class="kpi"><b>${rate}%</b><span>Erfolgsquote</span></div></div></div></div><div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>Angebote nach Status</h3></div><div class="panel-body">${bar('Laufend',running.length,max)}${bar('Gewonnen',won.length,max)}${bar('Verloren',lost.length,max)}</div></div><div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>Angebotswert</h3></div><div class="panel-body">${bar('Laufend €',Math.round(running.reduce((a,o)=>a+offerValue50(o),0)),Math.max(1,Math.round(offs.reduce((a,o)=>a+offerValue50(o),0))))}${bar('Gewonnen €',Math.round(won.reduce((a,o)=>a+offerValue50(o),0)),Math.max(1,Math.round(offs.reduce((a,o)=>a+offerValue50(o),0))))}${bar('Verloren €',Math.round(lost.reduce((a,o)=>a+offerValue50(o),0)),Math.max(1,Math.round(offs.reduce((a,o)=>a+offerValue50(o),0))))}</div></div></div>`;
+  };
+
+  const prevRender50=window.renderContent || (typeof renderContent==='function'?renderContent:null);
+  window.renderContent=function(){
+    ensureOffer50();
+    if(active==='analytics') document.getElementById('content').innerHTML=analyticsHTML();
+    else if(prevRender50) prevRender50();
+  };
+  try{renderContent=window.renderContent;}catch(e){}
+  try{renderNav();renderContent();}catch(e){}
+})();
+
 </script>
+
+<script>
+(function(){
+  const V51='v51';
+  function h51(v){try{return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}catch(e){return '';}}
+  function n51(v){return String(v??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+  function now51(){return new Date().toISOString();}
+  function euro51(v){const n=Number(String(v||'').replace(',','.'));return isFinite(n)&&n?new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n):'';}
+  function ensureLead51(){
+    if(typeof db!=='object'||!db)return;
+    if(!Array.isArray(db.leads))db.leads=[];
+    if(!Array.isArray(db.deletedLeads))db.deletedLeads=[];
+    if(!Array.isArray(db.offers))db.offers=[];
+  }
+  function runningOffersForLead51(lead){
+    ensureLead51();
+    const name=n51(lead.company||lead.customer||'');
+    return (db.offers||[]).filter(o=>{
+      const status=String(o.status||'');
+      const linked=(o.leadId&&String(o.leadId)===String(lead.id)) || (name && n51(o.customer||'')===name);
+      return linked && !['Gewonnen','Verloren'].includes(status);
+    });
+  }
+  window.deleteLead51=function(id){
+    ensureLead51();
+    const idx=(db.leads||[]).findIndex(x=>String(x.id)===String(id));
+    if(idx<0){alert('Lead nicht gefunden.');return;}
+    const l=db.leads[idx];
+    const running=runningOffersForLead51(l);
+    const msg='Lead wirklich löschen?\n\n'+(l.company||'Lead')+'\n'+(l.address||'')+'\n\nDer Lead wird aus der aktiven Leadliste entfernt und im Löscharchiv gespeichert.'+(running.length?'\n\nHinweis: Es gibt '+running.length+' laufende Angebot(e). Diese bleiben erhalten.':'');
+    if(!confirm(msg))return;
+    const reason=prompt('Löschgrund optional:', '')||'';
+    const archived=Object.assign({},l,{deletedAt:now51(),deleteReason:reason});
+    db.deletedLeads.unshift(archived);
+    db.leads.splice(idx,1);
+    try{persist();}catch(e){localStorage.setItem('bloc73_crm_v1',JSON.stringify(db));}
+    try{renderContent();renderNav();}catch(e){location.reload();}
+  };
+  window.restoreDeletedLead51=function(id){
+    ensureLead51();
+    const idx=(db.deletedLeads||[]).findIndex(x=>String(x.id)===String(id));
+    if(idx<0){alert('Archiv-Lead nicht gefunden.');return;}
+    const l=db.deletedLeads.splice(idx,1)[0];
+    delete l.deletedAt; delete l.deleteReason; l.updatedAt=now51();
+    db.leads.unshift(l);
+    try{persist();}catch(e){localStorage.setItem('bloc73_crm_v1',JSON.stringify(db));}
+    try{renderContent();renderNav();}catch(e){location.reload();}
+  };
+  window.permanentlyDeleteLead51=function(id){
+    ensureLead51();
+    const idx=(db.deletedLeads||[]).findIndex(x=>String(x.id)===String(id));
+    if(idx<0)return;
+    const l=db.deletedLeads[idx];
+    if(!confirm('Lead endgültig aus dem Löscharchiv entfernen?\n\n'+(l.company||'Lead')+'\n\nDas kann nur über ein altes JSON-Backup rückgängig gemacht werden.'))return;
+    db.deletedLeads.splice(idx,1);
+    try{persist();}catch(e){localStorage.setItem('bloc73_crm_v1',JSON.stringify(db));}
+    try{renderContent();renderNav();}catch(e){location.reload();}
+  };
+  window.leadsHTML45=function(){
+    ensureLead51();
+    const q=n51(document.getElementById('leadQ45')?.value||'');
+    let rows=(db.leads||[]).filter(l=>!q||n51(JSON.stringify(l)).includes(q));
+    rows.sort((a,b)=>String(b.updatedAt||b.createdAt||b.nextDate||'').localeCompare(String(a.updatedAt||a.createdAt||a.nextDate||'')));
+    const deleted=(db.deletedLeads||[]);
+    const rowHtml=rows.length?rows.map(l=>{
+      const offs=runningOffersForLead51(l);
+      const addr=l.address||[l.street,l.zip,l.city].filter(Boolean).join(', ');
+      return `<tr><td><b>${h51(l.company||'')}</b><div class="muted small">${h51(l.phone||'')}${l.email?' · '+h51(l.email):''}</div></td><td>${h51(l.target||'')}</td><td>${h51(l.status||'')}</td><td>${h51(addr||'')}</td><td>${offs.length?offs.map(o=>`<span class="pill">${h51(o.status||'Entwurf')} · ${h51(o.title||'Angebot')} ${o.value?' · '+euro51(o.value):''}</span>`).join('<br>'):'<span class="muted">Keine laufenden Angebote</span>'}</td><td><div class="row-actions"><button class="btn primary" onclick="createOfferFromLead45('${h51(l.id)}')">+ Angebot</button><button class="btn" onclick="openModal('leads','${h51(l.id)}')">Bearbeiten</button>${addr?`<button class="btn" onclick="openMapsFor('${h51(addr)}')">Route</button>`:''}<button class="btn danger" onclick="deleteLead51('${h51(l.id)}')">Lead löschen</button></div></td></tr>`;
+    }).join(''):`<tr><td colspan="6"><div class="empty">Noch keine Leads.</div></td></tr>`;
+    const delHtml=deleted.length?`<div class="panel" style="margin-top:16px"><div class="panel-head"><div><h3>Gelöschte Leads · Archiv</h3><div class="muted">Gelöschte Leads bleiben hier, bis du sie endgültig entfernst.</div></div></div><div class="table-wrap"><table><thead><tr><th>Firma</th><th>Adresse</th><th>Gelöscht</th><th>Grund</th><th>Aktion</th></tr></thead><tbody>${deleted.slice(0,80).map(l=>`<tr><td><b>${h51(l.company||'')}</b></td><td>${h51(l.address||[l.street,l.zip,l.city].filter(Boolean).join(', '))}</td><td>${h51((l.deletedAt||'').slice(0,10))}</td><td>${h51(l.deleteReason||'')}</td><td><div class="row-actions"><button class="btn" onclick="restoreDeletedLead51('${h51(l.id)}')">Wiederherstellen</button><button class="btn danger" onclick="permanentlyDeleteLead51('${h51(l.id)}')">Endgültig löschen</button></div></td></tr>`).join('')}</tbody></table></div></div>`:'';
+    return `<div class="panel"><div class="panel-head"><div><h3>Leads · Angebote · ${V51}</h3><div class="muted">Leads können Angebote bekommen und jetzt sauber gelöscht/archiviert werden.</div></div><div class="toolbar"><input class="input" id="leadQ45" placeholder="Lead suchen …" value="${h51(document.getElementById('leadQ45')?.value||'')}" oninput="renderContent()"><button class="btn primary" onclick="openModal('leads')">+ Lead</button><button class="btn" onclick="exportCSV('leads')">CSV</button></div></div><div class="panel-body"><div class="notice"><b>Neu:</b> Der Button <b>Lead löschen</b> entfernt den Lead aus der aktiven Liste und legt ihn im Archiv ab. Laufende Angebote bleiben erhalten.</div></div><div class="table-wrap"><table><thead><tr><th>Firma</th><th>Zielgruppe</th><th>Status</th><th>Adresse</th><th>Laufende Angebote</th><th>Aktion</th></tr></thead><tbody>${rowHtml}</tbody></table></div></div>${delHtml}`;
+  };
+  try{document.title='BLOC73 CRM · v53 · A4 Briefe mit QR';}catch(e){}
+  try{renderNav(); if(active==='leads')renderContent();}catch(e){}
+})();
+</script>
+
+<script>
+/* === v52: Automatische Besuchsbriefe aus Tagestouren drucken === */
+(function(){
+  'use strict';
+  const V52='v52';
+  function h52(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[m]));}
+  function q52(v){return JSON.stringify(String(v??''));}
+  function norm52(v){return String(v??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+  function today52(){return new Date().toISOString().slice(0,10);}
+  function germanDate52(v){try{return v?formatDate(v):new Date().toLocaleDateString('de-DE');}catch(e){return v||'';}}
+  function activeTourRows52(){
+    const skip=['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'];
+    return (db.tours||[]).filter(t=>!t.closed&&!t.hidden&&!skip.includes(t.status||''));
+  }
+  function visibleTourRows52(){
+    const q=norm52(document.getElementById('listQ')?.value||'');
+    let rows=activeTourRows52();
+    if(q) rows=rows.filter(r=>norm52(JSON.stringify(r)).includes(q));
+    rows.sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||'')) || (Number(a.order||0)-Number(b.order||0)) || String(a.company||'').localeCompare(String(b.company||'')));
+    return rows;
+  }
+  function parseAddress52(r){
+    const company=(r.company||r.customer||r.name||'').trim();
+    let street=(r.street||'').trim(), zip=(r.zip||r.plz||'').trim(), city=(r.city||r.ort||'').trim();
+    let raw=(r.address||'').replace(/\s+/g,' ').trim();
+    if(raw && (!street || !zip || !city)){
+      const parts=raw.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
+      const zc=raw.match(/\b(\d{5})\s+([^,;\n]+)/);
+      if(zc){ zip=zip||zc[1]; city=city||zc[2].trim(); }
+      if(!street){
+        let p=parts.find(x=>/\d/.test(x) && !/^\d{5}\s/.test(x));
+        if(!p && parts.length) p=parts[0];
+        street=p||'';
+      }
+      if(!city && parts.length){
+        const last=parts[parts.length-1];
+        const m=last.match(/^(\d{5})\s+(.+)$/);
+        if(m){zip=zip||m[1];city=city||m[2];}
+      }
+    }
+    return {company,street,zip,city,raw};
+  }
+  function targetText52(target){
+    const t=norm52(target);
+    if(t.includes('metz')||t.includes('fleisch')) return 'Gerade für Metzgereien und Fleischereien sind zuverlässige Schneidtechnik, Vakuumverpackung, Kutter-/Wolftechnik, Räuchertechnik sowie Service und DGUV-Prüfung entscheidend, damit Produktion und Verkauf ohne unnötige Ausfallzeiten laufen.';
+    if(t.includes('gastro')||t.includes('hotel')||t.includes('kantine')) return 'Für Gastronomie, Hotels und Großküchen stehen praktikable Maschinenlösungen, saubere Abläufe, Hygiene, schnelle Verfügbarkeit und ein zuverlässiger Service im Vordergrund.';
+    if(t.includes('pflege')||t.includes('senior')||t.includes('alten')) return 'Für Pflegeeinrichtungen und Heimküchen sind sichere, hygienische und einfach bedienbare Technik sowie planbare Wartung besonders wichtig.';
+    if(t.includes('kranken')||t.includes('klinik')||t.includes('reha')) return 'Für Kliniken, Krankenhäuser und Reha-Einrichtungen stehen Betriebssicherheit, Hygiene, nachvollziehbare Prüfungen und verlässliche technische Betreuung im Mittelpunkt.';
+    return 'Für Betriebe mit professioneller Lebensmittelverarbeitung sind zuverlässige Technik, saubere Beratung, schnelle Reaktionszeiten und langfristige Servicefähigkeit entscheidend.';
+  }
+  function letterHtml52(r,idx,total){
+    const a=parseAddress52(r);
+    const addressLines=[a.company,a.street,(a.zip||a.city)?[a.zip,a.city].filter(Boolean).join(' '):''].filter(Boolean);
+    const addrOk=addressLines.length>=2;
+    const date=germanDate52(today52());
+    const subject='Kurze Vorstellung · BLOC73 Machinery / AS Technical Solutions';
+    const target=r.target||'Betrieb';
+    return `<section class="letter-page">
+      <div class="letter-top"><div><b>AS Technical Solutions GmbH</b> · Industrieweg 13–15 · 48324 Sendenhorst</div><div>${h52(date)}</div></div>
+      <div class="address-block">${addrOk?addressLines.map(h52).join('<br>'):'<span class="missing">Adresse nicht vollständig hinterlegt</span><br><b>'+h52(a.company||'Kunde')+'</b>'}</div>
+      <h1>${h52(subject)}</h1>
+      <p>Sehr geehrte Damen und Herren,</p>
+      <p>im Rahmen meiner aktuellen Kundentour möchte ich Ihnen <b>BLOC73 Machinery</b> und <b>AS Technical Solutions</b> kurz vorstellen.</p>
+      <p><b>BLOC73 Machinery</b> steht für praxisnahe Beratung und den Vertrieb professioneller Maschinen für Lebensmittelverarbeitung, Schneidtechnik, Vakuum- und Verpackungstechnik, Food-Processing, Kühlung, Räuchertechnik, Gebrauchtmaschinen sowie Verbrauchsmaterial.</p>
+      <p><b>AS Technical Solutions</b> ergänzt diesen Bereich mit technischem Service, Wartung, Inbetriebnahme, Reparatur, Modernisierung und DGUV-Prüfungen. So erhalten Sie nicht nur eine Maschine, sondern eine langfristig betreubare Lösung.</p>
+      <p>${h52(targetText52(target))}</p>
+      <p>Gerne stehe ich Ihnen für eine kurze Einschätzung Ihrer vorhandenen Technik, eine passende Maschinenempfehlung oder eine konkrete Angebotsausarbeitung zur Verfügung.</p>
+      <p>Mit freundlichen Grüßen</p>
+      <div class="signature"><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH<br>Mobil: +49 160 91658700<br>E-Mail: r.kutschke@as-technical.de<br>www.as-technical.de · www.bloc73machinery.com</div>
+      <div class="letter-footer">${h52(a.company||'Kunde')} · ${h52(target)} · Tour ${h52(germanDate52(r.tourDate))} · Brief ${idx}/${total}</div>
+    </section>`;
+  }
+  function openLettersPrint52(rows,title){
+    rows=(rows||[]).filter(Boolean);
+    if(!rows.length){alert('Keine Tourkunden für den Briefdruck gefunden.');return;}
+    const pages=rows.map((r,i)=>letterHtml52(r,i+1,rows.length)).join('');
+    const html='<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+h52(title||'BLOC73 Besuchsbriefe')+'</title><style>'+printCss52()+'</style></head><body><div class="print-toolbar"><button onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.close()">Schließen</button><span>'+h52(rows.length)+' Brief(e)</span></div>'+pages+'<script>setTimeout(()=>{try{window.focus();}catch(e){}},250);<\/script></body></html>';
+    const w=window.open('','_blank');
+    if(!w){downloadText52((title||'BLOC73_Briefe')+'.html',html);alert('Popup wurde blockiert. Die Briefe wurden als HTML-Datei heruntergeladen. Öffne die Datei und drucke sie.');return;}
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+  function printCss52(){return `@page{size:A4;margin:18mm 18mm 16mm 18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;background:#fff;margin:0}.print-toolbar{position:sticky;top:0;background:#151515;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;z-index:5}.print-toolbar button{border:0;border-radius:8px;padding:9px 12px;font-weight:700}.letter-page{width:210mm;min-height:297mm;margin:0 auto;padding:22mm 18mm 18mm 18mm;page-break-after:always;background:#fff;position:relative}.letter-top{display:flex;justify-content:space-between;gap:20px;font-size:10.5px;color:#555;border-bottom:1px solid #ddd;padding-bottom:7px}.address-block{margin-top:34mm;margin-bottom:22mm;font-size:14px;line-height:1.45;min-height:28mm}.missing{color:#9b1c1c;font-weight:700}h1{font-size:18px;margin:0 0 16px 0;line-height:1.25}p{font-size:12.5px;line-height:1.58;margin:0 0 11px 0}.signature{margin-top:22px;font-size:12.5px;line-height:1.5}.letter-footer{position:absolute;left:18mm;right:18mm;bottom:12mm;border-top:1px solid #ddd;padding-top:6px;font-size:10px;color:#777}@media print{.print-toolbar{display:none}.letter-page{margin:0;width:auto;min-height:auto;padding:0;page-break-after:always}.letter-page:last-child{page-break-after:auto}.letter-footer{bottom:0;left:0;right:0}}`;}
+  function downloadText52(filename,text){
+    const blob=new Blob([text],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1200);
+  }
+  window.printTourLetter52=function(id){
+    const r=(db.tours||[]).find(x=>String(x.id)===String(id));
+    if(!r){alert('Tourkunde nicht gefunden.');return;}
+    openLettersPrint52([r],'BLOC73_Brief_'+(r.company||'Kunde').replace(/[^a-z0-9]+/gi,'_'));
+  };
+  window.printVisibleTourLetters52=function(){
+    const rows=visibleTourRows52();
+    openLettersPrint52(rows,'BLOC73_Besuchsbriefe_sichtbare_Tagestour');
+  };
+  window.printTourLettersByDate52=function(){
+    const def=(visibleTourRows52()[0]?.tourDate)||today52();
+    const d=prompt('Für welches Tourdatum sollen Briefe gedruckt werden?\nFormat: JJJJ-MM-TT',def);
+    if(!d)return;
+    const rows=activeTourRows52().filter(r=>String(r.tourDate||'')===String(d)).sort((a,b)=>(Number(a.order||0)-Number(b.order||0))||String(a.company||'').localeCompare(String(b.company||'')));
+    openLettersPrint52(rows,'BLOC73_Besuchsbriefe_'+d);
+  };
+  window.printTourLettersByWeek52=function(){
+    const def=(visibleTourRows52()[0]?.weekStart)||today52();
+    const d=prompt('Wochenstart Montag für Briefdruck eingeben.\nFormat: JJJJ-MM-TT',def);
+    if(!d)return;
+    const rows=activeTourRows52().filter(r=>String(r.weekStart||'')===String(d)).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||''))||(Number(a.order||0)-Number(b.order||0)));
+    openLettersPrint52(rows,'BLOC73_Besuchsbriefe_Woche_'+d);
+  };
+  const prevRow52=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const id=q52(r.id||'');
+      const route=q52(r.address||r.company||'');
+      const best=(typeof isExistingCustomer46==='function')?isExistingCustomer46(r):false;
+      const label=best?pill('Bestandskunde'):pill('Neukunde');
+      return `<tr><td>${germanDate52(r.tourDate)}</td><td>${h52(r.order||'')}</td><td><b>${h52(r.company||'')}</b><br><span class="muted small">${h52(r.address||'')}</span><br>${label}</td><td>${pill(r.status||'Geplant')}</td><td>${pill(r.graefInfo||'Nein')}</td><td>${h52((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited(${id})">Besucht</button><button class="btn primary" onclick="markTourLead(${id})">Lead</button><button class="btn" onclick="markTourFollowUp(${id})">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef(${id})">GRAEF</button><button class="btn" onclick="printTourLetter52(${id})">Brief</button><button class="btn danger" onclick="markTourNoInterest(${id})">Kein Interesse</button><button class="btn danger" onclick="markTourGone(${id})">Nicht vorhanden</button><button class="btn" onclick="openMapsFor(${route})">Route</button><button class="btn primary" onclick="openTomTomApp49(${id})">TomTom App</button><button class="btn" onclick="openModal('tours',${id})">Bearbeiten</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47(${id})">Tour löschen</button></div></td></tr>`;
+    }
+    return prevRow52?prevRow52(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+  const prevList52=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    if(m==='tours'){
+      const rows=visibleTourRows52();
+      const closed=(db.tours||[]).length-activeTourRows52().length;
+      return `<div class="panel"><div class="panel-head"><div><h3>Tagestouren · aktive Planung</h3><div class="muted">v52: Besuchsbriefe aus der geplanten Tagestour drucken.</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Aktive Tour suchen …" oninput="renderContent()"><button class="btn primary" onclick="openModal('tours')">+ Tour-Eintrag</button><button class="btn" onclick="setActive('visited')">Besuchshistorie</button><button class="btn" onclick="setActive('leads')">Leads</button><button class="btn" onclick="exportCSV('tours')">CSV alle Tourdaten</button></div></div><div class="panel-body"><div class="notice"><b>Besuchsbrief:</b> Pro Tourkunde kannst du rechts <b>Brief</b> klicken. Für die komplette sichtbare Planung nutzt du <b>Briefe sichtbare Tour</b>. Die Briefe öffnen als A4-Druckansicht und können normal gedruckt oder als PDF gespeichert werden.</div><div class="actions"><button class="btn primary" onclick="printVisibleTourLetters52()">Briefe sichtbare Tour</button><button class="btn" onclick="printTourLettersByDate52()">Briefe nach Datum</button><button class="btn" onclick="printTourLettersByWeek52()">Briefe Woche</button><button class="btn" onclick="exportTomTomDay48()">TomTom Tag GPX</button><button class="btn" onclick="exportTomTomWeek48()">TomTom Woche GPX</button><button class="btn" onclick="copyTomTomDayForApp49()">Tagesziele für App kopieren</button><button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button></div><div class="hint" style="margin-top:10px">Ausgeblendete abgeschlossene Tour-Einträge: ${closed}. Briefe nutzen Firma, Straße/Adresse, PLZ/Ort und Zielgruppe, soweit im Tourdatensatz vorhanden.</div></div><div class="table-wrap"><table><thead>${tableHead('tours')}</thead><tbody id="tableBody">${tableRows('tours',rows)}</tbody></table></div></div>`;
+    }
+    return prevList52?prevList52(m):'';
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{document.title='BLOC73 CRM · v53 · A4 Briefe mit QR';}catch(e){}
+  try{renderNav(); if(active==='tours')renderContent();}catch(e){}
+})();
+
+</script>
+
+
+<script>
+// === v53: A4-Besuchsbriefe mit bearbeitbarer Adresse und QR-Code ===
+(function(){
+  const QR53='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAIAAABkZftOAAAGAklEQVR4nO3dsZJcJxBAUY9L///LcuCYAJvWhdlz4tXb2ae5RdAFfH7//v0X8Gf9XX8A+ImEBwHhQUB4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQeDX7j/4fD4Tn+O46X2Gu+9h9XlWz5n++V2vf/5pu983Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrdSnc+5O+eZngvtvofq53fnaaecev4r37cVKx4EhAcB4UFAeBAQHgSEBwHhQeDYHG9lej/YtFO/95V9ZSun5n7T88NXvm9WPAgIDwLCg4DwICA8CAgPAsKDwPgc73Wn5k7T867qvMrX55MVKx4EhAcB4UFAeBAQHgSEBwHhQcAc7z+qzqWs5mav3193GyseBIQHAeFBQHgQEB4EhAcB4UFgfI5XnYe5q7pHbncOtvs5p8/DXKnmfq9836x4EBAeBIQHAeFBQHgQEB4EhAeBY3M8+7L+NX0O5/T5mdX5nLte/75Z8SAgPAgIDwLCg4DwICA8CAgPAp9X9i9Nu22/WXU+p+/Dn2HFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ3reJvbzuGcNj3PvO2ewF1WPAgIDwLCg4DwICA8CAgPAsKDwPgcb2X6/Mldt52Hecr0OZnT72f685x6P7u/14oHAeFBQHgQEB4EhAcB4UFAeBDI5njT97+9so/rlfvlXjlv85V9m1Y8CAgPAsKDgPAgIDwICA8CwoPA9hzvlXvkTs33ps8FfX0+tvr81d91237IFSseBIQHAeFBQHgQEB4EhAcB4UHg88q9bdNzv12v7Ptaqc7VvO29Ve/BigcB4UFAeBAQHgSEBwHhQUB4EDi2H6/an3ZqDlPtDzz1nOl753bdNq9bqc5lteJBQHgQEB4EhAcB4UFAeBAQHgS253jVuYXV/Xjfeu7l9HNWpvfvvbI/0IoHAeFBQHgQEB4EhAcB4UFAeBDYPlfz9TnY9Nzmlb/3trnoT5vHWvEgIDwICA8CwoOA8CAgPAgIDwLH9uOtVOcWrtx2L9z0c6r3vOu2OeE0Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrcyfb9cpZoL3Tb/XLntfsKV6X2Au//vVjwICA8CwoOA8CAgPAgIDwLCg8CxOd6u6X1Wu6bnh7vPv21f2W3793bd9vmteBAQHgSEBwHhQUB4EBAeBIQHge053vT5kLuq+9amVfvEVl45B/W2+fCKFQ8CwoOA8CAgPAgIDwLCg4DwIPCZPgfylFfuT6vO29xVvYdpt53LumLFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ2Hubtfa3pe98r+wNv271X377kfD76Q8CAgPAgIDwLCg4DwICA8CBw7V3P35185L7G6j27X9H656jzPV97/LiseBIQHAeFBQHgQEB4EhAcB4UFge453al70yvmT026bg516b6fmhKeev/t73Y8HX0h4EBAeBIQHAeFBQHgQEB4ExvfjVc+f3u+3Mj03u+3+uum57rey4kFAeBAQHgSEBwHhQUB4EBAeBMb34/001bzutjnY9H683d97272FVjwICA8CwoOA8CAgPAgIDwLCg8B1+/FOeWXe+Po+ut3nf+v9hLuseBAQHgSEBwHhQUB4EBAeBIQHge053ko1V5meK07/XbfNRU/tT6vmjSu37W+04kFAeBAQHgSEBwHhQUB4EBAeBI7N8VZum+ec2oe2+5zb9o/dNte6bZ45/f9lxYOA8CAgPAgIDwLCg4DwICA8CIzP8b7VbfewTe9b2zX9d536nNV7tuJBQHgQEB4EhAcB4UFAeBAQHgR+3BzvlTnS9L7B6Xnj9Hzs1Odf2f27dp9vxYOA8CAgPAgIDwLCg4DwICA8CHyqcyZPmZ7brEw//9TvXane267bziM9xYoHAeFBQHgQEB4EhAcB4UFAeBA4th/vtvvNTvnWcy93n39qX9/Kbe9ner+fFQ8CwoOA8CAgPAgIDwLCg4DwILC9Hw/4/6x4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQUB4EBAeBIQHgX8AckqcuK4HOCoAAAAASUVORK5CYII=';
+  const SITE53='https://bloc73machinery.com/';
+  function h53(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  function val53(o,k){return String((o&&o[k])||'').trim();}
+  function addressLines53(r){
+    const company=val53(r,'company')||val53(r,'name')||'Kunde';
+    const street=val53(r,'street')||val53(r,'strasse')||val53(r,'straße');
+    const zip=val53(r,'zip')||val53(r,'plz');
+    const city=val53(r,'city')||val53(r,'ort');
+    const full=val53(r,'address')||val53(r,'adresse');
+    let lines=[company];
+    if(street) lines.push(street);
+    if(zip||city) lines.push([zip,city].filter(Boolean).join(' '));
+    if(lines.length===1 && full) {
+      const parts=full.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);
+      lines=lines.concat(parts.slice(0,3));
+    }
+    const incomplete=lines.length<2;
+    return {company,street,zip,city,full,lines,incomplete};
+  }
+  window.editTourAddress53=function(id){
+    const r=(db.tours||[]).find(x=>String(x.id)===String(id));
+    if(!r) return alert('Tour-Eintrag nicht gefunden.');
+    const a=addressLines53(r);
+    const company=prompt('Firmenname für den Brief:', a.company||'');
+    if(company===null) return;
+    const street=prompt('Straße und Hausnummer:', a.street||'');
+    if(street===null) return;
+    const zip=prompt('PLZ:', a.zip||'');
+    if(zip===null) return;
+    const city=prompt('Ort:', a.city||'');
+    if(city===null) return;
+    const address=[street,[zip,city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    r.company=(company||'').trim(); r.street=(street||'').trim(); r.zip=(zip||'').trim(); r.city=(city||'').trim(); r.address=address;
+    r.updatedAt=new Date().toISOString();
+    persist(); renderContent();
+    alert('Adresse für Brief und Tour gespeichert.');
+  };
+  function targetText53(target){
+    const t=String(target||'').toLowerCase();
+    if(t.includes('pflege')||t.includes('senior')||t.includes('heim')) return 'Gerade in Pflegeheimen und Heimküchen zählen zuverlässige Technik, einfache Bedienbarkeit, hygienische Abläufe und ein planbarer Service. Genau hier verbinden wir passende Maschinenlösungen mit technischer Betreuung.';
+    if(t.includes('klinik')||t.includes('kranken')) return 'In Kliniken und Großküchen müssen Maschinen zuverlässig laufen, sicher prüfbar sein und den täglichen Arbeitsablauf entlasten. Wir unterstützen bei Auswahl, Service, Wartung und DGUV-relevanten Themen.';
+    if(t.includes('gastro')||t.includes('hotel')||t.includes('restaurant')) return 'In Gastronomie, Hotellerie und Catering geht es um saubere Ergebnisse, schnelle Abläufe und wirtschaftliche Lösungen. Wir beraten praxisnah und empfehlen nur Technik, die wirklich zum Betrieb passt.';
+    if(t.includes('metz')||t.includes('fleisch')) return 'Für Metzgereien und Fleischereien sind Schnittbild, Verarbeitungssicherheit, Hygiene, Leistung und Service entscheidend. Genau auf diese Anforderungen ist unser Maschinenportfolio ausgelegt.';
+    return 'Bei professioneller Lebensmitteltechnik zählen Wirtschaftlichkeit, Sicherheit, Hygiene und zuverlässiger Service. Genau dafür stehen BLOC73 Machinery und AS Technical Solutions.';
+  }
+  function germanDate53(d){try{if(!d)return new Date().toLocaleDateString('de-DE'); const x=new Date(d+'T12:00:00'); return x.toLocaleDateString('de-DE');}catch(e){return d||'';}}
+  function letterHtml53(r,idx,total){
+    const a=addressLines53(r);
+    const target=val53(r,'target')||val53(r,'zielgruppe')||'Lebensmittelbetrieb';
+    const date=new Date().toLocaleDateString('de-DE');
+    const lines=a.lines.map(x=>'<div>'+h53(x)+'</div>').join('');
+    const missing=a.incomplete?'<div class="addr-missing">Adresse bitte vor dem Druck prüfen/ergänzen.</div>':'';
+    const subject='Vorstellung BLOC73 Machinery / AS Technical Solutions';
+    return `<section class="letter-page">
+      <div class="sender-line">AS Technical Solutions GmbH · Industrieweg 13–15 · 48324 Sendenhorst</div>
+      <div class="letter-meta"><div></div><div>Sendenhorst, ${h53(date)}</div></div>
+      <div class="address-window">${lines}${missing}</div>
+      <div class="subject">${h53(subject)}</div>
+      <h1>Professionelle Lebensmitteltechnik, ehrliche Beratung und technischer Service aus einer Hand</h1>
+      <p>Sehr geehrte Damen und Herren,</p>
+      <p>im Rahmen unserer Außendiensttour möchten wir Ihnen unser Unternehmen kurz vorstellen. <b>BLOC73 Machinery</b> steht für praxisnahe Beratung, hochwertige Maschinenlösungen und eine klare Auswahl professioneller Lebensmitteltechnik für Betriebe, die zuverlässig, hygienisch und wirtschaftlich arbeiten müssen.</p>
+      <p>${h53(targetText53(target))}</p>
+      <p>Unser Portfolio umfasst unter anderem Schneidtechnik von <b>GRAEF</b>, Vakuum- und Verpackungstechnik von <b>ZERMAT</b>, Lösungen für Food Processing, Kühlung, Clips, Schlaufen, Gebrauchttechnik sowie weitere Maschinenbereiche für Handwerk, Gastronomie, Gemeinschaftsverpflegung und Industrie.</p>
+      <p>Über <b>AS Technical Solutions</b> ergänzen wir den Vertrieb um technische Kompetenz: Service, Wartung, Inbetriebnahme, Reparatur, technische Optimierung und DGUV-Prüfungen. Dadurch erhalten Sie nicht nur ein Angebot, sondern eine Lösung, die im Betrieb auch langfristig funktioniert.</p>
+      <div class="info-box"><b>Unser Ansatz:</b> Wir verkaufen keine Maschine „von der Stange“, sondern prüfen Bedarf, Anwendung, Platzsituation, Investitionsziel und Servicefähigkeit. So entsteht eine Empfehlung, die technisch passt und wirtschaftlich sinnvoll ist.</div>
+      <div class="bottom-grid"><div class="signature"><p>Gerne stehen wir Ihnen für eine kurze Einschätzung, ein persönliches Gespräch oder eine konkrete Maschinenberatung zur Verfügung.</p><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH · BLOC73 Machinery<br>Mobil: +49 160 91658700<br>E-Mail: r.kutschke@as-technical.de</p></div><div class="qr-card"><img src="${QR53}" alt="QR-Code BLOC73 Machinery"><b>Direkt zur Website</b><span>${h53(SITE53)}</span></div></div>
+      <div class="letter-footer"><span>${h53(a.company)} · ${h53(target)} · Brief ${idx}/${total}</span><span>www.bloc73machinery.com</span></div>
+    </section>`;
+  }
+  function printCss53(){return `@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#e9e9e9;color:#111;font-family:Arial,Helvetica,sans-serif}.print-toolbar{position:sticky;top:0;z-index:10;background:#151515;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center}.print-toolbar button{border:0;border-radius:8px;padding:9px 12px;font-weight:800;cursor:pointer}.letter-page{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:18mm 18mm 15mm 18mm;page-break-after:always;position:relative;overflow:hidden}.sender-line{font-size:8.5pt;color:#555;border-bottom:1px solid #d0d0d0;padding-bottom:3mm}.letter-meta{display:grid;grid-template-columns:1fr 55mm;gap:10mm;margin-top:8mm;font-size:10.5pt}.address-window{margin-top:20mm;width:88mm;min-height:36mm;font-size:11pt;line-height:1.42;white-space:normal}.addr-missing{margin-top:3mm;color:#9b1c1c;font-weight:800;font-size:9.5pt}.subject{margin-top:8mm;font-size:11pt;font-weight:800}h1{font-size:15.5pt;line-height:1.22;margin:7mm 0 5mm;letter-spacing:-.01em}p{font-size:10.8pt;line-height:1.48;margin:0 0 4mm}.info-box{margin:4mm 0 5mm;padding:4mm;border-left:4px solid #1d5f9d;background:#f4f7fb;font-size:10.5pt;line-height:1.45}.bottom-grid{display:grid;grid-template-columns:1fr 38mm;gap:10mm;align-items:end;margin-top:5mm}.signature p{font-size:10.5pt;margin-bottom:3.5mm}.qr-card{border:1px solid #ccc;border-radius:8px;padding:3mm;text-align:center;font-size:8.5pt;background:#fff}.qr-card img{width:30mm;height:30mm;display:block;margin:0 auto 2mm}.qr-card b{display:block;font-size:9pt}.qr-card span{display:block;color:#555;word-break:break-all;font-size:7.5pt}.letter-footer{position:absolute;left:18mm;right:18mm;bottom:8mm;border-top:1px solid #d0d0d0;padding-top:2mm;display:flex;justify-content:space-between;gap:8mm;font-size:8.5pt;color:#666}@media print{html,body{background:#fff}.print-toolbar{display:none}.letter-page{margin:0;width:210mm;height:297mm;page-break-after:always}.letter-page:last-child{page-break-after:auto}}`;}
+  function openLettersPrint53(rows,title){
+    rows=(rows||[]).filter(Boolean);
+    if(!rows.length) return alert('Keine Tourkunden für den Briefdruck gefunden.');
+    const pages=rows.map((r,i)=>letterHtml53(r,i+1,rows.length)).join('');
+    const html='<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+h53(title||'BLOC73 Besuchsbriefe')+'</title><style>'+printCss53()+'</style></head><body><div class="print-toolbar"><button onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.close()">Schließen</button><span>'+h53(rows.length)+' A4-Brief(e) · QR: bloc73machinery.com</span></div>'+pages+'<script>setTimeout(()=>{try{window.focus();}catch(e){}},250);<\/script></body></html>';
+    const w=window.open('','_blank');
+    if(!w){
+      const blob=new Blob([html],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(title||'BLOC73_Briefe')+'.html'; a.click();
+      alert('Popup wurde blockiert. Die Briefe wurden als HTML-Datei heruntergeladen. Öffne die Datei und drucke sie.'); return;
+    }
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+  function isOpenTour53(r){return !['geschlossen','closed','erledigt','gelöscht','geloescht'].includes(String(r.status||'').toLowerCase()) && !r.closedAt && !r.hidden;}
+  function visibleTourRows53(){
+    const q=(document.getElementById('listQ')?.value||'').toLowerCase().trim();
+    return (db.tours||[]).filter(isOpenTour53).filter(r=>!q || JSON.stringify(r).toLowerCase().includes(q)).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||'')) || ((+a.order||0)-(+b.order||0)));
+  }
+  window.printTourLetter52=function(id){const r=(db.tours||[]).find(x=>String(x.id)===String(id)); if(!r)return alert('Tour-Eintrag nicht gefunden.'); openLettersPrint53([r],'BLOC73_Brief_'+(r.company||'Kunde').replace(/[^a-z0-9]+/gi,'_'));};
+  window.printVisibleTourLetters52=function(){openLettersPrint53(visibleTourRows53(),'BLOC73_Briefe_sichtbare_Tour');};
+  window.printTourLettersByDate52=function(){const def=new Date().toISOString().slice(0,10); const d=prompt('Für welches Tourdatum sollen Briefe gedruckt werden?\nFormat: JJJJ-MM-TT',def); if(!d)return; openLettersPrint53((db.tours||[]).filter(r=>isOpenTour53(r)&&String(r.tourDate||'')===String(d)),'BLOC73_Briefe_'+d);};
+  function mondayOf53(dateStr){const d=dateStr?new Date(dateStr+'T12:00:00'):new Date(); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return d.toISOString().slice(0,10);}
+  window.printTourLettersByWeek52=function(){const def=mondayOf53(new Date().toISOString().slice(0,10)); const d=prompt('Wochenstart Montag für Briefdruck eingeben.\nFormat: JJJJ-MM-TT',def); if(!d)return; const start=new Date(d+'T12:00:00'); const end=new Date(start); end.setDate(start.getDate()+6); const rows=(db.tours||[]).filter(r=>{const x=new Date(String(r.tourDate||'')+'T12:00:00'); return isOpenTour53(r)&&x>=start&&x<=end;}); openLettersPrint53(rows,'BLOC73_Briefe_Woche_'+d);};
+  const prevRow53=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const id=JSON.stringify(r.id); const route=JSON.stringify(r.address||r.company||'');
+      const label=(r.isExistingCustomer||r.bestandskunde)?'<span class="badge ok">Bestandskunde</span>':'';
+      const pill=(typeof window.pill==='function')?window.pill:(v=>'<span class="badge">'+h53(v)+'</span>');
+      return `<tr><td>${h53(germanDate53(r.tourDate))}</td><td>${h53(r.order||'')}</td><td><b>${h53(r.company||'')}</b><br><span class="muted small">${h53(r.address||[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '))}</span><br>${label}</td><td>${pill(r.status||'Geplant')}</td><td>${pill(r.graefInfo||'Nein')}</td><td>${h53((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited(${id})">Besucht</button><button class="btn primary" onclick="markTourLead(${id})">Lead</button><button class="btn" onclick="markTourFollowUp(${id})">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef(${id})">GRAEF</button><button class="btn" onclick="editTourAddress53(${id})">Adresse</button><button class="btn" onclick="printTourLetter52(${id})">Brief A4</button><button class="btn danger" onclick="markTourNoInterest(${id})">Kein Interesse</button><button class="btn danger" onclick="markTourGone(${id})">Nicht vorhanden</button><button class="btn" onclick="openMapsFor(${route})">Route</button><button class="btn primary" onclick="openTomTomApp49(${id})">TomTom App</button><button class="btn" onclick="openModal('tours',${id})">Bearbeiten</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47(${id})">Tour löschen</button></div></td></tr>`;
+    }
+    return prevRow53?prevRow53(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+  const prevList53=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    if(m==='tours'){
+      const rows=visibleTourRows53(); const closed=(db.tours||[]).length-rows.length;
+      return `<div class="panel"><div class="panel-head"><div><h3>Tagestouren · aktive Planung</h3><div class="muted">v53: A4-Besuchsbriefe mit bearbeitbarer Adresse und QR-Code.</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Aktive Tour suchen …" oninput="renderContent()"><button class="btn primary" onclick="openModal('tours')">+ Tour-Eintrag</button><button class="btn" onclick="setActive('visited')">Besuchshistorie</button><button class="btn" onclick="setActive('leads')">Leads</button><button class="btn" onclick="exportCSV('tours')">CSV alle Tourdaten</button></div></div><div class="panel-body"><div class="notice"><b>A4-Briefdruck:</b> Pro Tourkunde kannst du <b>Adresse</b> prüfen/ändern und danach <b>Brief A4</b> drucken. Jeder Brief ist exakt als A4-Seite vorbereitet und enthält einen QR-Code zu <b>bloc73machinery.com</b>.</div><div class="actions"><button class="btn primary" onclick="printVisibleTourLetters52()">Briefe sichtbare Tour</button><button class="btn" onclick="printTourLettersByDate52()">Briefe nach Datum</button><button class="btn" onclick="printTourLettersByWeek52()">Briefe Woche</button><button class="btn" onclick="exportTomTomDay48()">TomTom Tag GPX</button><button class="btn" onclick="exportTomTomWeek48()">TomTom Woche GPX</button><button class="btn" onclick="copyTomTomDayForApp49()">Tagesziele für App kopieren</button><button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button></div><div class="hint" style="margin-top:10px">Ausgeblendete abgeschlossene Tour-Einträge: ${closed}. Briefe nutzen Firmenname, Straße, PLZ, Ort und vollständige Anschrift. Fehlende Adressen kannst du direkt über <b>Adresse</b> ergänzen.</div></div><div class="table-wrap"><table><thead>${tableHead('tours')}</thead><tbody id="tableBody">${tableRows('tours',rows)}</tbody></table></div></div>`;
+    }
+    return prevList53?prevList53(m):'';
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{document.title='BLOC73 CRM · v53 · A4 Briefe mit QR';}catch(e){}
+  try{renderNav(); if(active==='tours')renderContent();}catch(e){}
+})();
+</script>
+
+
+<script>
+// === v54: Word/Pages-Briefe, editierbare Adresse, keine PDF-Drucklogik ===
+(function(){
+  const V54='v54';
+  const SITE54='https://bloc73machinery.com/';
+  const QR54='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAIAAABkZftOAAAGAklEQVR4nO3dsZJcJxBAUY9L///LcuCYAJvWhdlz4tXb2ae5RdAFfH7//v0X8Gf9XX8A+ImEBwHhQUB4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQeDX7j/4fD4Tn+O46X2Gu+9h9XlWz5n++V2vf/5pu983Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrdSnc+5O+eZngvtvofq53fnaaecev4r37cVKx4EhAcB4UFAeBAQHgSEBwHhQeDYHG9lej/YtFO/95V9ZSun5n7T88NXvm9WPAgIDwLCg4DwICA8CAgPAsKDwPgc73Wn5k7T867qvMrX55MVKx4EhAcB4UFAeBAQHgSEBwHhQcAc7z+qzqWs5mav3193GyseBIQHAeFBQHgQEB4EhAcB4UFgfI5XnYe5q7pHbncOtvs5p8/DXKnmfq9836x4EBAeBIQHAeFBQHgQEB4EhAeBY3M8+7L+NX0O5/T5mdX5nLte/75Z8SAgPAgIDwLCg4DwICA8CAgPAp9X9i9Nu22/WXU+p+/Dn2HFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ3reJvbzuGcNj3PvO2ewF1WPAgIDwLCg4DwICA8CAgPAsKDwPgcb2X6/Mldt52Hecr0OZnT72f685x6P7u/14oHAeFBQHgQEB4EhAcB4UFAeBDI5njT97+9so/rlfvlXjlv85V9m1Y8CAgPAsKDgPAgIDwICA8CwoPA9hzvlXvkTs33ps8FfX0+tvr81d91237IFSseBIQHAeFBQHgQEB4EhAcB4UHg88q9bdNzv12v7Ptaqc7VvO29Ve/BigcB4UFAeBAQHgSEBwHhQUB4EDi2H6/an3ZqDlPtDzz1nOl753bdNq9bqc5lteJBQHgQEB4EhAcB4UFAeBAQHgS253jVuYXV/Xjfeu7l9HNWpvfvvbI/0IoHAeFBQHgQEB4EhAcB4UFAeBDYPlfz9TnY9Nzmlb/3trnoT5vHWvEgIDwICA8CwoOA8CAgPAgIDwLH9uOtVOcWrtx2L9z0c6r3vOu2OeE0Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrcyfb9cpZoL3Tb/XLntfsKV6X2Au//vVjwICA8CwoOA8CAgPAgIDwLCg8CxOd6u6X1Wu6bnh7vPv21f2W3793bd9vmteBAQHgSEBwHhQUB4EBAeBIQHge053vT5kLuq+9amVfvEVl45B/W2+fCKFQ8CwoOA8CAgPAgIDwLCg4DwIPCZPgfylFfuT6vO29xVvYdpt53LumLFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ2Hubtfa3pe98r+wNv271X377kfD76Q8CAgPAgIDwLCg4DwICA8CBw7V3P35185L7G6j27X9H656jzPV97/LiseBIQHAeFBQHgQEB4EhAcB4UFge453al70yvmT026bg516b6fmhKeev/t73Y8HX0h4EBAeBIQHAeFBQHgQEB4ExvfjVc+f3u+3Mj03u+3+uum57rey4kFAeBAQHgSEBwHhQUB4EBAeBMb34/001bzutjnY9H683d97272FVjwICA8CwoOA8CAgPAgIDwLCg8B1+/FOeWXe+Po+ut3nf+v9hLuseBAQHgSEBwHhQUB4EBAeBIQHge053ko1V5meK07/XbfNRU/tT6vmjSu37W+04kFAeBAQHgSEBwHhQUB4EBAeBI7N8VZum+ec2oe2+5zb9o/dNte6bZ45/f9lxYOA8CAgPAgIDwLCg4DwICA8CIzP8b7VbfewTe9b2zX9d536nNV7tuJBQHgQEB4EhAcB4UFAeBAQHgR+3BzvlTnS9L7B6Xnj9Hzs1Odf2f27dp9vxYOA8CAgPAgIDwLCg4DwICA8CHyqcyZPmZ7brEw//9TvXane267bziM9xYoHAeFBQHgQEB4EhAcB4UFAeBA4th/vtvvNTvnWcy93n39qX9/Kbe9ner+fFQ8CwoOA8CAgPAgIDwLCg4DwILC9Hw/4/6x4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQUB4EBAeBIQHgX8AckqcuK4HOCoAAAAASUVORK5CYII=';
+  function h54(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  function clean54(v){return String(v??'').trim();}
+  function today54(){return new Date().toISOString().slice(0,10);}
+  function germanDate54(d){try{if(!d)return new Date().toLocaleDateString('de-DE'); return new Date(String(d)+'T12:00:00').toLocaleDateString('de-DE');}catch(e){return d||'';}}
+  function mondayOf54(dateStr){const d=dateStr?new Date(dateStr+'T12:00:00'):new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10);}
+  function getTour54(id){return (db.tours||[]).find(x=>String(x.id)===String(id));}
+  function isOpenTour54(r){return !['geschlossen','closed','erledigt','gelöscht','geloescht'].includes(String(r.status||'').toLowerCase()) && !r.closedAt && !r.hidden;}
+  function visibleTourRows54(){const q=(document.getElementById('listQ')?.value||'').toLowerCase().trim();return (db.tours||[]).filter(isOpenTour54).filter(r=>!q||JSON.stringify(r).toLowerCase().includes(q)).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||''))||((+a.order||0)-(+b.order||0))||String(a.company||'').localeCompare(String(b.company||'')));}
+  function addressObj54(r){
+    const company=clean54(r.company||r.name||'');
+    const street=clean54(r.street||r.strasse||r['straße']||'');
+    const zip=clean54(r.zip||r.plz||'');
+    const city=clean54(r.city||r.ort||'');
+    const full=clean54(r.address||r.adresse||'');
+    let out={company:company||'Kunde',street,zip,city,full};
+    if((!out.street||(!out.zip&&!out.city))&&full){
+      const parts=full.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean);
+      for(const p of parts){
+        const m=p.match(/^(\d{5})\s+(.+)$/);
+        if(m){out.zip=out.zip||m[1];out.city=out.city||m[2];continue;}
+        if(!out.street && /\d/.test(p)) out.street=p;
+        else if(!out.city && !/^\d{5}/.test(p) && p!==out.company) out.city=p;
+      }
+    }
+    out.lines=[out.company,out.street,[out.zip,out.city].filter(Boolean).join(' ')].filter(Boolean);
+    out.incomplete=!(out.company&&out.street&&(out.zip||out.city));
+    return out;
+  }
+  function setTourAddress54(id,data){
+    const r=getTour54(id); if(!r)return false;
+    r.company=clean54(data.company)||r.company||'';
+    r.street=clean54(data.street);
+    r.zip=clean54(data.zip);
+    r.city=clean54(data.city);
+    r.address=[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    r.updatedAt=new Date().toISOString();
+    persist();
+    return true;
+  }
+  window.editTourAddress54=function(id){
+    const r=getTour54(id); if(!r)return alert('Tour-Eintrag nicht gefunden.');
+    const a=addressObj54(r);
+    let old=document.getElementById('addrModal54'); if(old)old.remove();
+    const wrap=document.createElement('div'); wrap.id='addrModal54';
+    wrap.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+    wrap.innerHTML=`<div style="width:min(560px,96vw);background:#1c1c1c;color:#f5f5f5;border:1px solid #444;border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden">
+      <div style="padding:16px 18px;border-bottom:1px solid #333;display:flex;justify-content:space-between;gap:12px;align-items:center"><div><b>Adresse für Brief bearbeiten</b><div style="color:#aaa;font-size:13px;margin-top:3px">Diese Adresse wird in der Tour und im Word-Brief gespeichert.</div></div><button class="btn" onclick="document.getElementById('addrModal54').remove()">Schließen</button></div>
+      <div style="padding:18px;display:grid;gap:12px">
+        <label>Firmenname<input id="addrCompany54" class="input" value="${h54(a.company)}"></label>
+        <label>Straße / Hausnummer<input id="addrStreet54" class="input" value="${h54(a.street)}"></label>
+        <div style="display:grid;grid-template-columns:130px 1fr;gap:10px"><label>PLZ<input id="addrZip54" class="input" value="${h54(a.zip)}"></label><label>Ort<input id="addrCity54" class="input" value="${h54(a.city)}"></label></div>
+        <div style="background:#111;border:1px solid #333;border-radius:12px;padding:12px;color:#ccc;font-size:13px"><b>Vorschau:</b><br><span id="addrPreview54"></span></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" onclick="document.getElementById('addrModal54').remove()">Abbrechen</button><button class="btn primary" onclick="saveTourAddress54('${String(id).replace(/'/g,'&#39;')}')">Adresse speichern</button></div>
+      </div></div>`;
+    document.body.appendChild(wrap);
+    ['addrCompany54','addrStreet54','addrZip54','addrCity54'].forEach(k=>document.getElementById(k)?.addEventListener('input',previewAddress54));
+    previewAddress54();
+  };
+  window.previewAddress54=function(){
+    const c=clean54(document.getElementById('addrCompany54')?.value), s=clean54(document.getElementById('addrStreet54')?.value), z=clean54(document.getElementById('addrZip54')?.value), o=clean54(document.getElementById('addrCity54')?.value);
+    const prev=document.getElementById('addrPreview54'); if(prev)prev.innerHTML=[c,s,[z,o].filter(Boolean).join(' ')].filter(Boolean).map(h54).join('<br>')||'<span style="color:#d59">Adresse unvollständig</span>';
+  };
+  window.saveTourAddress54=function(id){
+    const data={company:document.getElementById('addrCompany54')?.value,street:document.getElementById('addrStreet54')?.value,zip:document.getElementById('addrZip54')?.value,city:document.getElementById('addrCity54')?.value};
+    if(!clean54(data.company))return alert('Bitte Firmenname eintragen.');
+    if(!setTourAddress54(id,data))return alert('Tour-Eintrag nicht gefunden.');
+    document.getElementById('addrModal54')?.remove();
+    renderContent();
+    alert('Adresse gespeichert.');
+  };
+  function targetText54(target){
+    const t=String(target||'').toLowerCase();
+    if(t.includes('pflege')||t.includes('senior')||t.includes('heim')) return 'Für Pflegeheime, Seniorenheime und Heimküchen stehen zuverlässige, hygienische und einfach bedienbare Lösungen im Mittelpunkt. Wir unterstützen bei Auswahl, Service, Wartung und technischer Bewertung der passenden Ausstattung.';
+    if(t.includes('klinik')||t.includes('kranken')||t.includes('reha')) return 'Für Kliniken, Krankenhäuser und Reha-Einrichtungen zählen Betriebssicherheit, Hygiene, planbare Wartung und nachvollziehbare Prüfungen. Wir verbinden Maschinenberatung mit technischem Service und DGUV-relevanter Betreuung.';
+    if(t.includes('gastro')||t.includes('hotel')||t.includes('restaurant')||t.includes('kantine')) return 'Für Gastronomie, Hotellerie, Kantinen und Großküchen geht es um saubere Ergebnisse, schnelle Abläufe und wirtschaftliche Technik. Wir beraten praxisnah und empfehlen nur Lösungen, die zum tatsächlichen Bedarf passen.';
+    if(t.includes('metz')||t.includes('fleisch')) return 'Für Metzgereien und Fleischereien sind Schnittbild, Verarbeitungssicherheit, Hygiene, Leistung und Service entscheidend. Genau auf diese Anforderungen ist unser Maschinenportfolio ausgelegt.';
+    return 'Bei professioneller Lebensmitteltechnik zählen Wirtschaftlichkeit, Sicherheit, Hygiene und zuverlässiger Service. Genau dafür stehen BLOC73 Machinery und AS Technical Solutions.';
+  }
+  function wordCss54(){return `@page WordSection1{size:595.3pt 841.9pt;margin:56.7pt 56.7pt 42.5pt 56.7pt;}div.WordSection1{page:WordSection1;}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.5pt;line-height:1.35;margin:0;background:#fff;}.page{width:100%;min-height:728pt;page-break-after:always;position:relative;}.sender{font-size:8pt;color:#555;border-bottom:1px solid #ddd;padding-bottom:8pt;margin-bottom:22pt;}.date{text-align:right;margin-bottom:44pt;font-size:10pt;}.address{font-size:10.5pt;line-height:1.35;min-height:82pt;margin-bottom:26pt;}.missing{color:#9b1c1c;font-weight:bold;font-size:9pt;margin-top:6pt;}.subject{font-weight:bold;margin:0 0 14pt 0;}h1{font-size:15pt;line-height:1.18;margin:0 0 14pt 0;}p{margin:0 0 10pt 0;}.box{border-left:4pt solid #1d5f9d;background:#f4f7fb;padding:10pt;margin:10pt 0 12pt 0;}.bottom{display:table;width:100%;margin-top:18pt;}.sig{display:table-cell;vertical-align:top;width:72%;}.qr{display:table-cell;vertical-align:top;text-align:center;width:28%;border:1px solid #ccc;padding:8pt;font-size:8pt;}.qr img{width:78pt;height:78pt;display:block;margin:0 auto 5pt auto;}.footer{position:absolute;bottom:0;left:0;right:0;border-top:1px solid #ddd;padding-top:6pt;font-size:8pt;color:#666;}`;}
+  function letterWordSection54(r,idx,total){
+    const a=addressObj54(r); const target=clean54(r.target||r.zielgruppe)||'Lebensmittelbetrieb'; const date=new Date().toLocaleDateString('de-DE');
+    const lines=a.lines.map(x=>'<div>'+h54(x)+'</div>').join(''); const miss=a.incomplete?'<div class="missing">Adresse bitte prüfen/ergänzen.</div>':'';
+    return `<div class="WordSection1 page"><div class="sender">AS Technical Solutions GmbH · Industrieweg 13–15 · 48324 Sendenhorst</div><div class="date">Sendenhorst, ${h54(date)}</div><div class="address">${lines}${miss}</div><div class="subject">Vorstellung BLOC73 Machinery / AS Technical Solutions</div><h1>Professionelle Lebensmitteltechnik, ehrliche Beratung und technischer Service aus einer Hand</h1><p>Sehr geehrte Damen und Herren,</p><p>im Rahmen unserer aktuellen Außendiensttour möchten wir Ihnen <b>BLOC73 Machinery</b> und <b>AS Technical Solutions</b> kurz vorstellen.</p><p><b>BLOC73 Machinery</b> steht für praxisnahe Beratung und hochwertige Maschinenlösungen rund um professionelle Lebensmitteltechnik. Dazu gehören unter anderem Schneidtechnik, Vakuum- und Verpackungstechnik, Food Processing, Kühlung, Räuchertechnik, Clips, Schlaufen, Gebrauchttechnik und passende Sonderlösungen.</p><p>${h54(targetText54(target))}</p><p>Über <b>AS Technical Solutions</b> ergänzen wir den Vertrieb um technischen Service, Wartung, Inbetriebnahme, Reparatur, Modernisierung und DGUV-Prüfungen. So entsteht nicht nur ein Angebot, sondern eine Lösung, die im täglichen Betrieb langfristig funktioniert.</p><div class="box"><b>Unser Anspruch:</b> Wir prüfen Bedarf, Anwendung, Platzsituation, Investitionsziel und Servicefähigkeit. Daraus entsteht eine klare Empfehlung, die technisch passt und wirtschaftlich sinnvoll ist.</div><div class="bottom"><div class="sig"><p>Gerne stehen wir Ihnen für eine kurze Einschätzung, ein persönliches Gespräch oder eine konkrete Maschinenberatung zur Verfügung.</p><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH · BLOC73 Machinery<br>Mobil: +49 160 91658700<br>E-Mail: r.kutschke@as-technical.de<br>www.as-technical.de · www.bloc73machinery.com</p></div><div class="qr"><img src="${QR54}" alt="QR Code"><b>Direkt zur Website</b><br>${h54(SITE54)}</div></div><div class="footer">${h54(a.company)} · ${h54(target)} · Brief ${idx}/${total}</div></div>`;
+  }
+  function makeWordDoc54(rows,title){
+    rows=(rows||[]).filter(Boolean);
+    if(!rows.length){alert('Keine Tourkunden für Briefe gefunden.');return;}
+    const body=rows.map((r,i)=>letterWordSection54(r,i+1,rows.length)).join('');
+    const doc=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><meta name="Generator" content="BLOC73 CRM"><title>${h54(title||'BLOC73 Besuchsbriefe')}</title><style>${wordCss54()}</style></head><body>${body}</body></html>`;
+    const blob=new Blob(['﻿',doc],{type:'application/msword;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=(title||'BLOC73_Besuchsbriefe').replace(/[^a-z0-9_\-]+/gi,'_')+'.doc';
+    document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  }
+  window.downloadTourLetterWord54=function(id){const r=getTour54(id); if(!r)return alert('Tour-Eintrag nicht gefunden.'); makeWordDoc54([r],'BLOC73_Brief_'+(r.company||'Kunde'));};
+  window.downloadVisibleTourLettersWord54=function(){makeWordDoc54(visibleTourRows54(),'BLOC73_Besuchsbriefe_sichtbare_Tour');};
+  window.downloadTourLettersByDateWord54=function(){const def=visibleTourRows54()[0]?.tourDate||today54(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden?\nFormat: JJJJ-MM-TT',def); if(!d)return; makeWordDoc54((db.tours||[]).filter(r=>isOpenTour54(r)&&String(r.tourDate||'')===String(d)).sort((a,b)=>(+a.order||0)-(+b.order||0)),'BLOC73_Besuchsbriefe_'+d);};
+  window.downloadTourLettersByWeekWord54=function(){const def=mondayOf54(visibleTourRows54()[0]?.tourDate||today54()); const d=prompt('Wochenstart Montag für Word-Briefe eingeben.\nFormat: JJJJ-MM-TT',def); if(!d)return; const start=new Date(d+'T12:00:00'), end=new Date(start); end.setDate(start.getDate()+6); const rows=(db.tours||[]).filter(r=>{const x=new Date(String(r.tourDate||'')+'T12:00:00'); return isOpenTour54(r)&&x>=start&&x<=end;}).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||''))||((+a.order||0)-(+b.order||0))); makeWordDoc54(rows,'BLOC73_Besuchsbriefe_Woche_'+d);};
+  const prevRow54=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const id=JSON.stringify(r.id); const route=JSON.stringify(r.address||r.company||'');
+      const best=(r.isExistingCustomer||r.bestandskunde||((typeof isExistingCustomer46==='function')&&isExistingCustomer46(r)));
+      const label=best?'<span class="badge ok">Bestandskunde</span>':'<span class="badge">Neukunde</span>';
+      const pillFn=(typeof window.pill==='function')?window.pill:(v=>'<span class="badge">'+h54(v)+'</span>');
+      const addr=h54(r.address||[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '));
+      return `<tr><td>${h54(germanDate54(r.tourDate))}</td><td>${h54(r.order||'')}</td><td><b>${h54(r.company||'')}</b><br><span class="muted small">${addr}</span><br>${label}</td><td>${pillFn(r.status||'Geplant')}</td><td>${pillFn(r.graefInfo||'Nein')}</td><td>${h54((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick="markTourVisited(${id})">Besucht</button><button class="btn primary" onclick="markTourLead(${id})">Lead</button><button class="btn" onclick="markTourFollowUp(${id})">Wiedervorlage</button><button class="btn warn" onclick="markTourGraef(${id})">GRAEF</button><button class="btn" onclick="editTourAddress54(${id})">Adresse bearbeiten</button><button class="btn primary" onclick="downloadTourLetterWord54(${id})">Brief Word</button><button class="btn danger" onclick="markTourNoInterest(${id})">Kein Interesse</button><button class="btn danger" onclick="markTourGone(${id})">Nicht vorhanden</button><button class="btn" onclick="openMapsFor(${route})">Route</button><button class="btn primary" onclick="openTomTomApp49(${id})">TomTom App</button><button class="btn" onclick="openModal('tours',${id})">Bearbeiten</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47(${id})">Tour löschen</button></div></td></tr>`;
+    }
+    return prevRow54?prevRow54(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+  const prevList54=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    if(m==='tours'){
+      const rows=visibleTourRows54(); const closed=(db.tours||[]).length-rows.length;
+      return `<div class="panel"><div class="panel-head"><div><h3>Tagestouren · aktive Planung</h3><div class="muted">v54: Besuchsbriefe als Word-/Pages-Datei. Keine PDF-Funktion.</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Aktive Tour suchen …" oninput="renderContent()"><button class="btn primary" onclick="openModal('tours')">+ Tour-Eintrag</button><button class="btn" onclick="setActive('visited')">Besuchshistorie</button><button class="btn" onclick="setActive('leads')">Leads</button><button class="btn" onclick="exportCSV('tours')">CSV alle Tourdaten</button></div></div><div class="panel-body"><div class="notice"><b>Word-Briefe:</b> Pro Tourkunde zuerst <b>Adresse bearbeiten</b>, danach <b>Brief Word</b>. Die Datei wird als <b>.doc</b> erzeugt und kann auf iPhone/iPad mit Word oder Pages geöffnet, geprüft und gedruckt werden. Jeder Kunde erhält eine eigene A4-Seite mit QR-Code zu <b>bloc73machinery.com</b>.</div><div class="actions"><button class="btn primary" onclick="downloadVisibleTourLettersWord54()">Word sichtbare Tour</button><button class="btn" onclick="downloadTourLettersByDateWord54()">Word nach Datum</button><button class="btn" onclick="downloadTourLettersByWeekWord54()">Word Woche</button><button class="btn" onclick="exportTomTomDay48()">TomTom Tag GPX</button><button class="btn" onclick="exportTomTomWeek48()">TomTom Woche GPX</button><button class="btn" onclick="copyTomTomDayForApp49()">Tagesziele für App kopieren</button><button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button></div><div class="hint" style="margin-top:10px">Ausgeblendete abgeschlossene Tour-Einträge: ${closed}. Adressen bleiben im Tourdatensatz gespeichert. Bitte v54 nutzen, wenn Word/Pages statt PDF gewünscht ist.</div></div><div class="table-wrap"><table><thead>${tableHead('tours')}</thead><tbody id="tableBody">${tableRows('tours',rows)}</tbody></table></div></div>`;
+    }
+    return prevList54?prevList54(m):'';
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{document.title='BLOC73 CRM · v54 · Word-Briefe';}catch(e){}
+  try{renderNav(); if(active==='tours')renderContent();}catch(e){}
+})();
+</script>
+
 </body>
 </html>
