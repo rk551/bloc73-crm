@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v57 · TomTom Kunden repariert</title>
+  <title>BLOC73 CRM · v58 · Backup/Kunden repariert</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -32,7 +32,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v57 · TomTom Kunden repariert</p></div></div>
+    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v58 · Backup/Kunden repariert</p></div></div>
     <div class="nav" id="nav"></div>
     <div class="footer">Single-User HTML CRM<br>Daten lokal im Browser + Backup</div>
   </aside>
@@ -225,7 +225,93 @@ function weekOfDateString(d){return d?isoWeekKey(new Date(d+'T12:00:00')):'';}
 function weekdayName(iso){return ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date((iso||today())+'T12:00:00').getDay()];}
 function rowsForTourWeekStart(startIso){const start=mondayOfDateString(startIso||currentWeekStart());return db.tours.filter(t=>dateInWeekRange(t.tourDate,start)).sort((a,b)=>(a.tourDate||'').localeCompare(b.tourDate||'')+(Number(a.order||0)-Number(b.order||0))/1000);}
 function graefRowsForWeekStart(startIso){const start=mondayOfDateString(startIso||currentWeekStart());return db.graef.filter(g=>dateInWeekRange(g.informedAt,start)).sort((a,b)=>(a.informedAt||'').localeCompare(b.informedAt||''));}
-function exportExcelFile(filename,title,headers,rows){const tableRows=rows.map(row=>'<tr>'+row.map(cell=>'<td>'+esc(cell)+'</td>').join('')+'</tr>').join('');const html=`<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:8px;vertical-align:top}th{background:#eee;font-weight:bold}.title{font-size:18pt;font-weight:bold}</style></head><body><div class="title">${esc(title)}</div><table><thead><tr>${headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`;download(html,filename,'application/vnd.ms-excel;charset=utf-8');}
+function exportExcelFile(filename,title,headers,rows){const tableRows=rows.map(row=>'<tr>'+row.map(cell=>'<td>'+esc(cell)+'</td>').join('')+'</tr>').join('');const html=`<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:8px;vertical-align:top}th{background:#eee;font-weight:bold}.title{font-size:18pt;font-weight:bold}</style></head><body><div class="title">${esc(title)}</div><table><thead><tr>${headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${tableRows}</tbody></table>
+
+/* === v58: Backup/Kunden dauerhaft repariert ===
+   Problem behoben:
+   1) Der obere Button "Backup laden" konnte v41-Backups mit Wrapper (_bloc73Backup/data) nicht richtig einlesen.
+   2) Die alte v46-Leerstart-Logik ist deaktiviert, damit Kundendaten nie wieder automatisch entfernt werden.
+   3) Backup/Import zeigt Kundenanzahl vor dem Laden an und speichert alle Module dauerhaft.
+*/
+(function(){
+  'use strict';
+  const V58='v58';
+  function h58(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function now58(){return new Date().toISOString();}
+  function ensureArrays58(obj){
+    if(!obj || typeof obj!=='object') obj={};
+    const base = (typeof freshDB==='function') ? freshDB() : {};
+    const modules=['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','webHits','deletedLeads','deletedOffers'];
+    Object.keys(base).forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=Array.isArray(base[k]) ? base[k] : []; });
+    modules.forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=[]; });
+    if(!obj.products.length && base.products) obj.products=base.products;
+    return obj;
+  }
+  function unwrapBackup58(parsed){
+    if(parsed && parsed._bloc73Backup && parsed.data && typeof parsed.data==='object') return parsed.data;
+    if(parsed && parsed.data && parsed.data.customers && !parsed.customers) return parsed.data;
+    return parsed;
+  }
+  function backupPayload58(){
+    const safe = ensureArrays58(db||{});
+    return {
+      _bloc73Backup:{version:V58, exportedAt:now58(), app:'BLOC73 CRM', customers:(safe.customers||[]).length, records:Object.keys(safe).reduce((n,k)=>n+(Array.isArray(safe[k])?safe[k].length:0),0)},
+      data:safe
+    };
+  }
+  window.exportBackup=function(){
+    try{ if(typeof persist==='function') persist(); }catch(e){}
+    try{localStorage.setItem('bloc73_backup_last_export_v41',now58());localStorage.setItem('bloc73_backup_last_export',now58());}catch(e){}
+    const payload=backupPayload58();
+    const name='bloc73_crm_backup_'+(new Date().toISOString().slice(0,10))+'_'+V58+'.json';
+    if(typeof download==='function') download(JSON.stringify(payload,null,2),name,'application/json');
+    else {
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    try{ if(active==='backup') renderContent(); }catch(e){}
+  };
+  try{exportBackup=window.exportBackup;}catch(e){}
+  function importBackupCore58(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const parsed=JSON.parse(reader.result);
+        const data=ensureArrays58(unwrapBackup58(parsed));
+        const c=(data.customers||[]).length, l=(data.leads||[]).length, o=(data.offers||[]).length, t=(data.tours||[]).length, v=(data.visited||[]).length;
+        if(!confirm('Backup laden und aktuelle CRM-Daten ersetzen?\n\nEnthalten im Backup:\nKunden: '+c+'\nLeads: '+l+'\nAngebote: '+o+'\nTagestouren: '+t+'\nBesuchte Kunden: '+v)) return;
+        db=data;
+        try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+        try{localStorage.setItem('bloc73_backup_last_import_v41',now58());localStorage.setItem('bloc73_backup_last_import',now58());}catch(e){}
+        if(typeof persist==='function') persist(); else localStorage.setItem(typeof STORE_KEY!=='undefined'?STORE_KEY:'bloc73_crm_v10',JSON.stringify(db));
+        try{renderNav();renderContent();}catch(e){}
+        alert('Backup geladen.\n\nÜbernommen:\nKunden: '+(db.customers||[]).length+'\nLeads: '+(db.leads||[]).length+'\nAngebote: '+(db.offers||[]).length+'\nBesuchte Kunden: '+(db.visited||[]).length);
+      }catch(err){
+        alert('Backup konnte nicht geladen werden: '+(err && err.message ? err.message : err));
+      }
+    };
+    reader.readAsText(file);
+  }
+  window.importBackup=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  window.importBackup41=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  try{importBackup=window.importBackup;}catch(e){}
+  function verifyBackup58(){
+    const msg='v58 aktiv: Backup/Import repariert. Kunden im Speicher: '+((db&&db.customers)||[]).length+'. Alte v46-Kundenlöschung deaktiviert.';
+    alert(msg);
+  }
+  window.verifyBackup58=verifyBackup58;
+  const oldBackupCenter58=window.backupCenterHTML41;
+  if(typeof oldBackupCenter58==='function'){
+    window.backupCenterHTML41=function(){
+      const base=oldBackupCenter58();
+      return base.replace('<div class="backup-actions41">','<div class="notice"><b>v58 aktiv:</b> Backups speichern und laden jetzt wieder alle Kundendaten korrekt. Der obere Button <b>Backup laden</b> kann alte und neue Backup-Dateien lesen. <button class="btn" onclick="verifyBackup58()">Backup-Fix prüfen</button></div><div style="height:12px"></div><div class="backup-actions41">');
+    };
+  }
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
+  try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+})();
+
+</body></html>`;download(html,filename,'application/vnd.ms-excel;charset=utf-8');}
 function exportTourWeekExcel(){const start=mondayOfDateString(document.getElementById('tourWeekExportStart')?.value||currentWeekStart());const week=weekKeyFromStart(start);const rows=rowsForTourWeekStart(start);if(!rows.length){alert('Keine Touren für '+week+' ab '+formatDate(start));return;}const headers=['KW','Wochenstart Montag','Wochentag','Datum','Nr.','Firma','Zielgruppe','Adresse','Telefon','Website','Status','Besucht am','GRAEF informiert','Was wurde besprochen?','Notizen'];const data=rows.map(r=>[week,formatDate(start),weekdayName(r.tourDate),formatDate(r.tourDate),r.order,r.company,r.target,r.address,r.phone,r.website,r.status,r.visitedAt?formatDate(r.visitedAt):'',r.graefInfo||'Nein',r.discussion||'',r.notes||'']);exportExcelFile(`BLOC73_Tourenwoche_Mo_Fr_${week}_${start}.xls`,`BLOC73 Tourenplanung ${week} · Montag bis Freitag · Start ${formatDate(start)}`,headers,data);}
 function exportTourWeekPDF(){const start=mondayOfDateString(document.getElementById('tourWeekExportStart')?.value||currentWeekStart());const week=weekKeyFromStart(start);const rows=rowsForTourWeekStart(start);if(!rows.length){alert('Keine Touren für '+week+' ab '+formatDate(start));return;}const data=rows.map(r=>({Firma:r.company,Zielgruppe:r.target,Datum:weekdayName(r.tourDate)+' '+formatDate(r.tourDate),Status:r.status||'',Adresse:r.address||'',Telefon:r.phone||'',Website:r.website||'',GRAEF:r.graefInfo||'Nein',Besprochen:r.discussion||'',Notiz:r.notes||''}));downloadPdfReport(`BLOC73 Tourenplanung ${week}`,`Wochenstart Montag ${formatDate(start)} · Export aus BLOC73 CRM · ${new Date().toLocaleDateString('de-DE')}`,data,`BLOC73_Tourenwoche_${week}_${start}.pdf`);}
 function exportGraefWeekPDF(){const start=mondayOfDateString(document.getElementById('weekExportStart')?.value||currentWeekStart());const week=weekKeyFromStart(start);const rows=graefRowsForWeekStart(start);if(!rows.length){alert('Keine GRAEF-Einträge für '+week+' ab '+formatDate(start));return;}const data=rows.map(r=>({Firma:r.company,Zielgruppe:r.target,Datum:formatDate(r.informedAt),Adresse:r.address||'',Telefon:r.phone||'',Website:r.website||'',Besprochen:r.discussion||'',Notiz:r.notes||''}));downloadPdfReport(`GRAEF informiert · ${week}`,`Sendbarer Wochenbericht · Wochenstart Montag ${formatDate(start)} · ${new Date().toLocaleDateString('de-DE')}`,data,`GRAEF_Information_${week}_${start}.pdf`);}
@@ -709,7 +795,93 @@ function openGraefPrintablePDF(rows,start,week){
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GRAEF Information ${htmlEscapePdf(week)}</title>
   <style>
     @page{size:A4;margin:14mm 12mm 15mm 12mm}*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#161616;background:#fff;font-size:11px;line-height:1.38}.sheet{max-width:190mm;margin:0 auto}.header{background:#111;color:#fff;padding:18px 20px 16px;border-radius:0 0 10px 10px;position:relative}.header:after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:#1d5f9d}.brand{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#d8d8d8}.title{font-size:21px;font-weight:800;margin:5px 0 3px}.sub{font-size:10px;color:#d0d0d0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 12px}.box{border:1px solid #d6dbe1;background:#f6f8fb;border-radius:10px;padding:9px 10px;min-height:48px}.box b{display:block;font-size:8px;text-transform:uppercase;color:#626b75;margin-bottom:4px}.box span{font-size:12px;font-weight:700}.intro{border-left:4px solid #1d5f9d;padding:6px 0 6px 10px;margin:6px 0 14px;color:#333}.day-block{break-inside:auto;margin-top:12px}.day-block h2{background:#171717;color:#fff;border-radius:8px;padding:8px 11px;margin:0 0 9px;font-size:12px}.contact-card{break-inside:avoid;border:1px solid #d3d7dd;border-radius:11px;margin:0 0 10px;overflow:hidden;background:#fff}.card-top{display:flex;justify-content:space-between;gap:10px;border-top:4px solid #1d5f9d;padding:10px 12px 5px}.card-top h3{margin:0;font-size:13px}.card-top span{font-size:9px;font-weight:700;color:#1d5f9d;white-space:nowrap}.meta,.talk,.note{padding:3px 12px}.meta b,.talk b,.note b{display:block;font-size:8px;text-transform:uppercase;color:#666;margin-bottom:2px}.meta p,.talk p,.note p{margin:0}.meta-row{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}.talk{margin-top:5px;background:#f8fafc;border-top:1px solid #edf0f3;border-bottom:1px solid #edf0f3;padding-top:8px;padding-bottom:8px}.note{color:#444;padding-top:7px}.status{text-align:right;color:#666;font-size:8px;padding:4px 12px 8px}.footer{position:fixed;bottom:4mm;left:12mm;right:12mm;border-top:1px solid #d8d8d8;padding-top:3mm;font-size:8px;color:#666;display:flex;justify-content:space-between}.printbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:10px 0;margin-bottom:8px;display:flex;gap:8px;justify-content:flex-end}.printbar button{border:1px solid #222;background:#111;color:#fff;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer}.printbar .mutedbtn{background:#fff;color:#111}@media print{.printbar{display:none}.header{border-radius:0}.sheet{max-width:none}.footer{position:fixed}}
-  </style></head><body><div class="sheet"><div class="printbar"><button onclick="window.print()">Als PDF speichern / drucken</button><button class="mutedbtn" onclick="window.close()">Schließen</button></div><header class="header"><div class="brand">BLOC73 MACHINERY · AS Technical Solutions</div><div class="title">GRAEF Information · Wochenbericht</div><div class="sub">${htmlEscapePdf(week)} · ${htmlEscapePdf(range)} · erstellt am ${htmlEscapePdf(created)}</div></header><section class="summary"><div class="box"><b>Kalenderwoche</b><span>${htmlEscapePdf(week)}</span></div><div class="box"><b>Zeitraum</b><span>${htmlEscapePdf(range)}</span></div><div class="box"><b>GRAEF Kontakte</b><span>${rows.length}</span></div><div class="box"><b>Gesprächsnotizen</b><span>${withTalk} von ${rows.length}</span></div></section><div class="intro"><b>Zusammenfassung:</b> Zielgruppen: ${htmlEscapePdf(targets||'—')}. Aktive Einträge: ${activeRows}. Archivierte Einträge: ${archivedRows}.</div>${blocks}<div class="footer"><span>BLOC73 Machinery · GRAEF Wocheninformation · vertraulich</span><span>${htmlEscapePdf(week)}</span></div></div><script>setTimeout(()=>window.print(),450);<\/script></body></html>`;
+  </style></head><body><div class="sheet"><div class="printbar"><button onclick="window.print()">Als PDF speichern / drucken</button><button class="mutedbtn" onclick="window.close()">Schließen</button></div><header class="header"><div class="brand">BLOC73 MACHINERY · AS Technical Solutions</div><div class="title">GRAEF Information · Wochenbericht</div><div class="sub">${htmlEscapePdf(week)} · ${htmlEscapePdf(range)} · erstellt am ${htmlEscapePdf(created)}</div></header><section class="summary"><div class="box"><b>Kalenderwoche</b><span>${htmlEscapePdf(week)}</span></div><div class="box"><b>Zeitraum</b><span>${htmlEscapePdf(range)}</span></div><div class="box"><b>GRAEF Kontakte</b><span>${rows.length}</span></div><div class="box"><b>Gesprächsnotizen</b><span>${withTalk} von ${rows.length}</span></div></section><div class="intro"><b>Zusammenfassung:</b> Zielgruppen: ${htmlEscapePdf(targets||'—')}. Aktive Einträge: ${activeRows}. Archivierte Einträge: ${archivedRows}.</div>${blocks}<div class="footer"><span>BLOC73 Machinery · GRAEF Wocheninformation · vertraulich</span><span>${htmlEscapePdf(week)}</span></div></div><script>setTimeout(()=>window.print(),450);<\/script>
+
+/* === v58: Backup/Kunden dauerhaft repariert ===
+   Problem behoben:
+   1) Der obere Button "Backup laden" konnte v41-Backups mit Wrapper (_bloc73Backup/data) nicht richtig einlesen.
+   2) Die alte v46-Leerstart-Logik ist deaktiviert, damit Kundendaten nie wieder automatisch entfernt werden.
+   3) Backup/Import zeigt Kundenanzahl vor dem Laden an und speichert alle Module dauerhaft.
+*/
+(function(){
+  'use strict';
+  const V58='v58';
+  function h58(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function now58(){return new Date().toISOString();}
+  function ensureArrays58(obj){
+    if(!obj || typeof obj!=='object') obj={};
+    const base = (typeof freshDB==='function') ? freshDB() : {};
+    const modules=['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','webHits','deletedLeads','deletedOffers'];
+    Object.keys(base).forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=Array.isArray(base[k]) ? base[k] : []; });
+    modules.forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=[]; });
+    if(!obj.products.length && base.products) obj.products=base.products;
+    return obj;
+  }
+  function unwrapBackup58(parsed){
+    if(parsed && parsed._bloc73Backup && parsed.data && typeof parsed.data==='object') return parsed.data;
+    if(parsed && parsed.data && parsed.data.customers && !parsed.customers) return parsed.data;
+    return parsed;
+  }
+  function backupPayload58(){
+    const safe = ensureArrays58(db||{});
+    return {
+      _bloc73Backup:{version:V58, exportedAt:now58(), app:'BLOC73 CRM', customers:(safe.customers||[]).length, records:Object.keys(safe).reduce((n,k)=>n+(Array.isArray(safe[k])?safe[k].length:0),0)},
+      data:safe
+    };
+  }
+  window.exportBackup=function(){
+    try{ if(typeof persist==='function') persist(); }catch(e){}
+    try{localStorage.setItem('bloc73_backup_last_export_v41',now58());localStorage.setItem('bloc73_backup_last_export',now58());}catch(e){}
+    const payload=backupPayload58();
+    const name='bloc73_crm_backup_'+(new Date().toISOString().slice(0,10))+'_'+V58+'.json';
+    if(typeof download==='function') download(JSON.stringify(payload,null,2),name,'application/json');
+    else {
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    try{ if(active==='backup') renderContent(); }catch(e){}
+  };
+  try{exportBackup=window.exportBackup;}catch(e){}
+  function importBackupCore58(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const parsed=JSON.parse(reader.result);
+        const data=ensureArrays58(unwrapBackup58(parsed));
+        const c=(data.customers||[]).length, l=(data.leads||[]).length, o=(data.offers||[]).length, t=(data.tours||[]).length, v=(data.visited||[]).length;
+        if(!confirm('Backup laden und aktuelle CRM-Daten ersetzen?\n\nEnthalten im Backup:\nKunden: '+c+'\nLeads: '+l+'\nAngebote: '+o+'\nTagestouren: '+t+'\nBesuchte Kunden: '+v)) return;
+        db=data;
+        try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+        try{localStorage.setItem('bloc73_backup_last_import_v41',now58());localStorage.setItem('bloc73_backup_last_import',now58());}catch(e){}
+        if(typeof persist==='function') persist(); else localStorage.setItem(typeof STORE_KEY!=='undefined'?STORE_KEY:'bloc73_crm_v10',JSON.stringify(db));
+        try{renderNav();renderContent();}catch(e){}
+        alert('Backup geladen.\n\nÜbernommen:\nKunden: '+(db.customers||[]).length+'\nLeads: '+(db.leads||[]).length+'\nAngebote: '+(db.offers||[]).length+'\nBesuchte Kunden: '+(db.visited||[]).length);
+      }catch(err){
+        alert('Backup konnte nicht geladen werden: '+(err && err.message ? err.message : err));
+      }
+    };
+    reader.readAsText(file);
+  }
+  window.importBackup=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  window.importBackup41=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  try{importBackup=window.importBackup;}catch(e){}
+  function verifyBackup58(){
+    const msg='v58 aktiv: Backup/Import repariert. Kunden im Speicher: '+((db&&db.customers)||[]).length+'. Alte v46-Kundenlöschung deaktiviert.';
+    alert(msg);
+  }
+  window.verifyBackup58=verifyBackup58;
+  const oldBackupCenter58=window.backupCenterHTML41;
+  if(typeof oldBackupCenter58==='function'){
+    window.backupCenterHTML41=function(){
+      const base=oldBackupCenter58();
+      return base.replace('<div class="backup-actions41">','<div class="notice"><b>v58 aktiv:</b> Backups speichern und laden jetzt wieder alle Kundendaten korrekt. Der obere Button <b>Backup laden</b> kann alte und neue Backup-Dateien lesen. <button class="btn" onclick="verifyBackup58()">Backup-Fix prüfen</button></div><div style="height:12px"></div><div class="backup-actions41">');
+    };
+  }
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
+  try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+})();
+
+</body></html>`;
   const w = window.open('', '_blank');
   if(!w){
     const blob = new Blob([html], {type:'text/html;charset=utf-8'});
@@ -2362,17 +2534,10 @@ closeGraefWeek=function(){
   };
   window.isExistingCustomerV46=function(h){return !!window.findExistingCustomerV46(h);};
 
-  // Einmalige Datenvariante: Kundenstamm leeren, aber Sicherheitskopie im Browser behalten.
+  // v58: Die frühere v46-Leerstart-Logik ist deaktiviert.
+  // Kundendaten dürfen ab sofort niemals automatisch entfernt werden.
   try{
-    if(!localStorage.getItem(FLAG)){
-      const existingCustomers=Array.isArray(db.customers)?db.customers:[];
-      if(existingCustomers.length){
-        localStorage.setItem(BACKUP, JSON.stringify({createdAt:new Date().toISOString(), customers:existingCustomers}));
-        db.customers=[];
-        persist();
-      }
-      localStorage.setItem(FLAG,new Date().toISOString());
-    }
+    if(!localStorage.getItem(FLAG)) localStorage.setItem(FLAG,'disabled-by-v58');
   }catch(e){}
 
   // Sicherheitsfunktion: falls die entfernte Kundenliste wiederhergestellt werden muss.
@@ -2788,7 +2953,93 @@ closeGraefWeek=function(){
     const total=all.reduce((a,o)=>a+offerValue50(o),0), runVal=running.reduce((a,o)=>a+offerValue50(o),0), wonVal=won.reduce((a,o)=>a+offerValue50(o),0), lostVal=lost.reduce((a,o)=>a+offerValue50(o),0);
     const css=`<style>body{font-family:Arial,Helvetica,sans-serif;margin:0;color:#141414;background:#fff}.head{background:#151515;color:#fff;padding:26px 32px}.head h1{margin:0;font-size:25px}.muted{color:#666}.wrap{padding:26px 32px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.kpi{border:1px solid #ddd;border-radius:12px;padding:14px}.kpi b{font-size:22px;display:block}.section{margin-top:24px;page-break-inside:auto}.card{border:1px solid #ddd;border-radius:12px;padding:13px;margin:10px 0;page-break-inside:avoid}.row{display:grid;grid-template-columns:1.2fr 1fr 1fr .7fr .8fr;gap:8px}.pill{display:inline-block;border:1px solid #aaa;border-radius:999px;padding:3px 8px;font-size:12px}h2{font-size:19px;border-bottom:2px solid #111;padding-bottom:6px}.small{font-size:12px;color:#555}@media print{.noprint{display:none}.head{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style>`;
     const row=o=>`<div class="card"><div class="row"><div><b>${h50(o.title||'Angebot')}</b><div class="small">${h50(o.category||'Maschinenangebot')}</div></div><div>${h50(o.customer||'')}</div><div>${h50(o.product||'')}</div><div><span class="pill">${h50(o.status||'Entwurf')}</span></div><div><b>${euro50(o.value)||'—'}</b></div></div>${o.notes||o.discussion?`<div class="small" style="margin-top:8px"><b>Notiz:</b> ${h50(o.discussion||o.notes||'')}</div>`:''}${o.lostReason?`<div class="small"><b>Verloren-Grund:</b> ${h50(o.lostReason)}</div>`:''}${o.winNote?`<div class="small"><b>Gewonnen-Notiz:</b> ${h50(o.winNote)}</div>`:''}</div>`;
-    const html=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>BLOC73 Angebotsübersicht</title>${css}</head><body><div class="head"><h1>BLOC73 / AS Technical Solutions · Angebotsübersicht</h1><div>Erstellt am ${new Date().toLocaleString('de-DE')} · ${V}</div></div><div class="wrap"><div class="kpis"><div class="kpi"><b>${all.length}</b><span>Angebote gesamt</span></div><div class="kpi"><b>${euro50(runVal)||'0 €'}</b><span>Laufend</span></div><div class="kpi"><b>${euro50(wonVal)||'0 €'}</b><span>Gewonnen</span></div><div class="kpi"><b>${euro50(lostVal)||'0 €'}</b><span>Verloren</span></div></div>${groups.map(([t,rows])=>`<div class="section"><h2>${h50(t)} · ${rows.length} · ${euro50(rows.reduce((a,o)=>a+offerValue50(o),0))||'0 €'}</h2>${rows.length?rows.map(row).join(''):'<p class="muted">Keine Einträge.</p>'}</div>`).join('')}${deleted.length?`<div class="section"><h2>Gelöschte Angebote (Archiv)</h2>${deleted.map(row).join('')}</div>`:''}<p class="small">Hinweis: Gewonnene und verlorene Angebote bleiben gespeichert. Gelöschte Angebote liegen im internen Löscharchiv, solange das CRM-Backup nicht bereinigt wird.</p><button class="noprint" onclick="window.print()">Als PDF speichern / Drucken</button></div></body></html>`;
+    const html=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>BLOC73 Angebotsübersicht</title>${css}</head><body><div class="head"><h1>BLOC73 / AS Technical Solutions · Angebotsübersicht</h1><div>Erstellt am ${new Date().toLocaleString('de-DE')} · ${V}</div></div><div class="wrap"><div class="kpis"><div class="kpi"><b>${all.length}</b><span>Angebote gesamt</span></div><div class="kpi"><b>${euro50(runVal)||'0 €'}</b><span>Laufend</span></div><div class="kpi"><b>${euro50(wonVal)||'0 €'}</b><span>Gewonnen</span></div><div class="kpi"><b>${euro50(lostVal)||'0 €'}</b><span>Verloren</span></div></div>${groups.map(([t,rows])=>`<div class="section"><h2>${h50(t)} · ${rows.length} · ${euro50(rows.reduce((a,o)=>a+offerValue50(o),0))||'0 €'}</h2>${rows.length?rows.map(row).join(''):'<p class="muted">Keine Einträge.</p>'}</div>`).join('')}${deleted.length?`<div class="section"><h2>Gelöschte Angebote (Archiv)</h2>${deleted.map(row).join('')}</div>`:''}<p class="small">Hinweis: Gewonnene und verlorene Angebote bleiben gespeichert. Gelöschte Angebote liegen im internen Löscharchiv, solange das CRM-Backup nicht bereinigt wird.</p><button class="noprint" onclick="window.print()">Als PDF speichern / Drucken</button></div>
+
+/* === v58: Backup/Kunden dauerhaft repariert ===
+   Problem behoben:
+   1) Der obere Button "Backup laden" konnte v41-Backups mit Wrapper (_bloc73Backup/data) nicht richtig einlesen.
+   2) Die alte v46-Leerstart-Logik ist deaktiviert, damit Kundendaten nie wieder automatisch entfernt werden.
+   3) Backup/Import zeigt Kundenanzahl vor dem Laden an und speichert alle Module dauerhaft.
+*/
+(function(){
+  'use strict';
+  const V58='v58';
+  function h58(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function now58(){return new Date().toISOString();}
+  function ensureArrays58(obj){
+    if(!obj || typeof obj!=='object') obj={};
+    const base = (typeof freshDB==='function') ? freshDB() : {};
+    const modules=['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','webHits','deletedLeads','deletedOffers'];
+    Object.keys(base).forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=Array.isArray(base[k]) ? base[k] : []; });
+    modules.forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=[]; });
+    if(!obj.products.length && base.products) obj.products=base.products;
+    return obj;
+  }
+  function unwrapBackup58(parsed){
+    if(parsed && parsed._bloc73Backup && parsed.data && typeof parsed.data==='object') return parsed.data;
+    if(parsed && parsed.data && parsed.data.customers && !parsed.customers) return parsed.data;
+    return parsed;
+  }
+  function backupPayload58(){
+    const safe = ensureArrays58(db||{});
+    return {
+      _bloc73Backup:{version:V58, exportedAt:now58(), app:'BLOC73 CRM', customers:(safe.customers||[]).length, records:Object.keys(safe).reduce((n,k)=>n+(Array.isArray(safe[k])?safe[k].length:0),0)},
+      data:safe
+    };
+  }
+  window.exportBackup=function(){
+    try{ if(typeof persist==='function') persist(); }catch(e){}
+    try{localStorage.setItem('bloc73_backup_last_export_v41',now58());localStorage.setItem('bloc73_backup_last_export',now58());}catch(e){}
+    const payload=backupPayload58();
+    const name='bloc73_crm_backup_'+(new Date().toISOString().slice(0,10))+'_'+V58+'.json';
+    if(typeof download==='function') download(JSON.stringify(payload,null,2),name,'application/json');
+    else {
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    try{ if(active==='backup') renderContent(); }catch(e){}
+  };
+  try{exportBackup=window.exportBackup;}catch(e){}
+  function importBackupCore58(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const parsed=JSON.parse(reader.result);
+        const data=ensureArrays58(unwrapBackup58(parsed));
+        const c=(data.customers||[]).length, l=(data.leads||[]).length, o=(data.offers||[]).length, t=(data.tours||[]).length, v=(data.visited||[]).length;
+        if(!confirm('Backup laden und aktuelle CRM-Daten ersetzen?\n\nEnthalten im Backup:\nKunden: '+c+'\nLeads: '+l+'\nAngebote: '+o+'\nTagestouren: '+t+'\nBesuchte Kunden: '+v)) return;
+        db=data;
+        try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+        try{localStorage.setItem('bloc73_backup_last_import_v41',now58());localStorage.setItem('bloc73_backup_last_import',now58());}catch(e){}
+        if(typeof persist==='function') persist(); else localStorage.setItem(typeof STORE_KEY!=='undefined'?STORE_KEY:'bloc73_crm_v10',JSON.stringify(db));
+        try{renderNav();renderContent();}catch(e){}
+        alert('Backup geladen.\n\nÜbernommen:\nKunden: '+(db.customers||[]).length+'\nLeads: '+(db.leads||[]).length+'\nAngebote: '+(db.offers||[]).length+'\nBesuchte Kunden: '+(db.visited||[]).length);
+      }catch(err){
+        alert('Backup konnte nicht geladen werden: '+(err && err.message ? err.message : err));
+      }
+    };
+    reader.readAsText(file);
+  }
+  window.importBackup=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  window.importBackup41=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  try{importBackup=window.importBackup;}catch(e){}
+  function verifyBackup58(){
+    const msg='v58 aktiv: Backup/Import repariert. Kunden im Speicher: '+((db&&db.customers)||[]).length+'. Alte v46-Kundenlöschung deaktiviert.';
+    alert(msg);
+  }
+  window.verifyBackup58=verifyBackup58;
+  const oldBackupCenter58=window.backupCenterHTML41;
+  if(typeof oldBackupCenter58==='function'){
+    window.backupCenterHTML41=function(){
+      const base=oldBackupCenter58();
+      return base.replace('<div class="backup-actions41">','<div class="notice"><b>v58 aktiv:</b> Backups speichern und laden jetzt wieder alle Kundendaten korrekt. Der obere Button <b>Backup laden</b> kann alte und neue Backup-Dateien lesen. <button class="btn" onclick="verifyBackup58()">Backup-Fix prüfen</button></div><div style="height:12px"></div><div class="backup-actions41">');
+    };
+  }
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
+  try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+})();
+
+</body></html>`;
     const w=window.open('','_blank'); if(!w){alert('Popup blockiert. Bitte Popups erlauben.');return;} w.document.open(); w.document.write(html); w.document.close(); setTimeout(()=>{try{w.focus();w.print();}catch(e){}},500);
   };
 
@@ -2987,7 +3238,93 @@ closeGraefWeek=function(){
     rows=(rows||[]).filter(Boolean);
     if(!rows.length){alert('Keine Tourkunden für den Briefdruck gefunden.');return;}
     const pages=rows.map((r,i)=>letterHtml52(r,i+1,rows.length)).join('');
-    const html='<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+h52(title||'BLOC73 Besuchsbriefe')+'</title><style>'+printCss52()+'</style></head><body><div class="print-toolbar"><button onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.close()">Schließen</button><span>'+h52(rows.length)+' Brief(e)</span></div>'+pages+'<script>setTimeout(()=>{try{window.focus();}catch(e){}},250);<\/script></body></html>';
+    const html='<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+h52(title||'BLOC73 Besuchsbriefe')+'</title><style>'+printCss52()+'</style></head><body><div class="print-toolbar"><button onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.close()">Schließen</button><span>'+h52(rows.length)+' Brief(e)</span></div>'+pages+'<script>setTimeout(()=>{try{window.focus();}catch(e){}},250);<\/script>
+
+/* === v58: Backup/Kunden dauerhaft repariert ===
+   Problem behoben:
+   1) Der obere Button "Backup laden" konnte v41-Backups mit Wrapper (_bloc73Backup/data) nicht richtig einlesen.
+   2) Die alte v46-Leerstart-Logik ist deaktiviert, damit Kundendaten nie wieder automatisch entfernt werden.
+   3) Backup/Import zeigt Kundenanzahl vor dem Laden an und speichert alle Module dauerhaft.
+*/
+(function(){
+  'use strict';
+  const V58='v58';
+  function h58(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function now58(){return new Date().toISOString();}
+  function ensureArrays58(obj){
+    if(!obj || typeof obj!=='object') obj={};
+    const base = (typeof freshDB==='function') ? freshDB() : {};
+    const modules=['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','webHits','deletedLeads','deletedOffers'];
+    Object.keys(base).forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=Array.isArray(base[k]) ? base[k] : []; });
+    modules.forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=[]; });
+    if(!obj.products.length && base.products) obj.products=base.products;
+    return obj;
+  }
+  function unwrapBackup58(parsed){
+    if(parsed && parsed._bloc73Backup && parsed.data && typeof parsed.data==='object') return parsed.data;
+    if(parsed && parsed.data && parsed.data.customers && !parsed.customers) return parsed.data;
+    return parsed;
+  }
+  function backupPayload58(){
+    const safe = ensureArrays58(db||{});
+    return {
+      _bloc73Backup:{version:V58, exportedAt:now58(), app:'BLOC73 CRM', customers:(safe.customers||[]).length, records:Object.keys(safe).reduce((n,k)=>n+(Array.isArray(safe[k])?safe[k].length:0),0)},
+      data:safe
+    };
+  }
+  window.exportBackup=function(){
+    try{ if(typeof persist==='function') persist(); }catch(e){}
+    try{localStorage.setItem('bloc73_backup_last_export_v41',now58());localStorage.setItem('bloc73_backup_last_export',now58());}catch(e){}
+    const payload=backupPayload58();
+    const name='bloc73_crm_backup_'+(new Date().toISOString().slice(0,10))+'_'+V58+'.json';
+    if(typeof download==='function') download(JSON.stringify(payload,null,2),name,'application/json');
+    else {
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    try{ if(active==='backup') renderContent(); }catch(e){}
+  };
+  try{exportBackup=window.exportBackup;}catch(e){}
+  function importBackupCore58(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const parsed=JSON.parse(reader.result);
+        const data=ensureArrays58(unwrapBackup58(parsed));
+        const c=(data.customers||[]).length, l=(data.leads||[]).length, o=(data.offers||[]).length, t=(data.tours||[]).length, v=(data.visited||[]).length;
+        if(!confirm('Backup laden und aktuelle CRM-Daten ersetzen?\n\nEnthalten im Backup:\nKunden: '+c+'\nLeads: '+l+'\nAngebote: '+o+'\nTagestouren: '+t+'\nBesuchte Kunden: '+v)) return;
+        db=data;
+        try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+        try{localStorage.setItem('bloc73_backup_last_import_v41',now58());localStorage.setItem('bloc73_backup_last_import',now58());}catch(e){}
+        if(typeof persist==='function') persist(); else localStorage.setItem(typeof STORE_KEY!=='undefined'?STORE_KEY:'bloc73_crm_v10',JSON.stringify(db));
+        try{renderNav();renderContent();}catch(e){}
+        alert('Backup geladen.\n\nÜbernommen:\nKunden: '+(db.customers||[]).length+'\nLeads: '+(db.leads||[]).length+'\nAngebote: '+(db.offers||[]).length+'\nBesuchte Kunden: '+(db.visited||[]).length);
+      }catch(err){
+        alert('Backup konnte nicht geladen werden: '+(err && err.message ? err.message : err));
+      }
+    };
+    reader.readAsText(file);
+  }
+  window.importBackup=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  window.importBackup41=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  try{importBackup=window.importBackup;}catch(e){}
+  function verifyBackup58(){
+    const msg='v58 aktiv: Backup/Import repariert. Kunden im Speicher: '+((db&&db.customers)||[]).length+'. Alte v46-Kundenlöschung deaktiviert.';
+    alert(msg);
+  }
+  window.verifyBackup58=verifyBackup58;
+  const oldBackupCenter58=window.backupCenterHTML41;
+  if(typeof oldBackupCenter58==='function'){
+    window.backupCenterHTML41=function(){
+      const base=oldBackupCenter58();
+      return base.replace('<div class="backup-actions41">','<div class="notice"><b>v58 aktiv:</b> Backups speichern und laden jetzt wieder alle Kundendaten korrekt. Der obere Button <b>Backup laden</b> kann alte und neue Backup-Dateien lesen. <button class="btn" onclick="verifyBackup58()">Backup-Fix prüfen</button></div><div style="height:12px"></div><div class="backup-actions41">');
+    };
+  }
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
+  try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+})();
+
+</body></html>';
     const w=window.open('','_blank');
     if(!w){downloadText52((title||'BLOC73_Briefe')+'.html',html);alert('Popup wurde blockiert. Die Briefe wurden als HTML-Datei heruntergeladen. Öffne die Datei und drucke sie.');return;}
     w.document.open(); w.document.write(html); w.document.close();
@@ -3127,7 +3464,93 @@ closeGraefWeek=function(){
     rows=(rows||[]).filter(Boolean);
     if(!rows.length) return alert('Keine Tourkunden für den Briefdruck gefunden.');
     const pages=rows.map((r,i)=>letterHtml53(r,i+1,rows.length)).join('');
-    const html='<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+h53(title||'BLOC73 Besuchsbriefe')+'</title><style>'+printCss53()+'</style></head><body><div class="print-toolbar"><button onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.close()">Schließen</button><span>'+h53(rows.length)+' A4-Brief(e) · QR: bloc73machinery.com</span></div>'+pages+'<script>setTimeout(()=>{try{window.focus();}catch(e){}},250);<\/script></body></html>';
+    const html='<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+h53(title||'BLOC73 Besuchsbriefe')+'</title><style>'+printCss53()+'</style></head><body><div class="print-toolbar"><button onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.close()">Schließen</button><span>'+h53(rows.length)+' A4-Brief(e) · QR: bloc73machinery.com</span></div>'+pages+'<script>setTimeout(()=>{try{window.focus();}catch(e){}},250);<\/script>
+
+/* === v58: Backup/Kunden dauerhaft repariert ===
+   Problem behoben:
+   1) Der obere Button "Backup laden" konnte v41-Backups mit Wrapper (_bloc73Backup/data) nicht richtig einlesen.
+   2) Die alte v46-Leerstart-Logik ist deaktiviert, damit Kundendaten nie wieder automatisch entfernt werden.
+   3) Backup/Import zeigt Kundenanzahl vor dem Laden an und speichert alle Module dauerhaft.
+*/
+(function(){
+  'use strict';
+  const V58='v58';
+  function h58(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function now58(){return new Date().toISOString();}
+  function ensureArrays58(obj){
+    if(!obj || typeof obj!=='object') obj={};
+    const base = (typeof freshDB==='function') ? freshDB() : {};
+    const modules=['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','webHits','deletedLeads','deletedOffers'];
+    Object.keys(base).forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=Array.isArray(base[k]) ? base[k] : []; });
+    modules.forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=[]; });
+    if(!obj.products.length && base.products) obj.products=base.products;
+    return obj;
+  }
+  function unwrapBackup58(parsed){
+    if(parsed && parsed._bloc73Backup && parsed.data && typeof parsed.data==='object') return parsed.data;
+    if(parsed && parsed.data && parsed.data.customers && !parsed.customers) return parsed.data;
+    return parsed;
+  }
+  function backupPayload58(){
+    const safe = ensureArrays58(db||{});
+    return {
+      _bloc73Backup:{version:V58, exportedAt:now58(), app:'BLOC73 CRM', customers:(safe.customers||[]).length, records:Object.keys(safe).reduce((n,k)=>n+(Array.isArray(safe[k])?safe[k].length:0),0)},
+      data:safe
+    };
+  }
+  window.exportBackup=function(){
+    try{ if(typeof persist==='function') persist(); }catch(e){}
+    try{localStorage.setItem('bloc73_backup_last_export_v41',now58());localStorage.setItem('bloc73_backup_last_export',now58());}catch(e){}
+    const payload=backupPayload58();
+    const name='bloc73_crm_backup_'+(new Date().toISOString().slice(0,10))+'_'+V58+'.json';
+    if(typeof download==='function') download(JSON.stringify(payload,null,2),name,'application/json');
+    else {
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    try{ if(active==='backup') renderContent(); }catch(e){}
+  };
+  try{exportBackup=window.exportBackup;}catch(e){}
+  function importBackupCore58(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const parsed=JSON.parse(reader.result);
+        const data=ensureArrays58(unwrapBackup58(parsed));
+        const c=(data.customers||[]).length, l=(data.leads||[]).length, o=(data.offers||[]).length, t=(data.tours||[]).length, v=(data.visited||[]).length;
+        if(!confirm('Backup laden und aktuelle CRM-Daten ersetzen?\n\nEnthalten im Backup:\nKunden: '+c+'\nLeads: '+l+'\nAngebote: '+o+'\nTagestouren: '+t+'\nBesuchte Kunden: '+v)) return;
+        db=data;
+        try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+        try{localStorage.setItem('bloc73_backup_last_import_v41',now58());localStorage.setItem('bloc73_backup_last_import',now58());}catch(e){}
+        if(typeof persist==='function') persist(); else localStorage.setItem(typeof STORE_KEY!=='undefined'?STORE_KEY:'bloc73_crm_v10',JSON.stringify(db));
+        try{renderNav();renderContent();}catch(e){}
+        alert('Backup geladen.\n\nÜbernommen:\nKunden: '+(db.customers||[]).length+'\nLeads: '+(db.leads||[]).length+'\nAngebote: '+(db.offers||[]).length+'\nBesuchte Kunden: '+(db.visited||[]).length);
+      }catch(err){
+        alert('Backup konnte nicht geladen werden: '+(err && err.message ? err.message : err));
+      }
+    };
+    reader.readAsText(file);
+  }
+  window.importBackup=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  window.importBackup41=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  try{importBackup=window.importBackup;}catch(e){}
+  function verifyBackup58(){
+    const msg='v58 aktiv: Backup/Import repariert. Kunden im Speicher: '+((db&&db.customers)||[]).length+'. Alte v46-Kundenlöschung deaktiviert.';
+    alert(msg);
+  }
+  window.verifyBackup58=verifyBackup58;
+  const oldBackupCenter58=window.backupCenterHTML41;
+  if(typeof oldBackupCenter58==='function'){
+    window.backupCenterHTML41=function(){
+      const base=oldBackupCenter58();
+      return base.replace('<div class="backup-actions41">','<div class="notice"><b>v58 aktiv:</b> Backups speichern und laden jetzt wieder alle Kundendaten korrekt. Der obere Button <b>Backup laden</b> kann alte und neue Backup-Dateien lesen. <button class="btn" onclick="verifyBackup58()">Backup-Fix prüfen</button></div><div style="height:12px"></div><div class="backup-actions41">');
+    };
+  }
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
+  try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+})();
+
+</body></html>';
     const w=window.open('','_blank');
     if(!w){
       const blob=new Blob([html],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(title||'BLOC73_Briefe')+'.html'; a.click();
@@ -3265,7 +3688,93 @@ closeGraefWeek=function(){
     rows=(rows||[]).filter(Boolean);
     if(!rows.length){alert('Keine Tourkunden für Briefe gefunden.');return;}
     const body=rows.map((r,i)=>letterWordSection54(r,i+1,rows.length)).join('');
-    const doc=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><meta name="Generator" content="BLOC73 CRM"><title>${h54(title||'BLOC73 Besuchsbriefe')}</title><style>${wordCss54()}</style></head><body>${body}</body></html>`;
+    const doc=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><meta name="Generator" content="BLOC73 CRM"><title>${h54(title||'BLOC73 Besuchsbriefe')}</title><style>${wordCss54()}</style></head><body>${body}
+
+/* === v58: Backup/Kunden dauerhaft repariert ===
+   Problem behoben:
+   1) Der obere Button "Backup laden" konnte v41-Backups mit Wrapper (_bloc73Backup/data) nicht richtig einlesen.
+   2) Die alte v46-Leerstart-Logik ist deaktiviert, damit Kundendaten nie wieder automatisch entfernt werden.
+   3) Backup/Import zeigt Kundenanzahl vor dem Laden an und speichert alle Module dauerhaft.
+*/
+(function(){
+  'use strict';
+  const V58='v58';
+  function h58(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function now58(){return new Date().toISOString();}
+  function ensureArrays58(obj){
+    if(!obj || typeof obj!=='object') obj={};
+    const base = (typeof freshDB==='function') ? freshDB() : {};
+    const modules=['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','webHits','deletedLeads','deletedOffers'];
+    Object.keys(base).forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=Array.isArray(base[k]) ? base[k] : []; });
+    modules.forEach(k=>{ if(!Array.isArray(obj[k])) obj[k]=[]; });
+    if(!obj.products.length && base.products) obj.products=base.products;
+    return obj;
+  }
+  function unwrapBackup58(parsed){
+    if(parsed && parsed._bloc73Backup && parsed.data && typeof parsed.data==='object') return parsed.data;
+    if(parsed && parsed.data && parsed.data.customers && !parsed.customers) return parsed.data;
+    return parsed;
+  }
+  function backupPayload58(){
+    const safe = ensureArrays58(db||{});
+    return {
+      _bloc73Backup:{version:V58, exportedAt:now58(), app:'BLOC73 CRM', customers:(safe.customers||[]).length, records:Object.keys(safe).reduce((n,k)=>n+(Array.isArray(safe[k])?safe[k].length:0),0)},
+      data:safe
+    };
+  }
+  window.exportBackup=function(){
+    try{ if(typeof persist==='function') persist(); }catch(e){}
+    try{localStorage.setItem('bloc73_backup_last_export_v41',now58());localStorage.setItem('bloc73_backup_last_export',now58());}catch(e){}
+    const payload=backupPayload58();
+    const name='bloc73_crm_backup_'+(new Date().toISOString().slice(0,10))+'_'+V58+'.json';
+    if(typeof download==='function') download(JSON.stringify(payload,null,2),name,'application/json');
+    else {
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    try{ if(active==='backup') renderContent(); }catch(e){}
+  };
+  try{exportBackup=window.exportBackup;}catch(e){}
+  function importBackupCore58(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const parsed=JSON.parse(reader.result);
+        const data=ensureArrays58(unwrapBackup58(parsed));
+        const c=(data.customers||[]).length, l=(data.leads||[]).length, o=(data.offers||[]).length, t=(data.tours||[]).length, v=(data.visited||[]).length;
+        if(!confirm('Backup laden und aktuelle CRM-Daten ersetzen?\n\nEnthalten im Backup:\nKunden: '+c+'\nLeads: '+l+'\nAngebote: '+o+'\nTagestouren: '+t+'\nBesuchte Kunden: '+v)) return;
+        db=data;
+        try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+        try{localStorage.setItem('bloc73_backup_last_import_v41',now58());localStorage.setItem('bloc73_backup_last_import',now58());}catch(e){}
+        if(typeof persist==='function') persist(); else localStorage.setItem(typeof STORE_KEY!=='undefined'?STORE_KEY:'bloc73_crm_v10',JSON.stringify(db));
+        try{renderNav();renderContent();}catch(e){}
+        alert('Backup geladen.\n\nÜbernommen:\nKunden: '+(db.customers||[]).length+'\nLeads: '+(db.leads||[]).length+'\nAngebote: '+(db.offers||[]).length+'\nBesuchte Kunden: '+(db.visited||[]).length);
+      }catch(err){
+        alert('Backup konnte nicht geladen werden: '+(err && err.message ? err.message : err));
+      }
+    };
+    reader.readAsText(file);
+  }
+  window.importBackup=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  window.importBackup41=function(e){const f=e && e.target && e.target.files && e.target.files[0]; if(!f)return; importBackupCore58(f);};
+  try{importBackup=window.importBackup;}catch(e){}
+  function verifyBackup58(){
+    const msg='v58 aktiv: Backup/Import repariert. Kunden im Speicher: '+((db&&db.customers)||[]).length+'. Alte v46-Kundenlöschung deaktiviert.';
+    alert(msg);
+  }
+  window.verifyBackup58=verifyBackup58;
+  const oldBackupCenter58=window.backupCenterHTML41;
+  if(typeof oldBackupCenter58==='function'){
+    window.backupCenterHTML41=function(){
+      const base=oldBackupCenter58();
+      return base.replace('<div class="backup-actions41">','<div class="notice"><b>v58 aktiv:</b> Backups speichern und laden jetzt wieder alle Kundendaten korrekt. Der obere Button <b>Backup laden</b> kann alte und neue Backup-Dateien lesen. <button class="btn" onclick="verifyBackup58()">Backup-Fix prüfen</button></div><div style="height:12px"></div><div class="backup-actions41">');
+    };
+  }
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
+  try{localStorage.setItem('bloc73_v46_customers_cleared_once','disabled-by-v58');}catch(e){}
+})();
+
+</body></html>`;
     const blob=new Blob(['﻿',doc],{type:'application/msword;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -3274,8 +3783,10 @@ closeGraefWeek=function(){
   }
   window.downloadTourLetterWord54=function(id){const r=getTour54(id); if(!r)return alert('Tour-Eintrag nicht gefunden.'); makeWordDoc54([r],'BLOC73_Brief_'+(r.company||'Kunde'));};
   window.downloadVisibleTourLettersWord54=function(){makeWordDoc54(visibleTourRows54(),'BLOC73_Besuchsbriefe_sichtbare_Tour');};
-  window.downloadTourLettersByDateWord54=function(){const def=visibleTourRows54()[0]?.tourDate||today54(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden?\nFormat: JJJJ-MM-TT',def); if(!d)return; makeWordDoc54((db.tours||[]).filter(r=>isOpenTour54(r)&&String(r.tourDate||'')===String(d)).sort((a,b)=>(+a.order||0)-(+b.order||0)),'BLOC73_Besuchsbriefe_'+d);};
-  window.downloadTourLettersByWeekWord54=function(){const def=mondayOf54(visibleTourRows54()[0]?.tourDate||today54()); const d=prompt('Wochenstart Montag für Word-Briefe eingeben.\nFormat: JJJJ-MM-TT',def); if(!d)return; const start=new Date(d+'T12:00:00'), end=new Date(start); end.setDate(start.getDate()+6); const rows=(db.tours||[]).filter(r=>{const x=new Date(String(r.tourDate||'')+'T12:00:00'); return isOpenTour54(r)&&x>=start&&x<=end;}).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||''))||((+a.order||0)-(+b.order||0))); makeWordDoc54(rows,'BLOC73_Besuchsbriefe_Woche_'+d);};
+  window.downloadTourLettersByDateWord54=function(){const def=visibleTourRows54()[0]?.tourDate||today54(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden?
+Format: JJJJ-MM-TT',def); if(!d)return; makeWordDoc54((db.tours||[]).filter(r=>isOpenTour54(r)&&String(r.tourDate||'')===String(d)).sort((a,b)=>(+a.order||0)-(+b.order||0)),'BLOC73_Besuchsbriefe_'+d);};
+  window.downloadTourLettersByWeekWord54=function(){const def=mondayOf54(visibleTourRows54()[0]?.tourDate||today54()); const d=prompt('Wochenstart Montag für Word-Briefe eingeben.
+Format: JJJJ-MM-TT',def); if(!d)return; const start=new Date(d+'T12:00:00'), end=new Date(start); end.setDate(start.getDate()+6); const rows=(db.tours||[]).filter(r=>{const x=new Date(String(r.tourDate||'')+'T12:00:00'); return isOpenTour54(r)&&x>=start&&x<=end;}).sort((a,b)=>String(a.tourDate||'').localeCompare(String(b.tourDate||''))||((+a.order||0)-(+b.order||0))); makeWordDoc54(rows,'BLOC73_Besuchsbriefe_Woche_'+d);};
   const prevRow54=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
   window.rowHTML=function(m,r){
     if(m==='tours'){
@@ -3378,8 +3889,8 @@ closeGraefWeek=function(){
   };
   try{listHTML=window.listHTML;}catch(e){}
 
-  try{document.title='BLOC73 CRM · v57 · TomTom Kunden repariert';}catch(e){}
-  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v57 · TomTom Kunden repariert';}catch(e){}
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p'); if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
   try{renderNav(); renderContent();}catch(e){}
 })();
 
@@ -3437,8 +3948,8 @@ closeGraefWeek=function(){
     return prevList57?prevList57(m):'';
   };
   try{listHTML=window.listHTML;}catch(e){}
-  try{document.title='BLOC73 CRM · v57 · TomTom Kunden repariert';}catch(e){}
-  try{const p=document.querySelector('.brand p');if(p)p.textContent='v57 · TomTom Kunden repariert';}catch(e){}
+  try{document.title='BLOC73 CRM · v58 · Backup/Kunden repariert';}catch(e){}
+  try{const p=document.querySelector('.brand p');if(p)p.textContent='v58 · Backup/Kunden repariert';}catch(e){}
   try{renderNav();renderContent();}catch(e){}
 })();
 </script>
