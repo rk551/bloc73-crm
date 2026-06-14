@@ -5403,5 +5403,188 @@ function body90(r,type){
 })();
 </script>
 
+
+
+<script>
+/* =========================================================
+   BLOC73 CRM · FIX SPEICHERN / LADEN
+   Ursache: Export erzeugt neues Backup-Paket (_bloc73Backup + data),
+   der obere Import-Button nutzte teilweise noch die alte Importfunktion.
+   Diese finale Überschreibung macht Export und Import kompatibel.
+   ========================================================= */
+(function(){
+  'use strict';
+
+  const FIX_VERSION = 'v90-storage-fix-2026-06-14';
+
+  function fixToday(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function fixNow(){
+    return new Date().toISOString();
+  }
+
+  function fixStoreKey(){
+    try { return STORE_KEY || 'bloc73_crm_v10'; }
+    catch(e){ return 'bloc73_crm_v10'; }
+  }
+
+  function fixFreshDB(){
+    try { return typeof freshDB === 'function' ? freshDB() : {}; }
+    catch(e){ return {}; }
+  }
+
+  function fixUid(){
+    try { return typeof uid === 'function' ? uid() : ('id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8)); }
+    catch(e){ return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  }
+
+  function fixDownload(content, filename, type){
+    try {
+      if(typeof download === 'function'){
+        download(content, filename, type || 'application/json');
+        return;
+      }
+    } catch(e) {}
+
+    const blob = new Blob([content], {type: type || 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function fixNormalizeDB(input){
+    if(!input || typeof input !== 'object') throw new Error('Die Datei enthält keine gültigen CRM-Daten.');
+
+    // Neue Backup-Struktur: { _bloc73Backup:{...}, data:{...} }
+    let data = input && input._bloc73Backup && input.data ? input.data : input;
+
+    // Sicherheitsfall: falls versehentlich ein doppeltes Paket geladen wurde
+    if(data && data._bloc73Backup && data.data) data = data.data;
+
+    if(!data || typeof data !== 'object' || Array.isArray(data)){
+      throw new Error('Die Backup-Struktur ist ungültig.');
+    }
+
+    const base = fixFreshDB();
+    const normalized = Object.assign({}, data);
+
+    Object.keys(base).forEach(k => {
+      if(!Array.isArray(normalized[k])) normalized[k] = [];
+    });
+
+    // Zusätzliche Module aus späteren CRM-Versionen behalten
+    ['leads','letters','webHits'].forEach(k => {
+      if(normalized[k] && !Array.isArray(normalized[k])) normalized[k] = [];
+    });
+
+    Object.keys(normalized).forEach(k => {
+      if(Array.isArray(normalized[k])){
+        normalized[k] = normalized[k]
+          .filter(r => r && typeof r === 'object')
+          .map(r => {
+            if(!r.id) r.id = fixUid();
+            if(!r.createdAt) r.createdAt = fixNow();
+            if(!r.updatedAt) r.updatedAt = fixNow();
+            return r;
+          });
+      }
+    });
+
+    // Produktkatalog nicht leer lassen
+    if(Array.isArray(base.products) && (!Array.isArray(normalized.products) || normalized.products.length === 0)){
+      normalized.products = base.products;
+    }
+
+    return normalized;
+  }
+
+  function fixPersist(){
+    const key = fixStoreKey();
+    const serialized = JSON.stringify(db);
+    try {
+      localStorage.setItem(key, serialized);
+      localStorage.setItem('bloc73_backup_last_save', fixNow());
+      return true;
+    } catch(e){
+      alert('Speichern fehlgeschlagen. Wahrscheinlich ist der Browser-Speicher voll oder blockiert.\n\nHinweis: Sehr große PDFs/Bilder bitte als iCloud-/OneDrive-Link speichern, nicht dauerhaft im Browser.\n\nFehler: ' + e.message);
+      return false;
+    }
+  }
+
+  window.exportBackup = function(){
+    try {
+      const payload = {
+        _bloc73Backup: {
+          app: 'BLOC73 CRM',
+          version: FIX_VERSION,
+          exportedAt: fixNow(),
+          storeKey: fixStoreKey()
+        },
+        data: db
+      };
+      localStorage.setItem('bloc73_backup_last_export', fixNow());
+      fixDownload(JSON.stringify(payload, null, 2), 'bloc73_crm_backup_' + fixToday() + '_' + FIX_VERSION + '.json', 'application/json;charset=utf-8');
+      try { if(typeof renderContent === 'function' && typeof active !== 'undefined' && active === 'backup') renderContent(); } catch(e) {}
+    } catch(e){
+      alert('Backup konnte nicht erstellt werden: ' + e.message);
+    }
+  };
+
+  window.importBackup = function(event){
+    const file = event && event.target && event.target.files && event.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(){
+      try {
+        const parsed = JSON.parse(String(reader.result || ''));
+        const normalized = fixNormalizeDB(parsed);
+
+        const count = Object.keys(normalized).reduce((sum,k) => sum + (Array.isArray(normalized[k]) ? normalized[k].length : 0), 0);
+        if(!confirm('Aktuelle CRM-Daten durch dieses Backup ersetzen?\n\nGefundene Datensätze im Backup: ' + count)) return;
+
+        db = normalized;
+        if(!fixPersist()) return;
+        localStorage.setItem('bloc73_backup_last_import', fixNow());
+
+        try { if(typeof persist === 'function') persist(); } catch(e) {}
+        try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+        try { if(typeof renderContent === 'function') renderContent(); } catch(e) {}
+        try { if(typeof setActive === 'function' && typeof active !== 'undefined') setActive(active || 'dashboard'); } catch(e) {}
+
+        alert('Backup wurde sauber geladen.');
+      } catch(e){
+        alert('Backup konnte nicht geladen werden: ' + e.message);
+      } finally {
+        try { event.target.value = ''; } catch(e) {}
+      }
+    };
+    reader.onerror = function(){
+      alert('Backup-Datei konnte nicht gelesen werden.');
+    };
+    reader.readAsText(file);
+  };
+
+  // Backup-Zentrale ebenfalls auf denselben Import legen
+  window.importBackup41 = window.importBackup;
+
+  // Globale Funktionsnamen für Inline-onclick/onchange sicher überschreiben
+  try { exportBackup = window.exportBackup; } catch(e) {}
+  try { importBackup = window.importBackup; } catch(e) {}
+  try { importBackup41 = window.importBackup; } catch(e) {}
+
+  // Kleiner sichtbarer Hinweis im Browser-Console-Log, ohne UI zu stören
+  try { console.info('BLOC73 CRM Speicher/Laden Fix aktiv:', FIX_VERSION); } catch(e) {}
+})();
+</script>
+
 </body>
 </html>
