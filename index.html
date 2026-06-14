@@ -32,7 +32,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v83 · Briefkopf QR</p></div></div>
+    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v84 · PDF-Brief</p></div></div>
     <div class="nav" id="nav"></div>
     <div class="footer">Single-User HTML CRM<br>Daten lokal im Browser + Backup</div>
   </aside>
@@ -3864,46 +3864,82 @@ closeGraefWeek=function(){
     return 'Vorstellung von BLOC73 Machinery und AS Technical Solutions';
   }
 
+  const QR_BLOC73_84='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAACZklEQVR4nO2bTY6cMBBGX8VIWRopB8hRzM2iHCk3gKPMDcxyJNCXhQ3N9ChKj0JIOyov3A1+i5JK9evCxEfW9OlDODjvvPPOO++887/ira4OG2YzJjODuQPm7Wy4UB7nz+K78pNGgPkLYgZLWjuIC0BYALBr5HH+7/BztVAbAH3vg5j6tb4z666Wx/lz+O7uWdNXQcprB3TFnK+Ux/kLeBsAUg7vi+Mm5Hd+X5v9RkEJvS+GJguyqQ9Y+gFHLT+b/M4/xE9mZtYDEGTfMpAyAGtJn6+Vx/mTeHS3RoIgSpKW96fPJr/zj/A2bLUuKa+mkXVPp9dSCdtwoTzOn8Xv8XcBorA0CksZVY8890B8df/cJl88cPlbE+Z9iwsageKzk/vnBvktwmYoRpwy+xb2A4+/jfLVflMx4qCbEUuq6r4hrt9m+dUkvRrEV9MI1PuF4q5Xj79t8of4W0uj8m5Bysfqye23SX7Tb9SWUEWpbFWrb4pg12+TvEZWk146SuuKrf6F+XOx6fr4nPI7/1s+yIa4UKJuykH1kr/0N7w/2Sh/8M8aCYftdqoxevxtlL/PoGpBlKml0fgGcf22xu/5c1Ctinb7rfdHUBIv12+L/P0N0aG/McaFY+PD9dssf5ufZOqhdDqKpucOkpZr5XH+ZD5tTWiNccGsD7IB2IYovX/VOD/vE87zbeRurZPQU79H52eV3/kH+aSltDvqc6mJvf79T3izvo5zaCytq1CalDb8E3mc/zP+ePmnXN1wTZ0zW2rl97+N8/v8ZG1SbvMbsFXCNlwpj/Mn8ebfdzvvvPPOO+/85fxPiwjRnAV/BWkAAAAASUVORK5CYII=';
+  const SITE_BLOC73_84='www.bloc73machinery.com';
+
   function headerBox69(r,type){
-    if(type==='dguv'){
-      return '<div class="qrhead69"><img src="'+H69(QR70_DGUV)+'" alt="QR-Code AS Technical Kontaktformular"><div class="qrcap69"><b>DGUV Anfrage direkt</b><span>Kontaktformular AS Technical Solutions</span><small>as-technical.de/kontaktformular.php</small></div></div>';
-    }
-    return lastLetter69(r,type)?'<div class="stamp69">'+H69(letterLabel69(type))+' zuletzt<br><b>'+H69(lastLetter69(r,type))+'</b></div>':'<div class="stamp69">Briefart<br><b>'+H69(letterLabel69(type))+'</b></div>';
+    return '<div class="qrhead69">'+
+      '<img src="'+H69(QR_BLOC73_84)+'" alt="QR-Code BLOC73 Machinery">'+
+      '<div class="qrcap69"><b>BLOC73 Machinery</b><span>Maschinen · Beratung · Lösungen</span><small>'+H69(SITE_BLOC73_84)+'</small></div>'+
+    '</div>';
   }
 
   function page69(r,type){
     const co=company69(r)||'Kunde';
     const address=(addr69(r)||'').split(/\n|,\s*/).filter(Boolean).map(H69).join('<br>');
     const paragraphs=body69(r,type).map(function(p,i){return i===0?'<p class="sal">'+H69(p)+'</p>':'<p>'+H69(p)+'</p>';}).join('');
-    const history=headerBox69(r,type);
-    return '<section class="page69"><header><div><div class="brand69">BLOC73 Machinery</div><div class="sub69">eine Marke der AS Technical Solutions GmbH</div></div>'+history+'</header>'+ 
-      '<div class="addr69"><b>'+H69(co)+'</b><br>'+address+'</div>'+ 
-      '<div class="date69">Sendenhorst, '+H69(D69(today69()))+'</div>'+ 
-      '<h1>'+H69(subject69(type))+'</h1>'+ 
-      '<main class="text69">'+paragraphs+'</main>'+ 
-      '<div class="sig69"><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p></div>'+ 
-      '<footer>AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer></section>';
+    return '<section class="page69">'+
+      '<header class="letterHead69">'+
+        '<div class="brandBlock69"><div class="brand69">BLOC73 Machinery</div><div class="sub69">eine Marke der AS Technical Solutions GmbH</div></div>'+
+        headerBox69(r,type)+
+      '</header>'+
+      '<div class="addr69"><b>'+H69(co)+'</b><br>'+address+'</div>'+
+      '<div class="date69">Sendenhorst, '+H69(D69(today69()))+'</div>'+
+      '<h1>'+H69(subject69(type))+'</h1>'+
+      '<main class="text69">'+paragraphs+'</main>'+
+      '<div class="sig69"><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p></div>'+
+      '<footer>AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer>'+
+    '</section>';
   }
-  function css69(){return '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;background:#202020;color:#111;font:11.2pt/1.45 Arial,Helvetica,sans-serif}.toolbar69{position:sticky;top:0;z-index:5;background:#111;color:#eee;padding:10px;text-align:center}.toolbar69 button,.toolbar69 a{display:inline-block;margin:0 5px;border:1px solid #d6b46a;background:#242424;color:#fff;text-decoration:none;border-radius:10px;padding:9px 13px;font-weight:800}.toolbar69 .primary{background:#d6b46a;color:#111}.page69{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:18mm 18mm 13mm;box-shadow:0 20px 70px rgba(0,0,0,.45);position:relative;page-break-after:always;overflow:hidden}header{display:flex;justify-content:space-between;gap:18mm;border-bottom:2px solid #111;padding-bottom:8mm;margin-bottom:12mm}.brand69{font-size:19pt;font-weight:900;letter-spacing:.02em}.sub69{font-size:9.5pt;color:#555;margin-top:1mm}.stamp69{border:1px solid #ddd;padding:6mm 7mm;text-align:right;min-width:38mm;font-size:8.8pt;color:#666}.stamp69 b{font-size:10.5pt;color:#111}.qrhead69{border:1px solid #ddd;padding:4mm;min-width:44mm;display:grid;grid-template-columns:24mm 1fr;gap:4mm;align-items:center}.qrhead69 img{width:24mm;height:24mm;display:block}.qrcap69{font-size:8.2pt;line-height:1.25;text-align:left;color:#555}.qrcap69 b{display:block;font-size:9pt;color:#111;margin-bottom:1mm}.qrcap69 span{display:block}.qrcap69 small{display:block;font-size:7pt;word-break:break-all;color:#666}.addr69{font-size:10.5pt;line-height:1.35;margin-bottom:8mm;min-height:24mm}.date69{text-align:right;font-size:10.5pt;margin-bottom:10mm}h1{font-size:15.5pt;line-height:1.22;margin:0 0 8mm;font-weight:900}.text69 p{margin:0 0 4.1mm;text-align:left}.text69 .sal{margin-bottom:5mm}.sig69{margin-top:8mm}.sig69 p{margin:0 0 3.5mm}footer{position:absolute;left:18mm;right:18mm;bottom:9mm;border-top:1px solid #ddd;padding-top:3mm;color:#666;font-size:8.3pt;line-height:1.25}@media print{body{background:#fff}.toolbar69{display:none}.page69{margin:0;box-shadow:none}}';}
+
+  function css69(){
+    return '@page{size:A4;margin:0}'+
+    '*{box-sizing:border-box}'+
+    'html,body{margin:0;padding:0;background:#e9e9e9;color:#111;font-family:Arial,Helvetica,sans-serif}'+
+    '.toolbar69{position:sticky;top:0;z-index:10;background:#111;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:center;box-shadow:0 2px 18px rgba(0,0,0,.35)}'+
+    '.toolbar69 button{border:1px solid #d6b46a;background:#222;color:#fff;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}'+
+    '.toolbar69 .primary{background:#d6b46a;color:#111}'+
+    '.toolbar69 span{font-size:10pt;color:#ddd;margin-left:8px}'+
+    '.page69{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:17mm 18mm 14mm;position:relative;page-break-after:always;overflow:hidden;box-shadow:0 18px 70px rgba(0,0,0,.32)}'+
+    '.page69:last-child{page-break-after:auto}'+
+    '.letterHead69{display:flex;justify-content:space-between;align-items:flex-start;gap:16mm;border-bottom:2px solid #111;padding-bottom:9mm;margin-bottom:13mm}'+
+    '.brand69{font-size:20pt;font-weight:900;letter-spacing:.01em;line-height:1.05}'+
+    '.sub69{font-size:9.5pt;color:#444;margin-top:2mm}'+
+    '.qrhead69{border:1px solid #d3d3d3;padding:3.5mm;min-width:52mm;display:grid;grid-template-columns:25mm 1fr;gap:4mm;align-items:center;background:#fff}'+
+    '.qrhead69 img{width:25mm;height:25mm;display:block}'+
+    '.qrcap69{font-size:8.2pt;line-height:1.25;text-align:left;color:#555}'+
+    '.qrcap69 b{display:block;color:#111;font-size:9.2pt;margin-bottom:1mm}'+
+    '.qrcap69 span{display:block}'+
+    '.qrcap69 small{display:block;color:#666;font-size:7.2pt;word-break:break-all;margin-top:1mm}'+
+    '.addr69{font-size:10.7pt;line-height:1.38;margin:0 0 10mm;min-height:28mm}'+
+    '.date69{text-align:right;font-size:10.5pt;margin-bottom:8mm}'+
+    'h1{font-size:15.2pt;line-height:1.24;margin:0 0 7mm;font-weight:900}'+
+    '.text69 p{font-size:10.8pt;line-height:1.48;margin:0 0 3.8mm;text-align:left}'+
+    '.text69 .sal{margin-bottom:4.5mm}'+
+    '.sig69{margin-top:7mm}'+
+    '.sig69 p{font-size:10.6pt;margin:0 0 3.2mm}'+
+    'footer{position:absolute;left:18mm;right:18mm;bottom:8mm;border-top:1px solid #d5d5d5;padding-top:2.5mm;color:#666;font-size:8.1pt;line-height:1.25}'+
+    '@media print{html,body{background:#fff}.toolbar69{display:none}.page69{margin:0;box-shadow:none;width:210mm;height:297mm}}';
+  }
+
   function doc69(rows,type,title,toolbar){
     rows=Array.isArray(rows)?rows.filter(Boolean):[];
     const pages=rows.map(function(r){return page69(r,type);}).join('');
-    let tools='';
-    if(toolbar){
-      const fname=file69(title||('BLOC73_'+letterLabel69(type)+'_'+today69()))+'.doc';
-      tools='<div class="toolbar69"><button class="primary" onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.downloadLetterWord69()">Word-Datei herunterladen</button><button onclick="window.close()">Schließen</button><span>'+H69(rows.length)+' A4-Seite(n)</span></div>';
-    }
-    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+H69(title||'BLOC73 Brief')+'</title><style>'+css69()+'</style></head><body>'+tools+pages+'<script>window.downloadLetterWord69=function(){var html=document.documentElement.outerHTML;var blob=new Blob([html],{type:"application/msword;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download='+JSON.stringify(file69(title||('BLOC73_'+letterLabel69(type)+'_'+today69()))+'.doc')+';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1200)};<\/script></body></html>';
+    const tools=toolbar?'<div class="toolbar69"><button class="primary" onclick="window.print()">PDF erstellen / Drucken</button><button onclick="window.close()">Schließen</button><span>'+H69(rows.length)+' A4-Seite(n) · keine Word-Datei</span></div>':'';
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+H69(title||'BLOC73 Brief PDF')+'</title><style>'+css69()+'</style></head><body>'+tools+pages+'</body></html>';
   }
+
   function openDoc69(rows,type,title){
     const html=doc69(rows,type,title,true);
     const w=window.open('','_blank');
     if(!w){
-      const blob=new Blob([doc69(rows,type,title,false)],{type:'application/msword;charset=utf-8'});
-      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file69(title)+'.doc';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);
-      alert('Popup blockiert. Der Brief wurde als Word-Datei heruntergeladen.');return;
+      alert('PDF-Vorschau konnte nicht geöffnet werden. Bitte Popups für das CRM erlauben. Es wird keine Word-Datei mehr erzeugt.');
+      return;
     }
-    w.document.open();w.document.write(html);w.document.close();
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    try{w.focus();}catch(e){}
   }
 
   window.createSelectedLetter69=function(){
@@ -5820,203 +5856,6 @@ closeGraefWeek=function(){
   };
 
   ensure82();
-})();
-
-
-/* ================================
-   v83 · Briefkopf korrigiert
-   Basis: v82 bleibt erhalten.
-   Änderung nur Briefausgabe:
-   - Kästchen "Erstbesuch zuletzt / Datum" vollständig entfernt
-   - QR-Code zu www.bloc73machinery.com rechts oben
-   - Briefkopf und A4-Formatierung hochwertiger
-   ================================ */
-(function(){
-  if(window.__bloc73_v83_letter_header_fixed) return;
-  window.__bloc73_v83_letter_header_fixed = true;
-
-  const QR_BLOC73_83 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAACZklEQVR4nO2bTY6cMBBGX8VIWRopB8hRzM2iHCk3gKPMDcxyJNCXhQ3N9ChKj0JIOyov3A1+i5JK9evCxEfW9OlDODjvvPPOO++887/ira4OG2YzJjODuQPm7Wy4UB7nz+K78pNGgPkLYgZLWjuIC0BYALBr5HH+7/BztVAbAH3vg5j6tb4z666Wx/lz+O7uWdNXQcprB3TFnK+Ux/kLeBsAUg7vi+Mm5Hd+X5v9RkEJvS+GJguyqQ9Y+gFHLT+b/M4/xE9mZtYDEGTfMpAyAGtJn6+Vx/mTeHS3RoIgSpKW96fPJr/zj/A2bLUuKa+mkXVPp9dSCdtwoTzOn8Xv8XcBorA0CksZVY8890B8df/cJl88cPlbE+Z9iwsageKzk/vnBvktwmYoRpwy+xb2A4+/jfLVflMx4qCbEUuq6r4hrt9m+dUkvRrEV9MI1PuF4q5Xj79t8of4W0uj8m5Bysfqye23SX7Tb9SWUEWpbFWrb4pg12+TvEZWk146SuuKrf6F+XOx6fr4nPI7/1s+yIa4UKJuykH1kr/0N7w/2Sh/8M8aCYftdqoxevxtlL/PoGpBlKml0fgGcf22xu/5c1Ctinb7rfdHUBIv12+L/P0N0aG/McaFY+PD9dssf5ufZOqhdDqKpucOkpZr5XH+ZD5tTWiNccGsD7IB2IYovX/VOD/vE87zbeRurZPQU79H52eV3/kH+aSltDvqc6mJvf79T3izvo5zaCytq1CalDb8E3mc/zP+ePmnXN1wTZ0zW2rl97+N8/v8ZG1SbvMbsFXCNlwpj/Mn8ebfdzvvvPPOO+/85fxPiwjRnAV/BWkAAAAASUVORK5CYII=';
-  const SITE_BLOC73_83 = 'www.bloc73machinery.com';
-
-  function H83(v){
-    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
-    });
-  }
-
-  if(typeof window.headerBox69 === 'function' || typeof headerBox69 === 'function'){
-    window.headerBox69 = function(r,type){
-      return '<div class="qrhead69 qrhead83">'+
-        '<img src="'+H83(QR_BLOC73_83)+'" alt="QR-Code BLOC73 Machinery">'+
-        '<div class="qrcap69 qrcap83">'+
-          '<b>BLOC73 Machinery</b>'+
-          '<span>Maschinen, Beratung und Lösungen</span>'+
-          '<small>'+H83(SITE_BLOC73_83)+'</small>'+
-        '</div>'+
-      '</div>';
-    };
-  }
-
-  window.headerBox83 = function(){
-    return '<div class="qrhead69 qrhead83">'+
-      '<img src="'+H83(QR_BLOC73_83)+'" alt="QR-Code BLOC73 Machinery">'+
-      '<div class="qrcap69 qrcap83">'+
-        '<b>BLOC73 Machinery</b>'+
-        '<span>Maschinen, Beratung und Lösungen</span>'+
-        '<small>'+H83(SITE_BLOC73_83)+'</small>'+
-      '</div>'+
-    '</div>';
-  };
-
-  // Überschreibt die bestehende A4-Seitenfunktion gezielt, ohne Brieftexte/Briefarten zu verändern.
-  if(typeof page69 === 'function'){
-    window.page69 = function(r,type){
-      const co = (typeof company69 === 'function' ? company69(r) : (r.company || r.customer || 'Kunde')) || 'Kunde';
-      const rawAddr = (typeof addr69 === 'function' ? addr69(r) : (r.address || '')) || '';
-      const address = rawAddr.split(/\n|,\s*/).filter(Boolean).map(H83).join('<br>');
-      const paragraphs = (typeof body69 === 'function' ? body69(r,type) : []).map(function(p,i){
-        return i===0 ? '<p class="sal">'+H83(p)+'</p>' : '<p>'+H83(p)+'</p>';
-      }).join('');
-
-      const subj = typeof subject69 === 'function' ? subject69(type) : 'Vorstellung von BLOC73 Machinery und AS Technical Solutions';
-      const dateText = typeof D69 === 'function' && typeof today69 === 'function' ? D69(today69()) : new Date().toLocaleDateString('de-DE');
-
-      return '<section class="page69 page83">'+
-        '<header class="letterHeader83">'+
-          '<div class="brandBlock83">'+
-            '<div class="brand69 brand83">BLOC73 Machinery</div>'+
-            '<div class="sub69 sub83">eine Marke der AS Technical Solutions GmbH</div>'+
-          '</div>'+
-          window.headerBox83()+
-        '</header>'+
-        '<div class="addr69 addr83"><b>'+H83(co)+'</b><br>'+address+'</div>'+
-        '<div class="date69 date83">Sendenhorst, '+H83(dateText)+'</div>'+
-        '<h1 class="subject83">'+H83(subj)+'</h1>'+
-        '<main class="text69 text83">'+paragraphs+'</main>'+
-        '<div class="sig69 sig83">'+
-          '<p>Mit freundlichen Grüßen</p>'+
-          '<p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p>'+
-        '</div>'+
-        '<footer class="footer83">AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer>'+
-      '</section>';
-    };
-  }
-
-  // Zusätzliche CSS-Korrektur wird in die Briefdokumente eingespritzt.
-  if(typeof css69 === 'function'){
-    const oldCss69_83 = css69;
-    window.css69 = function(){
-      const base = oldCss69_83();
-      const extra = `
-        .page83{
-          padding:17mm 18mm 14mm;
-          font-family:Arial,Helvetica,sans-serif;
-        }
-        .letterHeader83{
-          display:flex;
-          justify-content:space-between;
-          align-items:flex-start;
-          gap:16mm;
-          border-bottom:2px solid #111;
-          padding-bottom:9mm;
-          margin-bottom:13mm;
-        }
-        .brand83{
-          font-size:20pt;
-          font-weight:900;
-          letter-spacing:.01em;
-          line-height:1.05;
-        }
-        .sub83{
-          font-size:9.5pt;
-          color:#444;
-          margin-top:2mm;
-        }
-        .qrhead83{
-          border:1px solid #d7d7d7;
-          padding:3.5mm;
-          min-width:50mm;
-          display:grid;
-          grid-template-columns:25mm 1fr;
-          gap:4mm;
-          align-items:center;
-          background:#fff;
-        }
-        .qrhead83 img{
-          width:25mm;
-          height:25mm;
-          display:block;
-        }
-        .qrcap83{
-          text-align:left;
-          font-size:8.2pt;
-          line-height:1.25;
-          color:#555;
-        }
-        .qrcap83 b{
-          display:block;
-          color:#111;
-          font-size:9.2pt;
-          margin-bottom:1mm;
-        }
-        .qrcap83 small{
-          display:block;
-          color:#666;
-          font-size:7.2pt;
-          word-break:break-all;
-          margin-top:1mm;
-        }
-        .addr83{
-          margin-top:0;
-          margin-bottom:10mm;
-          min-height:28mm;
-          font-size:10.7pt;
-          line-height:1.38;
-        }
-        .date83{
-          text-align:right;
-          margin-bottom:8mm;
-          font-size:10.5pt;
-        }
-        .subject83{
-          font-size:15.2pt;
-          line-height:1.24;
-          margin:0 0 7mm;
-          font-weight:900;
-        }
-        .text83 p{
-          font-size:10.8pt;
-          line-height:1.48;
-          margin:0 0 3.8mm;
-        }
-        .text83 .sal{
-          margin-bottom:4.5mm;
-        }
-        .sig83{
-          margin-top:7mm;
-        }
-        .sig83 p{
-          font-size:10.6pt;
-          margin:0 0 3.2mm;
-        }
-        .footer83{
-          position:absolute;
-          left:18mm;
-          right:18mm;
-          bottom:8mm;
-          border-top:1px solid #d5d5d5;
-          padding-top:2.5mm;
-          color:#666;
-          font-size:8.1pt;
-          line-height:1.25;
-        }
-        .stamp69{
-          display:none !important;
-        }
-      `;
-      return base + extra;
-    };
-  }
 })();
 
 </script>
