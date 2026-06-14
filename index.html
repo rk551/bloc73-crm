@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v85 · stabiler Stand</title>
+  <title>BLOC73 CRM · v86 · Profi-Dashboard</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -32,7 +32,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v85 · stabil · PDF-Brief</p></div></div>
+    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v86 · Profi-Dashboard</p></div></div>
     <div class="nav" id="nav"></div>
     <div class="footer">Single-User HTML CRM<br>Daten lokal im Browser + Backup</div>
   </aside>
@@ -5166,6 +5166,301 @@ closeGraefWeek=function(){
       setTimeout(setVersion85,0);
       return r;
     };
+  }
+})();
+
+
+/* ================================
+   v86 · Profi-Dashboard + hochwertigere A4-Briefformatierung
+   Basis: v85 bleibt erhalten.
+   Änderung:
+   - Dashboard wird reine Profi-Vertriebsübersicht, keine Kunden-/Suchübersicht.
+   - Brief bleibt PDF-/Druckvorschau, aber A4-Formatierung wird ruhiger, sauberer, DIN-näher.
+   ================================ */
+(function(){
+  if(window.__bloc73_v86_professional_dashboard_letter) return;
+  window.__bloc73_v86_professional_dashboard_letter = true;
+
+  const QR_BLOC73_86 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAACZklEQVR4nO2bTY6cMBBGX8VIWRopB8hRzM2iHCk3gKPMDcxyJNCXhQ3N9ChKj0JIOyov3A1+i5JK9evCxEfW9OlDODjvvPPOO++887/ira4OG2YzJjODuQPm7Wy4UB7nz+K78pNGgPkLYgZLWjuIC0BYALBr5HH+7/BztVAbAH3vg5j6tb4z666Wx/lz+O7uWdNXQcprB3TFnK+Ux/kLeBsAUg7vi+Mm5Hd+X5v9RkEJvS+GJguyqQ9Y+gFHLT+b/M4/xE9mZtYDEGTfMpAyAGtJn6+Vx/mTeHS3RoIgSpKW96fPJr/zj/A2bLUuKa+mkXVPp9dSCdtwoTzOn8Xv8XcBorA0CksZVY8890B8df/cJl88cPlbE+Z9iwsageKzk/vnBvktwmYoRpwy+xb2A4+/jfLVflMx4qCbEUuq6r4hrt9m+dUkvRrEV9MI1PuF4q5Xj79t8of4W0uj8m5Bysfqye23SX7Tb9SWUEWpbFWrb4pg12+TvEZWk146SuuKrf6F+XOx6fr4nPI7/1s+yIa4UKJuykH1kr/0N7w/2Sh/8M8aCYftdqoxevxtlL/PoGpBlKml0fgGcf22xu/5c1Ctinb7rfdHUBIv12+L/P0N0aG/McaFY+PD9dssf5ufZOqhdDqKpucOkpZr5XH+ZD5tTWiNccGsD7IB2IYovX/VOD/vE87zbeRurZPQU79H52eV3/kH+aSltDvqc6mJvf79T3izvo5zaCytq1CalDb8E3mc/zP+ePmnXN1wTZ0zW2rl97+N8/v8ZG1SbvMbsFXCNlwpj/Mn8ebfdzvvvPPOO+/85fxPiwjRnAV/BWkAAAAASUVORK5CYII=';
+
+  function H86(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function today86(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function monday86(iso){
+    try{ if(typeof mondayOfDateString === 'function') return mondayOfDateString(iso || today86()); }catch(e){}
+    var d = new Date((iso || today86())+'T12:00:00');
+    var day = d.getDay() || 7;
+    d.setDate(d.getDate()+1-day);
+    return d.toISOString().slice(0,10);
+  }
+
+  function addDays86(iso,days){
+    try{ if(typeof addDaysToIso === 'function') return addDaysToIso(iso,days); }catch(e){}
+    var d = new Date((iso || today86())+'T12:00:00');
+    d.setDate(d.getDate()+Number(days||0));
+    return d.toISOString().slice(0,10);
+  }
+
+  function fmt86(d){
+    try{ if(typeof formatDate === 'function') return formatDate(d); }catch(e){}
+    return d || '';
+  }
+
+  function inRange86(d,start,end){
+    return !!d && String(d) >= String(start) && String(d) <= String(end);
+  }
+
+  function num86(v){
+    return Number(String(v || '0').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')) || 0;
+  }
+
+  function euro86(v){
+    return num86(v).toLocaleString('de-DE',{maximumFractionDigits:0})+' €';
+  }
+
+  function status86(v){
+    return String(v || '').toLowerCase();
+  }
+
+  function isOpenOffer86(o){
+    var s=status86(o.status);
+    return !/gewonnen|verloren|abgesagt|storniert|erledigt/.test(s);
+  }
+
+  function rowText86(r){
+    return String([r.company,r.customer,r.title,r.target,r.status,r.notes,r.discussion,r.product,r.area,r.type,r.address].filter(Boolean).join(' ')).toLowerCase();
+  }
+
+  function dguvPotential86(r){
+    var t=rowText86(r);
+    return /dguv|prüfung|pruefung|betriebsmittel|wartung|service|maschinenprüfung|sicherheitsprüfung|metzgerei|fleischerei|gastro|pflegeheim|krankenhaus|großküche|grosskueche/.test(t);
+  }
+
+  function uniq86(rows){
+    var seen={};
+    return (rows || []).filter(function(r){
+      var k=String((r.company||r.customer||r.title||'')+' '+(r.address||'')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+      if(!k || seen[k]) return false;
+      seen[k]=true;
+      return true;
+    });
+  }
+
+  function progress86(label,val,max){
+    var w=max?Math.max(3,Math.round((val/max)*100)):0;
+    return '<div style="margin-bottom:11px">'+
+      '<div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:4px"><span>'+H86(label)+'</span><b>'+H86(val)+'</b></div>'+
+      '<div style="height:9px;background:#101010;border:1px solid #333;border-radius:999px;overflow:hidden">'+
+      '<div style="height:100%;width:'+w+'%;background:linear-gradient(135deg,#d6b46a,#8a6428)"></div></div></div>';
+  }
+
+  function actionRows86(rows){
+    if(!rows.length) return '<tr><td colspan="4"><div class="empty">Keine dringenden Punkte. Sauber.</div></td></tr>';
+    return rows.map(function(a){
+      return '<tr><td><span class="pill warn">'+H86(a.kind)+'</span></td><td>'+H86(fmt86(a.date))+'</td><td><b>'+H86(a.title)+'</b><br><span class="muted small">'+H86(a.sub||'')+'</span></td><td><button class="btn" onclick="setActive(\''+H86(a.module)+'\')">Öffnen</button></td></tr>';
+    }).join('');
+  }
+
+  function professionalDashboard86(){
+    var today=today86();
+    var weekStart=monday86(today);
+    var weekEnd=addDays86(weekStart,6);
+    var next7=addDays86(today,7);
+
+    var tours=db.tours||[];
+    var visited=db.visited||[];
+    var offers=db.offers||[];
+    var tasks=db.tasks||[];
+    var graef=db.graef||[];
+    var letters=db.letters||[];
+
+    var toursWeek=tours.filter(function(t){return inRange86(t.tourDate,weekStart,weekEnd);});
+    var toursOpen=toursWeek.filter(function(t){return status86(t.status).indexOf('besucht')<0;});
+    var toursDone=toursWeek.filter(function(t){return status86(t.status).indexOf('besucht')>=0;});
+    var visitedWeek=visited.filter(function(v){return inRange86(v.visitedAt,weekStart,weekEnd);});
+    var graefWeek=graef.filter(function(g){return inRange86(g.informedAt,weekStart,weekEnd);});
+
+    var openOffers=offers.filter(isOpenOffer86);
+    var wonOffers=offers.filter(function(o){return status86(o.status).indexOf('gewonnen')>=0;});
+    var lostOffers=offers.filter(function(o){return status86(o.status).indexOf('verloren')>=0;});
+    var openOfferValue=openOffers.reduce(function(s,o){return s+num86(o.value);},0);
+    var wonOfferValue=wonOffers.reduce(function(s,o){return s+num86(o.value);},0);
+    var closeBase=wonOffers.length+lostOffers.length;
+    var closeRate=closeBase?Math.round((wonOffers.length/closeBase)*100):0;
+
+    var dueTasks=tasks.filter(function(t){return status86(t.status)!=='erledigt' && t.due && t.due<=today;});
+    var nextTasks=tasks.filter(function(t){return status86(t.status)!=='erledigt' && t.due && t.due>today && t.due<=next7;});
+    var dueOffers=openOffers.filter(function(o){return o.followDate && o.followDate<=today;});
+    var nextOffers=openOffers.filter(function(o){return o.followDate && o.followDate>today && o.followDate<=next7;});
+
+    var dguv=uniq86([].concat(db.customers||[],tours||[],visited||[]).filter(dguvPotential86));
+
+    var firstLetters=letters.filter(function(l){return String(l.type||'').toLowerCase()==='erst';}).length;
+    var dguvLetters=letters.filter(function(l){return String(l.type||'').toLowerCase()==='dguv';}).length;
+    var followLetters=letters.filter(function(l){return String(l.type||'').toLowerCase()==='folge';}).length;
+
+    var actions=[].concat(
+      dueOffers.map(function(o){return {kind:'Angebot fällig',date:o.followDate,title:o.title||o.customer||'Angebot',sub:o.customer||o.product||'',module:'offers'};}),
+      dueTasks.map(function(t){return {kind:'Aufgabe fällig',date:t.due,title:t.title||'Aufgabe',sub:t.customer||t.type||'',module:'tasks'};}),
+      toursOpen.slice(0,10).map(function(t){return {kind:'Tour offen',date:t.tourDate,title:t.company||'Tourkunde',sub:(t.target||'')+' · '+(t.address||''),module:'tours'};}),
+      nextOffers.map(function(o){return {kind:'Nachfassen',date:o.followDate,title:o.title||o.customer||'Angebot',sub:o.customer||o.product||'',module:'offers'};}),
+      nextTasks.map(function(t){return {kind:'Aufgabe',date:t.due,title:t.title||'Aufgabe',sub:t.customer||t.type||'',module:'tasks'};})
+    ).sort(function(a,b){return String(a.date||'9999').localeCompare(String(b.date||'9999'));}).slice(0,14);
+
+    var offerStages=[
+      ['Entwurf',offers.filter(function(o){return status86(o.status).indexOf('entwurf')>=0;}).length],
+      ['Gesendet',offers.filter(function(o){return status86(o.status).indexOf('gesendet')>=0;}).length],
+      ['Nachfassen',offers.filter(function(o){return status86(o.status).indexOf('nachfassen')>=0;}).length],
+      ['Verhandlung',offers.filter(function(o){return status86(o.status).indexOf('verhandlung')>=0;}).length],
+      ['Gewonnen',wonOffers.length],
+      ['Verloren',lostOffers.length]
+    ];
+    var maxStage=Math.max.apply(null,offerStages.map(function(x){return x[1];}).concat([1]));
+
+    var targetCounts={};
+    uniq86([].concat(toursWeek,visitedWeek)).forEach(function(r){
+      var t=r.target||'Sonstiges';
+      targetCounts[t]=(targetCounts[t]||0)+1;
+    });
+    var targetRows=Object.keys(targetCounts).sort(function(a,b){return targetCounts[b]-targetCounts[a];}).slice(0,8);
+    var maxTarget=Math.max.apply(null,targetRows.map(function(k){return targetCounts[k];}).concat([1]));
+
+    return ''+
+    '<div class="panel">'+
+      '<div class="panel-head"><div><h3>Vertriebs-Cockpit</h3><div class="muted">Profi-Übersicht ohne Kundenliste und ohne Suchblock. Fokus: Steuerung, Prioritäten, Angebote, Touren, DGUV.</div></div>'+
+      '<div class="actions"><button class="btn" onclick="setActive(\'tourplanner\')">Tour planen</button><button class="btn" onclick="setActive(\'tours\')">Tagestouren</button><button class="btn" onclick="setActive(\'offers\')">Angebote</button><button class="btn" onclick="setActive(\'tasks\')">Aufgaben</button></div></div>'+
+      '<div class="panel-body">'+
+        '<div class="notice"><b>Aktuelle Woche:</b> '+H86(fmt86(weekStart))+' bis '+H86(fmt86(weekEnd))+' · Ziel: Besuche abschließen, Angebote nachfassen, DGUV-Potenzial sichern.</div>'+
+        '<div style="height:14px"></div>'+
+        '<div class="kpis">'+
+          '<div class="kpi"><b>'+H86(toursDone.length+visitedWeek.length)+'</b><span>Besuche / Abschlüsse KW</span></div>'+
+          '<div class="kpi"><b>'+H86(toursOpen.length)+'</b><span>offene Tourkontakte KW</span></div>'+
+          '<div class="kpi"><b>'+H86(openOffers.length)+'</b><span>offene Angebote</span></div>'+
+          '<div class="kpi"><b>'+H86(euro86(openOfferValue))+'</b><span>offener Angebotswert</span></div>'+
+        '</div>'+
+        '<div class="kpis">'+
+          '<div class="kpi"><b>'+H86(dueTasks.length+dueOffers.length)+'</b><span>heute / überfällig</span></div>'+
+          '<div class="kpi"><b>'+H86(graefWeek.length)+'</b><span>GRAEF informiert KW</span></div>'+
+          '<div class="kpi"><b>'+H86(dguv.length)+'</b><span>DGUV-Potenzial</span></div>'+
+          '<div class="kpi"><b>'+H86(closeRate)+'%</b><span>Abschlussquote</span></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="grid" style="margin-top:16px">'+
+      '<div class="panel" style="grid-column:span 7"><div class="panel-head"><h3>Prioritäten / nächste Schritte</h3><button class="btn primary" onclick="setActive(\'tasks\')">Aufgaben öffnen</button></div><div class="table-wrap"><table><thead><tr><th>Typ</th><th>Datum</th><th>Vorgang</th><th>Aktion</th></tr></thead><tbody>'+actionRows86(actions)+'</tbody></table></div></div>'+
+      '<div class="panel" style="grid-column:span 5"><div class="panel-head"><h3>Angebots-Pipeline</h3><button class="btn" onclick="setActive(\'offers\')">Angebote öffnen</button></div><div class="panel-body">'+
+        offerStages.map(function(x){return progress86(x[0],x[1],maxStage);}).join('')+
+        '<div class="notice"><b>Gewonnener Wert:</b> '+H86(euro86(wonOfferValue))+' · <b>Offener Wert:</b> '+H86(euro86(openOfferValue))+'</div>'+
+      '</div></div>'+
+    '</div>'+
+
+    '<div class="grid" style="margin-top:16px">'+
+      '<div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Wochenleistung</h3></div><div class="panel-body">'+
+        progress86('Tourkontakte geplant',toursWeek.length,Math.max(toursWeek.length,1))+
+        progress86('Besuche abgeschlossen',toursDone.length+visitedWeek.length,Math.max(toursWeek.length,visitedWeek.length,1))+
+        progress86('GRAEF informiert',graefWeek.length,Math.max(toursWeek.length,graefWeek.length,1))+
+        progress86('offene Tourkontakte',toursOpen.length,Math.max(toursWeek.length,1))+
+      '</div></div>'+
+      '<div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Zielgruppen KW</h3></div><div class="panel-body">'+
+        (targetRows.length?targetRows.map(function(k){return progress86(k,targetCounts[k],maxTarget);}).join(''):'<div class="empty">Noch keine Wochenkontakte.</div>')+
+      '</div></div>'+
+      '<div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Briefe / Kontaktimpulse</h3></div><div class="panel-body">'+
+        '<div class="kpi" style="margin-bottom:10px"><b>'+H86(firstLetters)+'</b><span>Erstbesuch-Briefe</span></div>'+
+        '<div class="kpi" style="margin-bottom:10px"><b>'+H86(dguvLetters)+'</b><span>DGUV-Briefe</span></div>'+
+        '<div class="kpi"><b>'+H86(followLetters)+'</b><span>Folgebesuch-Briefe</span></div>'+
+      '</div></div>'+
+    '</div>';
+  }
+
+  // Dashboard vollständig überschreiben: keine alte Kundenübersicht / globale Suche mehr.
+  window.dashboardHTML = professionalDashboard86;
+
+  // Briefformatierung ersetzen: bessere A4-PDF-Vorschau, kein Word, kein Datumskasten.
+  function headerBox86(r,type){
+    return '<div class="qrhead69">'+
+      '<img src="'+H86(QR_BLOC73_86)+'" alt="QR-Code BLOC73 Machinery">'+
+      '<div class="qrcap69"><b>BLOC73 Machinery</b><span>Maschinen · Beratung · Lösungen</span><small>www.bloc73machinery.com</small></div>'+
+    '</div>';
+  }
+
+  if(typeof page69 === 'function'){
+    window.page69 = function(r,type){
+      const co=(typeof company69==='function'?company69(r):(r.company||r.customer||'Kunde'))||'Kunde';
+      const rawAddr=(typeof addr69==='function'?addr69(r):(r.address||''))||'';
+      const address=rawAddr.split(/\n|,\s*/).filter(Boolean).map(H86).join('<br>');
+      const paragraphs=(typeof body69==='function'?body69(r,type):[]).map(function(p,i){return i===0?'<p class="sal">'+H86(p)+'</p>':'<p>'+H86(p)+'</p>';}).join('');
+      const subj=typeof subject69==='function'?subject69(type):'Vorstellung von BLOC73 Machinery und AS Technical Solutions';
+      const dateText=typeof D69==='function'&&typeof today69==='function'?D69(today69()):new Date().toLocaleDateString('de-DE');
+
+      return '<section class="page69">'+
+        '<header class="letterHead69"><div class="brandBlock69"><div class="brand69">BLOC73 Machinery</div><div class="sub69">eine Marke der AS Technical Solutions GmbH</div></div>'+headerBox86(r,type)+'</header>'+
+        '<div class="addr69"><b>'+H86(co)+'</b><br>'+address+'</div>'+
+        '<div class="date69">Sendenhorst, '+H86(dateText)+'</div>'+
+        '<h1>'+H86(subj)+'</h1>'+
+        '<main class="text69">'+paragraphs+'</main>'+
+        '<div class="sig69"><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p></div>'+
+        '<footer>AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer>'+
+      '</section>';
+    };
+  }
+
+  if(typeof css69 === 'function'){
+    window.css69 = function(){
+      return '@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#e9e9e9;color:#111;font-family:Arial,Helvetica,sans-serif}'+
+      '.toolbar69{position:sticky;top:0;z-index:10;background:#111;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:center;box-shadow:0 2px 18px rgba(0,0,0,.35)}'+
+      '.toolbar69 button{border:1px solid #d6b46a;background:#222;color:#fff;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}.toolbar69 .primary{background:#d6b46a;color:#111}.toolbar69 span{font-size:10pt;color:#ddd;margin-left:8px}'+
+      '.page69{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:17mm 18mm 14mm;position:relative;page-break-after:always;overflow:hidden;box-shadow:0 18px 70px rgba(0,0,0,.32)}.page69:last-child{page-break-after:auto}'+
+      '.letterHead69{display:flex;justify-content:space-between;align-items:flex-start;gap:16mm;border-bottom:2px solid #111;padding-bottom:9mm;margin-bottom:13mm}'+
+      '.brand69{font-size:20pt;font-weight:900;letter-spacing:.01em;line-height:1.05}.sub69{font-size:9.5pt;color:#444;margin-top:2mm}'+
+      '.qrhead69{border:1px solid #d3d3d3;padding:3.5mm;min-width:52mm;display:grid;grid-template-columns:25mm 1fr;gap:4mm;align-items:center;background:#fff}.qrhead69 img{width:25mm;height:25mm;display:block}'+
+      '.qrcap69{font-size:8.2pt;line-height:1.25;text-align:left;color:#555}.qrcap69 b{display:block;color:#111;font-size:9.2pt;margin-bottom:1mm}.qrcap69 span{display:block}.qrcap69 small{display:block;color:#666;font-size:7.2pt;word-break:break-all;margin-top:1mm}'+
+      '.addr69{font-size:10.7pt;line-height:1.38;margin:0 0 10mm;min-height:28mm}.date69{text-align:right;font-size:10.5pt;margin-bottom:8mm}h1{font-size:15.2pt;line-height:1.24;margin:0 0 7mm;font-weight:900}'+
+      '.text69 p{font-size:10.8pt;line-height:1.48;margin:0 0 3.8mm;text-align:left}.text69 .sal{margin-bottom:4.5mm}.sig69{margin-top:7mm}.sig69 p{font-size:10.6pt;margin:0 0 3.2mm}'+
+      'footer{position:absolute;left:18mm;right:18mm;bottom:8mm;border-top:1px solid #d5d5d5;padding-top:2.5mm;color:#666;font-size:8.1pt;line-height:1.25}.stamp69{display:none!important}'+
+      '@media print{html,body{background:#fff}.toolbar69{display:none}.page69{margin:0;box-shadow:none;width:210mm;height:297mm}}';
+    };
+  }
+
+  if(typeof doc69 === 'function'){
+    window.doc69 = function(rows,type,title,toolbar){
+      rows=Array.isArray(rows)?rows.filter(Boolean):[];
+      const pages=rows.map(function(r){return page69(r,type);}).join('');
+      const tools=toolbar?'<div class="toolbar69"><button class="primary" onclick="window.print()">PDF erstellen / Drucken</button><button onclick="window.close()">Schließen</button><span>'+H86(rows.length)+' A4-Seite(n) · PDF-Vorschau</span></div>':'';
+      return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+H86(title||'BLOC73 Brief PDF')+'</title><style>'+css69()+'</style></head><body>'+tools+pages+'</body></html>';
+    };
+  }
+
+  if(typeof openDoc69 === 'function'){
+    window.openDoc69 = function(rows,type,title){
+      const html=doc69(rows,type,title,true);
+      const w=window.open('','_blank');
+      if(!w){ alert('PDF-Vorschau konnte nicht geöffnet werden. Bitte Popups für das CRM erlauben.'); return; }
+      w.document.open(); w.document.write(html); w.document.close();
+      try{w.focus();}catch(e){}
+    };
+  }
+
+  function setVersion86(){
+    try{document.title='BLOC73 CRM · v86 · Profi-Dashboard';}catch(e){}
+    try{var p=document.querySelector('.brand p'); if(p) p.textContent='v86 · Profi-Dashboard';}catch(e){}
+  }
+  setVersion86();
+  setTimeout(setVersion86,200);
+  var oldSetActive86=window.setActive;
+  if(typeof oldSetActive86==='function'){
+    window.setActive=function(k){var r=oldSetActive86.apply(this,arguments);setTimeout(setVersion86,0);return r;};
+  }
+  var oldRenderContent86=window.renderContent;
+  if(typeof oldRenderContent86==='function'){
+    window.renderContent=function(){var r=oldRenderContent86.apply(this,arguments);setTimeout(setVersion86,0);return r;};
   }
 })();
 
