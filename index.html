@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v87 · Profi-Stand</title>
+  <title>BLOC73 CRM · v88 · Profi-Stand</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -32,7 +32,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v87 · Profi-Stand</p></div></div>
+    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v88 · Profi-Stand</p></div></div>
     <div class="nav" id="nav"></div>
     <div class="footer">Single-User HTML CRM<br>Daten lokal im Browser + Backup</div>
   </aside>
@@ -97,155 +97,7 @@ function navCount(k){if(k==='dashboard'||k==='tourplanner')return ''; return (db
 function setActive(k){active=k;renderNav();const meta=modules[k]||navTitles[k];document.getElementById('pageTitle').textContent=meta.title;document.getElementById('pageSub').textContent=meta.sub;renderContent();}
 function renderContent(){const c=document.getElementById('content'); if(active==='dashboard')c.innerHTML=dashboardHTML(); else if(active==='tourplanner')c.innerHTML=tourHTML(); else if(active==='calendar')c.innerHTML=calendarHTML(); else if(active==='products')c.innerHTML=productsHTML(); else c.innerHTML=listHTML(active); afterRender();}
 function afterRender(){if(active==='tourplanner')renderTourResults(); if(active==='dashboard')runGlobalSearch();}
-
-function dashboardHTML(){
-  const todayIso = today();
-  const monday = (typeof mondayOfDateString === 'function') ? mondayOfDateString(todayIso) : todayIso;
-  const sunday = (typeof addDaysToIso === 'function') ? addDaysToIso(monday,6) : todayIso;
-  const next7 = (typeof addDaysToIso === 'function') ? addDaysToIso(todayIso,7) : todayIso;
-
-  function h(v){return esc(v??'');}
-  function d(v){return v ? formatDate(v) : '';}
-  function inWeek(v){return !!v && String(v)>=String(monday) && String(v)<=String(sunday);}
-  function n(v){return Number(String(v||'0').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
-  function euro(v){return n(v).toLocaleString('de-DE',{maximumFractionDigits:0})+' €';}
-  function st(v){return String(v||'').toLowerCase();}
-  function isOpenOffer(o){const s=st(o.status);return !/gewonnen|verloren|abgesagt|storniert|erledigt/.test(s);}
-  function unique(rows){
-    const seen={};
-    return rows.filter(r=>{
-      const k=String((r.company||r.customer||r.title||'')+' '+(r.address||'')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
-      if(!k||seen[k])return false;seen[k]=true;return true;
-    });
-  }
-  function textOf(r){return String([r.company,r.customer,r.title,r.target,r.status,r.notes,r.discussion,r.product,r.area,r.type,r.address].filter(Boolean).join(' ')).toLowerCase();}
-  function dguvPotential(r){return /dguv|prüfung|pruefung|betriebsmittel|wartung|service|maschinenprüfung|sicherheitsprüfung|metzgerei|fleischerei|gastro|pflegeheim|krankenhaus|großküche|grosskueche/.test(textOf(r));}
-  function bar(label,val,max){
-    const w=max?Math.max(3,Math.round((val/max)*100)):0;
-    return `<div style="margin-bottom:11px">
-      <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:4px"><span>${h(label)}</span><b>${h(val)}</b></div>
-      <div style="height:9px;background:#101010;border:1px solid #333;border-radius:999px;overflow:hidden"><div style="height:100%;width:${w}%;background:linear-gradient(135deg,#d6b46a,#8a6428)"></div></div>
-    </div>`;
-  }
-
-  const tours=db.tours||[], visited=db.visited||[], offers=db.offers||[], tasks=db.tasks||[], graef=db.graef||[], letters=db.letters||[];
-  const toursWeek=tours.filter(t=>inWeek(t.tourDate));
-  const toursOpen=toursWeek.filter(t=>!st(t.status).includes('besucht'));
-  const toursDone=toursWeek.filter(t=>st(t.status).includes('besucht'));
-  const visitedWeek=visited.filter(v=>inWeek(v.visitedAt));
-  const graefWeek=graef.filter(g=>inWeek(g.informedAt));
-  const openOffers=offers.filter(isOpenOffer);
-  const wonOffers=offers.filter(o=>st(o.status).includes('gewonnen'));
-  const lostOffers=offers.filter(o=>st(o.status).includes('verloren'));
-  const openOfferValue=openOffers.reduce((s,o)=>s+n(o.value),0);
-  const wonOfferValue=wonOffers.reduce((s,o)=>s+n(o.value),0);
-  const closeBase=wonOffers.length+lostOffers.length;
-  const closeRate=closeBase?Math.round((wonOffers.length/closeBase)*100):0;
-  const dueTasks=tasks.filter(t=>st(t.status)!=='erledigt' && t.due && t.due<=todayIso);
-  const nextTasks=tasks.filter(t=>st(t.status)!=='erledigt' && t.due && t.due>todayIso && t.due<=next7);
-  const dueOffers=openOffers.filter(o=>o.followDate && o.followDate<=todayIso);
-  const nextOffers=openOffers.filter(o=>o.followDate && o.followDate>todayIso && o.followDate<=next7);
-  const dguv=unique([...(db.customers||[]),...tours,...visited].filter(dguvPotential));
-
-  const firstLetters=letters.filter(l=>String(l.type||'').toLowerCase()==='erst').length;
-  const dguvLetters=letters.filter(l=>String(l.type||'').toLowerCase()==='dguv').length;
-  const followLetters=letters.filter(l=>String(l.type||'').toLowerCase()==='folge').length;
-
-  const actions=[
-    ...dueOffers.map(o=>({kind:'Angebot fällig',date:o.followDate,title:o.title||o.customer||'Angebot',sub:o.customer||o.product||'',module:'offers'})),
-    ...dueTasks.map(t=>({kind:'Aufgabe fällig',date:t.due,title:t.title||'Aufgabe',sub:t.customer||t.type||'',module:'tasks'})),
-    ...toursOpen.slice(0,10).map(t=>({kind:'Tour offen',date:t.tourDate,title:t.company||'Tourkunde',sub:(t.target||'')+' · '+(t.address||''),module:'tours'})),
-    ...nextOffers.map(o=>({kind:'Nachfassen',date:o.followDate,title:o.title||o.customer||'Angebot',sub:o.customer||o.product||'',module:'offers'})),
-    ...nextTasks.map(t=>({kind:'Aufgabe',date:t.due,title:t.title||'Aufgabe',sub:t.customer||t.type||'',module:'tasks'}))
-  ].sort((a,b)=>String(a.date||'9999').localeCompare(String(b.date||'9999'))).slice(0,14);
-
-  const actionRows = actions.length ? actions.map(a=>`
-    <tr>
-      <td><span class="pill warn">${h(a.kind)}</span></td>
-      <td>${h(d(a.date))}</td>
-      <td><b>${h(a.title)}</b><br><span class="muted small">${h(a.sub)}</span></td>
-      <td><button class="btn" onclick="setActive('${h(a.module)}')">Öffnen</button></td>
-    </tr>`).join('') : '<tr><td colspan="4"><div class="empty">Keine dringenden Punkte. Sauber.</div></td></tr>';
-
-  const offerStages=[
-    ['Entwurf',offers.filter(o=>st(o.status).includes('entwurf')).length],
-    ['Gesendet',offers.filter(o=>st(o.status).includes('gesendet')).length],
-    ['Nachfassen',offers.filter(o=>st(o.status).includes('nachfassen')).length],
-    ['Verhandlung',offers.filter(o=>st(o.status).includes('verhandlung')).length],
-    ['Gewonnen',wonOffers.length],
-    ['Verloren',lostOffers.length]
-  ];
-  const maxStage=Math.max(...offerStages.map(x=>x[1]),1);
-
-  const targetCounts={};
-  unique([...toursWeek,...visitedWeek]).forEach(r=>{const t=r.target||'Sonstiges';targetCounts[t]=(targetCounts[t]||0)+1;});
-  const targetRows=Object.keys(targetCounts).sort((a,b)=>targetCounts[b]-targetCounts[a]).slice(0,8);
-  const maxTarget=Math.max(...targetRows.map(k=>targetCounts[k]),1);
-
-  return `
-    <div class="panel">
-      <div class="panel-head">
-        <div>
-          <h3>Vertriebs-Cockpit</h3>
-          <div class="muted">Profi-Übersicht ohne Kundenliste und ohne Suchblock. Fokus: Steuerung, Prioritäten, Angebote, Touren, DGUV.</div>
-        </div>
-        <div class="actions">
-          <button class="btn" onclick="setActive('tourplanner')">Tour planen</button>
-          <button class="btn" onclick="setActive('tours')">Tagestouren</button>
-          <button class="btn" onclick="setActive('offers')">Angebote</button>
-          <button class="btn" onclick="setActive('tasks')">Aufgaben</button>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="notice"><b>Aktuelle Woche:</b> ${h(d(monday))} bis ${h(d(sunday))} · Ziel: Besuche abschließen, Angebote nachfassen, DGUV-Potenzial sichern.</div>
-        <div style="height:14px"></div>
-        <div class="kpis">
-          <div class="kpi"><b>${h(toursDone.length+visitedWeek.length)}</b><span>Besuche / Abschlüsse KW</span></div>
-          <div class="kpi"><b>${h(toursOpen.length)}</b><span>offene Tourkontakte KW</span></div>
-          <div class="kpi"><b>${h(openOffers.length)}</b><span>offene Angebote</span></div>
-          <div class="kpi"><b>${h(euro(openOfferValue))}</b><span>offener Angebotswert</span></div>
-        </div>
-        <div class="kpis">
-          <div class="kpi"><b>${h(dueTasks.length+dueOffers.length)}</b><span>heute / überfällig</span></div>
-          <div class="kpi"><b>${h(graefWeek.length)}</b><span>GRAEF informiert KW</span></div>
-          <div class="kpi"><b>${h(dguv.length)}</b><span>DGUV-Potenzial</span></div>
-          <div class="kpi"><b>${h(closeRate)}%</b><span>Abschlussquote</span></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid" style="margin-top:16px">
-      <div class="panel" style="grid-column:span 7">
-        <div class="panel-head"><h3>Prioritäten / nächste Schritte</h3><button class="btn primary" onclick="setActive('tasks')">Aufgaben öffnen</button></div>
-        <div class="table-wrap"><table><thead><tr><th>Typ</th><th>Datum</th><th>Vorgang</th><th>Aktion</th></tr></thead><tbody>${actionRows}</tbody></table></div>
-      </div>
-      <div class="panel" style="grid-column:span 5">
-        <div class="panel-head"><h3>Angebots-Pipeline</h3><button class="btn" onclick="setActive('offers')">Angebote öffnen</button></div>
-        <div class="panel-body">
-          ${offerStages.map(x=>bar(x[0],x[1],maxStage)).join('')}
-          <div class="notice"><b>Gewonnener Wert:</b> ${h(euro(wonOfferValue))} · <b>Offener Wert:</b> ${h(euro(openOfferValue))}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid" style="margin-top:16px">
-      <div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Wochenleistung</h3></div><div class="panel-body">
-        ${bar('Tourkontakte geplant',toursWeek.length,Math.max(toursWeek.length,1))}
-        ${bar('Besuche abgeschlossen',toursDone.length+visitedWeek.length,Math.max(toursWeek.length,visitedWeek.length,1))}
-        ${bar('GRAEF informiert',graefWeek.length,Math.max(toursWeek.length,graefWeek.length,1))}
-        ${bar('offene Tourkontakte',toursOpen.length,Math.max(toursWeek.length,1))}
-      </div></div>
-      <div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Zielgruppen KW</h3></div><div class="panel-body">
-        ${targetRows.length?targetRows.map(k=>bar(k,targetCounts[k],maxTarget)).join(''):'<div class="empty">Noch keine Wochenkontakte.</div>'}
-      </div></div>
-      <div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Briefe / Kontaktimpulse</h3></div><div class="panel-body">
-        <div class="kpi" style="margin-bottom:10px"><b>${h(firstLetters)}</b><span>Erstbesuch-Briefe</span></div>
-        <div class="kpi" style="margin-bottom:10px"><b>${h(dguvLetters)}</b><span>DGUV-Briefe</span></div>
-        <div class="kpi"><b>${h(followLetters)}</b><span>Folgebesuch-Briefe</span></div>
-      </div></div>
-    </div>
-  `;
-}
+function dashboardHTML(){const todayTasks=db.tasks.filter(t=>t.status!=='Erledigt' && (t.due||'')<=today()).length;const graefWeek=db.graef.filter(g=>g.week===isoWeekKey(new Date())).length;return `<div class="kpis"><div class="kpi"><b>${db.customers.length}</b><span>Kunden</span></div><div class="kpi"><b>${db.offers.length}</b><span>Angebote</span></div><div class="kpi"><b>${todayTasks}</b><span>fällige Aufgaben</span></div><div class="kpi"><b>${graefWeek}</b><span>GRAEF diese Woche</span></div></div><div class="grid"><div class="panel" style="grid-column:span 7"><div class="panel-head"><h3>Globale CRM-Suche</h3></div><div class="panel-body"><div class="searchbar"><input id="globalQ" class="input" placeholder="Firma, PLZ, Ort, Branche, Maschine, Angebot suchen …" oninput="runGlobalSearch()"><button class="btn primary" onclick="runGlobalSearch()">Suchen</button></div><div class="actions" style="margin-bottom:12px"><button class="btn" onclick="quickSearch('Metzgerei')">Metzgereien</button><button class="btn" onclick="quickSearch('Gastro')">Gastro</button><button class="btn" onclick="quickSearch('Pflegeheim')">Pflegeheime</button><button class="btn" onclick="quickSearch('Krankenhaus')">Krankenhäuser</button><button class="btn" onclick="setActive('tourplanner')">Tour planen</button></div><div id="globalResults" class="global-results"></div></div></div><div class="panel" style="grid-column:span 5"><div class="panel-head"><h3>Schnellanlage</h3></div><div class="panel-body actions"><button class="btn primary" onclick="openModal('customers')">+ Kunde</button><button class="btn" onclick="openModal('offers')">+ Angebot</button><button class="btn" onclick="openModal('tasks')">+ Aufgabe</button><button class="btn" onclick="openModal('calendar')">+ Termin</button><button class="btn" onclick="setActive('tourplanner')">Tourenplanung</button></div></div></div>`}
 function quickSearch(q){document.getElementById('globalQ').value=q;runGlobalSearch();}
 function runGlobalSearch(){const box=document.getElementById('globalResults');if(!box)return;const q=norm(document.getElementById('globalQ')?.value||'');const rows=[];['customers','offers','tasks','calendar','tours','visited','graef','products'].forEach(m=>(db[m]||[]).forEach(r=>{if(!q||norm(JSON.stringify(r)).includes(q))rows.push({m,r})}));box.innerHTML=rows.slice(0,35).map(x=>`<div class="result"><span class="pill">${esc(modules[x.m].title)}</span> <b>${esc(x.r.company||x.r.title||x.r.product||'Datensatz')}</b><div class="muted small">${esc([x.r.target,x.r.address,x.r.status,x.r.product,x.r.date,x.r.due,x.r.notes].filter(Boolean).join(' · ')).slice(0,240)}</div></div>`).join('')||'<div class="empty">Keine Treffer.</div>';}
 function listHTML(m){const meta=modules[m];const rows=db[m]||[];return `<div class="panel"><div class="panel-head"><div><h3>${esc(meta.title)}</h3><div class="muted">${esc(meta.sub)}</div></div><div class="toolbar"><input class="input" id="listQ" placeholder="Suchen …" oninput="filterTable('${m}')"><button class="btn primary" onclick="openModal('${m}')">+ ${esc(meta.label)}</button><button class="btn" onclick="exportCSV('${m}')">CSV</button></div></div><div class="table-wrap"><table><thead>${tableHead(m)}</thead><tbody id="tableBody">${tableRows(m,rows)}</tbody></table></div></div>`}
@@ -4012,82 +3864,46 @@ closeGraefWeek=function(){
     return 'Vorstellung von BLOC73 Machinery und AS Technical Solutions';
   }
 
-  const QR_BLOC73_87='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAACZklEQVR4nO2bTY6cMBBGX8VIWRopB8hRzM2iHCk3gKPMDcxyJNCXhQ3N9ChKj0JIOyov3A1+i5JK9evCxEfW9OlDODjvvPPOO++887/ira4OG2YzJjODuQPm7Wy4UB7nz+K78pNGgPkLYgZLWjuIC0BYALBr5HH+7/BztVAbAH3vg5j6tb4z666Wx/lz+O7uWdNXQcprB3TFnK+Ux/kLeBsAUg7vi+Mm5Hd+X5v9RkEJvS+GJguyqQ9Y+gFHLT+b/M4/xE9mZtYDEGTfMpAyAGtJn6+Vx/mTeHS3RoIgSpKW96fPJr/zj/A2bLUuKa+mkXVPp9dSCdtwoTzOn8Xv8XcBorA0CksZVY8890B8df/cJl88cPlbE+Z9iwsageKzk/vnBvktwmYoRpwy+xb2A4+/jfLVflMx4qCbEUuq6r4hrt9m+dUkvRrEV9MI1PuF4q5Xj79t8of4W0uj8m5Bysfqye23SX7Tb9SWUEWpbFWrb4pg12+TvEZWk146SuuKrf6F+XOx6fr4nPI7/1s+yIa4UKJuykH1kr/0N7w/2Sh/8M8aCYftdqoxevxtlL/PoGpBlKml0fgGcf22xu/5c1Ctinb7rfdHUBIv12+L/P0N0aG/McaFY+PD9dssf5ufZOqhdDqKpucOkpZr5XH+ZD5tTWiNccGsD7IB2IYovX/VOD/vE87zbeRurZPQU79H52eV3/kH+aSltDvqc6mJvf79T3izvo5zaCytq1CalDb8E3mc/zP+ePmnXN1wTZ0zW2rl97+N8/v8ZG1SbvMbsFXCNlwpj/Mn8ebfdzvvvPPOO+/85fxPiwjRnAV/BWkAAAAASUVORK5CYII=';
-  const SITE_BLOC73_87='www.bloc73machinery.com';
-
   function headerBox69(r,type){
-    return '<div class="qrhead69">'+
-      '<img src="'+H69(QR_BLOC73_87)+'" alt="QR-Code BLOC73 Machinery">'+
-      '<div class="qrcap69"><b>BLOC73 Machinery</b><span>Maschinen · Beratung · Lösungen</span><small>'+H69(SITE_BLOC73_87)+'</small></div>'+
-    '</div>';
+    if(type==='dguv'){
+      return '<div class="qrhead69"><img src="'+H69(QR70_DGUV)+'" alt="QR-Code AS Technical Kontaktformular"><div class="qrcap69"><b>DGUV Anfrage direkt</b><span>Kontaktformular AS Technical Solutions</span><small>as-technical.de/kontaktformular.php</small></div></div>';
+    }
+    return lastLetter69(r,type)?'<div class="stamp69">'+H69(letterLabel69(type))+' zuletzt<br><b>'+H69(lastLetter69(r,type))+'</b></div>':'<div class="stamp69">Briefart<br><b>'+H69(letterLabel69(type))+'</b></div>';
   }
 
   function page69(r,type){
     const co=company69(r)||'Kunde';
     const address=(addr69(r)||'').split(/\n|,\s*/).filter(Boolean).map(H69).join('<br>');
     const paragraphs=body69(r,type).map(function(p,i){return i===0?'<p class="sal">'+H69(p)+'</p>':'<p>'+H69(p)+'</p>';}).join('');
-    return '<section class="page69">'+
-      '<header class="letterHead69">'+
-        '<div class="brandBlock69"><div class="brand69">BLOC73 Machinery</div><div class="sub69">eine Marke der AS Technical Solutions GmbH</div></div>'+
-        headerBox69(r,type)+
-      '</header>'+
-      '<div class="addr69"><b>'+H69(co)+'</b><br>'+address+'</div>'+
-      '<div class="date69">Sendenhorst, '+H69(D69(today69()))+'</div>'+
-      '<h1>'+H69(subject69(type))+'</h1>'+
-      '<main class="text69">'+paragraphs+'</main>'+
-      '<div class="sig69"><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p></div>'+
-      '<footer>AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer>'+
-    '</section>';
+    const history=headerBox69(r,type);
+    return '<section class="page69"><header><div><div class="brand69">BLOC73 Machinery</div><div class="sub69">eine Marke der AS Technical Solutions GmbH</div></div>'+history+'</header>'+ 
+      '<div class="addr69"><b>'+H69(co)+'</b><br>'+address+'</div>'+ 
+      '<div class="date69">Sendenhorst, '+H69(D69(today69()))+'</div>'+ 
+      '<h1>'+H69(subject69(type))+'</h1>'+ 
+      '<main class="text69">'+paragraphs+'</main>'+ 
+      '<div class="sig69"><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p></div>'+ 
+      '<footer>AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer></section>';
   }
-
-  function css69(){
-    return '@page{size:A4;margin:0}'+
-    '*{box-sizing:border-box}'+
-    'html,body{margin:0;padding:0;background:#e9e9e9;color:#111;font-family:Arial,Helvetica,sans-serif}'+
-    '.toolbar69{position:sticky;top:0;z-index:10;background:#111;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:center;box-shadow:0 2px 18px rgba(0,0,0,.35)}'+
-    '.toolbar69 button{border:1px solid #d6b46a;background:#222;color:#fff;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}'+
-    '.toolbar69 .primary{background:#d6b46a;color:#111}'+
-    '.toolbar69 span{font-size:10pt;color:#ddd;margin-left:8px}'+
-    '.page69{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:17mm 18mm 14mm;position:relative;page-break-after:always;overflow:hidden;box-shadow:0 18px 70px rgba(0,0,0,.32)}'+
-    '.page69:last-child{page-break-after:auto}'+
-    '.letterHead69{display:flex;justify-content:space-between;align-items:flex-start;gap:16mm;border-bottom:2px solid #111;padding-bottom:9mm;margin-bottom:13mm}'+
-    '.brand69{font-size:20pt;font-weight:900;letter-spacing:.01em;line-height:1.05}'+
-    '.sub69{font-size:9.5pt;color:#444;margin-top:2mm}'+
-    '.qrhead69{border:1px solid #d3d3d3;padding:3.5mm;min-width:52mm;display:grid;grid-template-columns:25mm 1fr;gap:4mm;align-items:center;background:#fff}'+
-    '.qrhead69 img{width:25mm;height:25mm;display:block}'+
-    '.qrcap69{font-size:8.2pt;line-height:1.25;text-align:left;color:#555}'+
-    '.qrcap69 b{display:block;color:#111;font-size:9.2pt;margin-bottom:1mm}'+
-    '.qrcap69 span{display:block}'+
-    '.qrcap69 small{display:block;color:#666;font-size:7.2pt;word-break:break-all;margin-top:1mm}'+
-    '.addr69{font-size:10.7pt;line-height:1.38;margin:0 0 10mm;min-height:28mm}'+
-    '.date69{text-align:right;font-size:10.5pt;margin-bottom:8mm}'+
-    'h1{font-size:15.2pt;line-height:1.24;margin:0 0 7mm;font-weight:900}'+
-    '.text69 p{font-size:10.8pt;line-height:1.48;margin:0 0 3.8mm;text-align:left}'+
-    '.text69 .sal{margin-bottom:4.5mm}'+
-    '.sig69{margin-top:7mm}'+
-    '.sig69 p{font-size:10.6pt;margin:0 0 3.2mm}'+
-    'footer{position:absolute;left:18mm;right:18mm;bottom:8mm;border-top:1px solid #d5d5d5;padding-top:2.5mm;color:#666;font-size:8.1pt;line-height:1.25}'+
-    '@media print{html,body{background:#fff}.toolbar69{display:none}.page69{margin:0;box-shadow:none;width:210mm;height:297mm}}';
-  }
-
+  function css69(){return '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;background:#202020;color:#111;font:11.2pt/1.45 Arial,Helvetica,sans-serif}.toolbar69{position:sticky;top:0;z-index:5;background:#111;color:#eee;padding:10px;text-align:center}.toolbar69 button,.toolbar69 a{display:inline-block;margin:0 5px;border:1px solid #d6b46a;background:#242424;color:#fff;text-decoration:none;border-radius:10px;padding:9px 13px;font-weight:800}.toolbar69 .primary{background:#d6b46a;color:#111}.page69{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:18mm 18mm 13mm;box-shadow:0 20px 70px rgba(0,0,0,.45);position:relative;page-break-after:always;overflow:hidden}header{display:flex;justify-content:space-between;gap:18mm;border-bottom:2px solid #111;padding-bottom:8mm;margin-bottom:12mm}.brand69{font-size:19pt;font-weight:900;letter-spacing:.02em}.sub69{font-size:9.5pt;color:#555;margin-top:1mm}.stamp69{border:1px solid #ddd;padding:6mm 7mm;text-align:right;min-width:38mm;font-size:8.8pt;color:#666}.stamp69 b{font-size:10.5pt;color:#111}.qrhead69{border:1px solid #ddd;padding:4mm;min-width:44mm;display:grid;grid-template-columns:24mm 1fr;gap:4mm;align-items:center}.qrhead69 img{width:24mm;height:24mm;display:block}.qrcap69{font-size:8.2pt;line-height:1.25;text-align:left;color:#555}.qrcap69 b{display:block;font-size:9pt;color:#111;margin-bottom:1mm}.qrcap69 span{display:block}.qrcap69 small{display:block;font-size:7pt;word-break:break-all;color:#666}.addr69{font-size:10.5pt;line-height:1.35;margin-bottom:8mm;min-height:24mm}.date69{text-align:right;font-size:10.5pt;margin-bottom:10mm}h1{font-size:15.5pt;line-height:1.22;margin:0 0 8mm;font-weight:900}.text69 p{margin:0 0 4.1mm;text-align:left}.text69 .sal{margin-bottom:5mm}.sig69{margin-top:8mm}.sig69 p{margin:0 0 3.5mm}footer{position:absolute;left:18mm;right:18mm;bottom:9mm;border-top:1px solid #ddd;padding-top:3mm;color:#666;font-size:8.3pt;line-height:1.25}@media print{body{background:#fff}.toolbar69{display:none}.page69{margin:0;box-shadow:none}}';}
   function doc69(rows,type,title,toolbar){
     rows=Array.isArray(rows)?rows.filter(Boolean):[];
     const pages=rows.map(function(r){return page69(r,type);}).join('');
-    const tools=toolbar?'<div class="toolbar69"><button class="primary" onclick="window.print()">PDF erstellen / Drucken</button><button onclick="window.close()">Schließen</button><span>'+H69(rows.length)+' A4-Seite(n) · PDF-Vorschau</span></div>':'';
-    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+H69(title||'BLOC73 Brief PDF')+'</title><style>'+css69()+'</style></head><body>'+tools+pages+'</body></html>';
+    let tools='';
+    if(toolbar){
+      const fname=file69(title||('BLOC73_'+letterLabel69(type)+'_'+today69()))+'.doc';
+      tools='<div class="toolbar69"><button class="primary" onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.downloadLetterWord69()">Word-Datei herunterladen</button><button onclick="window.close()">Schließen</button><span>'+H69(rows.length)+' A4-Seite(n)</span></div>';
+    }
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+H69(title||'BLOC73 Brief')+'</title><style>'+css69()+'</style></head><body>'+tools+pages+'<script>window.downloadLetterWord69=function(){var html=document.documentElement.outerHTML;var blob=new Blob([html],{type:"application/msword;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download='+JSON.stringify(file69(title||('BLOC73_'+letterLabel69(type)+'_'+today69()))+'.doc')+';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1200)};<\/script></body></html>';
   }
-
   function openDoc69(rows,type,title){
     const html=doc69(rows,type,title,true);
     const w=window.open('','_blank');
     if(!w){
-      alert('PDF-Vorschau konnte nicht geöffnet werden. Bitte Popups für das CRM erlauben. Es wird keine Word-Datei mehr erzeugt.');
-      return;
+      const blob=new Blob([doc69(rows,type,title,false)],{type:'application/msword;charset=utf-8'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file69(title)+'.doc';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);
+      alert('Popup blockiert. Der Brief wurde als Word-Datei heruntergeladen.');return;
     }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    try{w.focus();}catch(e){}
+    w.document.open();w.document.write(html);w.document.close();
   }
 
   window.createSelectedLetter69=function(){
@@ -5289,36 +5105,78 @@ closeGraefWeek=function(){
 })();
 
 
-/* v87 · finale sichtbare Versionsanzeige */
+/* ==========================================================
+   v88 · harte Korrektur Dashboard + Brief
+   Basis: v78 stabil.
+   Dashboard wird direkt über renderContent abgefangen.
+   Alle alten Brieffunktionen werden auf neue PDF-Briefvorschau umgeleitet.
+   Keine Word-Ausgabe.
+   ========================================================== */
 (function(){
-  function setVersion87(){
-    try{ document.title='BLOC73 CRM · v87 · Profi-Stand'; }catch(e){}
-    try{
-      var p=document.querySelector('.brand p');
-      if(p) p.textContent='v87 · Profi-Stand';
-    }catch(e){}
+  'use strict';
+  const QR_BLOC73_V88 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAACZklEQVR4nO2bTY6cMBBGX8VIWRopB8hRzM2iHCk3gKPMDcxyJNCXhQ3N9ChKj0JIOyov3A1+i5JK9evCxEfW9OlDODjvvPPOO++887/ira4OG2YzJjODuQPm7Wy4UB7nz+K78pNGgPkLYgZLWjuIC0BYALBr5HH+7/BztVAbAH3vg5j6tb4z666Wx/lz+O7uWdNXQcprB3TFnK+Ux/kLeBsAUg7vi+Mm5Hd+X5v9RkEJvS+GJguyqQ9Y+gFHLT+b/M4/xE9mZtYDEGTfMpAyAGtJn6+Vx/mTeHS3RoIgSpKW96fPJr/zj/A2bLUuKa+mkXVPp9dSCdtwoTzOn8Xv8XcBorA0CksZVY8890B8df/cJl88cPlbE+Z9iwsageKzk/vnBvktwmYoRpwy+xb2A4+/jfLVflMx4qCbEUuq6r4hrt9m+dUkvRrEV9MI1PuF4q5Xj79t8of4W0uj8m5Bysfqye23SX7Tb9SWUEWpbFWrb4pg12+TvEZWk146SuuKrf6F+XOx6fr4nPI7/1s+yIa4UKJuykH1kr/0N7w/2Sh/8M8aCYftdqoxevxtlL/PoGpBlKml0fgGcf22xu/5c1Ctinb7rfdHUBIv12+L/P0N0aG/McaFY+PD9dssf5ufZOqhdDqKpucOkpZr5XH+ZD5tTWiNccGsD7IB2IYovX/VOD/vE87zbeRurZPQU79H52eV3/kH+aSltDvqc6mJvf79T3izvo5zaCytq1CalDb8E3mc/zP+ePmnXN1wTZ0zW2rl97+N8/v8ZG1SbvMbsFXCNlwpj/Mn8ebfdzvvvPPOO+/85fxPiwjRnAV/BWkAAAAASUVORK5CYII=";
+  const BLOC73_URL_V88 = 'www.bloc73machinery.com';
+  function h88(v){return String(v==null?'':v).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
+  function today88(){try{return typeof today==='function'?today():new Date().toISOString().slice(0,10);}catch(e){return new Date().toISOString().slice(0,10);}}
+  function fmt88(v){try{return v?formatDate(v):'';}catch(e){return v||'';}}
+  function addDays88(iso,days){try{if(typeof addDaysToIso==='function')return addDaysToIso(iso,days);}catch(e){} const d=new Date((iso||today88())+'T12:00:00'); d.setDate(d.getDate()+Number(days||0)); return d.toISOString().slice(0,10);}
+  function monday88(iso){try{if(typeof mondayOfDateString==='function')return mondayOfDateString(iso||today88());}catch(e){} const d=new Date((iso||today88())+'T12:00:00'); const day=d.getDay()||7; d.setDate(d.getDate()+1-day); return d.toISOString().slice(0,10);}
+  function inRange88(d,a,b){return !!d&&String(d)>=String(a)&&String(d)<=String(b);}
+  function n88(v){return Number(String(v||'0').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;}
+  function euro88(v){return n88(v).toLocaleString('de-DE',{maximumFractionDigits:0})+' €';}
+  function st88(v){return String(v||'').toLowerCase();}
+  function openOffer88(o){const s=st88(o.status); return !/gewonnen|verloren|abgesagt|storniert|erledigt/.test(s);}
+  function text88(r){return String([r.company,r.customer,r.title,r.target,r.status,r.notes,r.discussion,r.product,r.area,r.type,r.address].filter(Boolean).join(' ')).toLowerCase();}
+  function dguv88(r){return /dguv|prüfung|pruefung|betriebsmittel|wartung|service|metzgerei|fleischerei|gastro|pflegeheim|krankenhaus|großküche|grosskueche/.test(text88(r));}
+  function uniq88(rows){const seen={}; return (rows||[]).filter(r=>{const k=String((r.company||r.customer||r.title||'')+' '+(r.address||'')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim(); if(!k||seen[k])return false; seen[k]=1; return true;});}
+  function bar88(label,val,max){const w=max?Math.max(3,Math.round((val/max)*100)):0; return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:5px"><span>'+h88(label)+'</span><b>'+h88(val)+'</b></div><div style="height:9px;background:#101010;border:1px solid #333;border-radius:999px;overflow:hidden"><div style="height:100%;width:'+w+'%;background:linear-gradient(135deg,#d6b46a,#8a6428)"></div></div></div>';}
+  function dashboard88(){
+    const now=today88(), weekStart=monday88(now), weekEnd=addDays88(weekStart,6), next7=addDays88(now,7);
+    const tours=Array.isArray(db.tours)?db.tours:[], visited=Array.isArray(db.visited)?db.visited:[], offers=Array.isArray(db.offers)?db.offers:[], tasks=Array.isArray(db.tasks)?db.tasks:[], graef=Array.isArray(db.graef)?db.graef:[], letters=Array.isArray(db.letters)?db.letters:[];
+    const toursWeek=tours.filter(t=>inRange88(t.tourDate,weekStart,weekEnd));
+    const toursOpen=toursWeek.filter(t=>!st88(t.status).includes('besucht'));
+    const toursDone=toursWeek.filter(t=>st88(t.status).includes('besucht'));
+    const visitedWeek=visited.filter(v=>inRange88(v.visitedAt,weekStart,weekEnd));
+    const graefWeek=graef.filter(g=>inRange88(g.informedAt,weekStart,weekEnd)||inRange88(g.visitedAt,weekStart,weekEnd));
+    const openOffers=offers.filter(openOffer88), wonOffers=offers.filter(o=>st88(o.status).includes('gewonnen')), lostOffers=offers.filter(o=>st88(o.status).includes('verloren'));
+    const openValue=openOffers.reduce((s,o)=>s+n88(o.value),0), wonValue=wonOffers.reduce((s,o)=>s+n88(o.value),0);
+    const closeBase=wonOffers.length+lostOffers.length, closeRate=closeBase?Math.round((wonOffers.length/closeBase)*100):0;
+    const dueTasks=tasks.filter(t=>st88(t.status)!=='erledigt'&&t.due&&t.due<=now), nextTasks=tasks.filter(t=>st88(t.status)!=='erledigt'&&t.due&&t.due>now&&t.due<=next7);
+    const dueOffers=openOffers.filter(o=>o.followDate&&o.followDate<=now), nextOffers=openOffers.filter(o=>o.followDate&&o.followDate>now&&o.followDate<=next7);
+    const dguvRows=uniq88([...(Array.isArray(db.customers)?db.customers:[]),...tours,...visited].filter(dguv88));
+    const actions=[...dueOffers.map(o=>({kind:'Angebot fällig',date:o.followDate,title:o.title||o.customer||'Angebot',sub:o.customer||o.product||'',module:'offers'})),...dueTasks.map(t=>({kind:'Aufgabe fällig',date:t.due,title:t.title||'Aufgabe',sub:t.customer||t.type||'',module:'tasks'})),...toursOpen.slice(0,10).map(t=>({kind:'Tour offen',date:t.tourDate,title:t.company||'Tourkunde',sub:(t.target||'')+' · '+(t.address||''),module:'tours'})),...nextOffers.map(o=>({kind:'Nachfassen',date:o.followDate,title:o.title||o.customer||'Angebot',sub:o.customer||o.product||'',module:'offers'})),...nextTasks.map(t=>({kind:'Aufgabe',date:t.due,title:t.title||'Aufgabe',sub:t.customer||t.type||'',module:'tasks'}))].sort((a,b)=>String(a.date||'9999').localeCompare(String(b.date||'9999'))).slice(0,14);
+    const actionRows=actions.length?actions.map(a=>'<tr><td><span class="pill warn">'+h88(a.kind)+'</span></td><td>'+h88(fmt88(a.date))+'</td><td><b>'+h88(a.title)+'</b><br><span class="muted small">'+h88(a.sub)+'</span></td><td><button class="btn" onclick="setActive(\''+h88(a.module)+'\')">Öffnen</button></td></tr>').join(''):'<tr><td colspan="4"><div class="empty">Keine dringenden Punkte. Sauber.</div></td></tr>';
+    const stages=[['Entwurf',offers.filter(o=>st88(o.status).includes('entwurf')).length],['Gesendet',offers.filter(o=>st88(o.status).includes('gesendet')).length],['Nachfassen',offers.filter(o=>st88(o.status).includes('nachfassen')).length],['Verhandlung',offers.filter(o=>st88(o.status).includes('verhandlung')).length],['Gewonnen',wonOffers.length],['Verloren',lostOffers.length]];
+    const maxStage=Math.max(...stages.map(x=>x[1]),1);
+    const targetCounts={}; uniq88([...toursWeek,...visitedWeek]).forEach(r=>{const t=r.target||'Sonstiges'; targetCounts[t]=(targetCounts[t]||0)+1;});
+    const targetKeys=Object.keys(targetCounts).sort((a,b)=>targetCounts[b]-targetCounts[a]).slice(0,8), maxTarget=Math.max(...targetKeys.map(k=>targetCounts[k]),1);
+    const firstLetters=letters.filter(l=>String(l.type||'').toLowerCase()==='erst').length, dguvLetters=letters.filter(l=>String(l.type||'').toLowerCase()==='dguv').length, followLetters=letters.filter(l=>String(l.type||'').toLowerCase()==='folge').length;
+    return '<div class="panel"><div class="panel-head"><div><h3>Vertriebs-Cockpit</h3><div class="muted">Profi-Übersicht ohne Kundenliste und ohne Suchblock.</div></div><div class="actions"><button class="btn" onclick="setActive(\'tourplanner\')">Tour planen</button><button class="btn" onclick="setActive(\'tours\')">Tagestouren</button><button class="btn" onclick="setActive(\'offers\')">Angebote</button><button class="btn" onclick="setActive(\'tasks\')">Aufgaben</button></div></div><div class="panel-body"><div class="notice"><b>Aktuelle Woche:</b> '+h88(fmt88(weekStart))+' bis '+h88(fmt88(weekEnd))+' · Fokus: Besuche abschließen, Angebote nachfassen, DGUV-Potenzial sichern.</div><div style="height:14px"></div><div class="kpis"><div class="kpi"><b>'+h88(toursDone.length+visitedWeek.length)+'</b><span>Besuche / Abschlüsse KW</span></div><div class="kpi"><b>'+h88(toursOpen.length)+'</b><span>offene Tourkontakte KW</span></div><div class="kpi"><b>'+h88(openOffers.length)+'</b><span>offene Angebote</span></div><div class="kpi"><b>'+h88(euro88(openValue))+'</b><span>offener Angebotswert</span></div></div><div class="kpis"><div class="kpi"><b>'+h88(dueTasks.length+dueOffers.length)+'</b><span>heute / überfällig</span></div><div class="kpi"><b>'+h88(graefWeek.length)+'</b><span>GRAEF informiert KW</span></div><div class="kpi"><b>'+h88(dguvRows.length)+'</b><span>DGUV-Potenzial</span></div><div class="kpi"><b>'+h88(closeRate)+'%</b><span>Abschlussquote</span></div></div></div></div>'+ '<div class="grid" style="margin-top:16px"><div class="panel" style="grid-column:span 7"><div class="panel-head"><h3>Prioritäten / nächste Schritte</h3><button class="btn primary" onclick="setActive(\'tasks\')">Aufgaben öffnen</button></div><div class="table-wrap"><table><thead><tr><th>Typ</th><th>Datum</th><th>Vorgang</th><th>Aktion</th></tr></thead><tbody>'+actionRows+'</tbody></table></div></div><div class="panel" style="grid-column:span 5"><div class="panel-head"><h3>Angebots-Pipeline</h3><button class="btn" onclick="setActive(\'offers\')">Angebote öffnen</button></div><div class="panel-body">'+stages.map(x=>bar88(x[0],x[1],maxStage)).join('')+'<div class="notice"><b>Gewonnener Wert:</b> '+h88(euro88(wonValue))+' · <b>Offener Wert:</b> '+h88(euro88(openValue))+'</div></div></div></div>' + '<div class="grid" style="margin-top:16px"><div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Wochenleistung</h3></div><div class="panel-body">'+bar88('Tourkontakte geplant',toursWeek.length,Math.max(toursWeek.length,1))+bar88('Besuche abgeschlossen',toursDone.length+visitedWeek.length,Math.max(toursWeek.length,visitedWeek.length,1))+bar88('GRAEF informiert',graefWeek.length,Math.max(toursWeek.length,graefWeek.length,1))+bar88('offene Tourkontakte',toursOpen.length,Math.max(toursWeek.length,1))+'</div></div><div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Zielgruppen KW</h3></div><div class="panel-body">'+(targetKeys.length?targetKeys.map(k=>bar88(k,targetCounts[k],maxTarget)).join(''):'<div class="empty">Noch keine Wochenkontakte.</div>')+'</div></div><div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Briefe / Kontaktimpulse</h3></div><div class="panel-body"><div class="kpi" style="margin-bottom:10px"><b>'+h88(firstLetters)+'</b><span>Erstbesuch-Briefe</span></div><div class="kpi" style="margin-bottom:10px"><b>'+h88(dguvLetters)+'</b><span>DGUV-Briefe</span></div><div class="kpi"><b>'+h88(followLetters)+'</b><span>Folgebesuch-Briefe</span></div></div></div></div>';
   }
-  setVersion87();
-  setTimeout(setVersion87,50);
-  setTimeout(setVersion87,300);
-  var oldSetActive87=window.setActive;
-  if(typeof oldSetActive87==='function'){
-    window.setActive=function(k){
-      var r=oldSetActive87.apply(this,arguments);
-      setTimeout(setVersion87,0);
-      setTimeout(setVersion87,80);
-      return r;
-    };
-  }
-  var oldRenderContent87=window.renderContent;
-  if(typeof oldRenderContent87==='function'){
-    window.renderContent=function(){
-      var r=oldRenderContent87.apply(this,arguments);
-      setTimeout(setVersion87,0);
-      setTimeout(setVersion87,80);
-      return r;
-    };
-  }
+  const originalRenderContent88=typeof renderContent==='function'?renderContent:null;
+  window.renderContent=function(){const c=document.getElementById('content'); if(active==='dashboard'){if(c)c.innerHTML=dashboard88(); return;} if(originalRenderContent88)return originalRenderContent88.apply(this,arguments);};
+  try{renderContent=window.renderContent;}catch(e){}
+  window.dashboardHTML=dashboard88; try{dashboardHTML=dashboard88;}catch(e){}
+
+  function company88(r){return String((r&&(r.company||r.name||r.customer||r.title))||'').trim();}
+  function address88(r){return String((r&&(r.address||[r.street,r.zip,r.city].filter(Boolean).join(' ')))||'').trim();}
+  function file88(v){return String(v||'BLOC73_Brief').replace(/[^a-z0-9äöüß_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,90)||'BLOC73_Brief';}
+  function subject88(type){if(type==='dguv')return 'DGUV V3 Prüfung und technische Betreuung Ihrer Betriebsmittel'; if(type==='folge')return 'Folgetermin zu unserem bisherigen Austausch'; return 'Vorstellung von BLOC73 Machinery und AS Technical Solutions';}
+  function body88(r,type){const sal='Sehr geehrte Damen und Herren,'; if(type==='dguv')return [sal,'im Rahmen unserer Außendiensttour möchten wir Ihnen AS Technical Solutions als technischen Partner für Service, Wartung und DGUV V3 Prüfungen vorstellen.','Gerade in lebensmittelverarbeitenden Betrieben müssen Betriebsmittel zuverlässig, sicher und nachvollziehbar dokumentiert sein. Dazu gehören eine saubere Prüfung, klare Prüfprotokolle, Prüfplaketten und eine strukturierte Nachverfolgung der nächsten Prüftermine.','Über AS Technical Solutions verbinden wir technische Praxis mit Vertriebserfahrung aus der Lebensmitteltechnik. Wir prüfen nicht nur formal, sondern erkennen im Betrieb auch technische Risiken, Wartungsbedarf und mögliche Schwachstellen an Maschinen und Betriebsmitteln.','Gerne prüfen wir bei einem kurzen Vor-Ort-Termin, ob und in welchem Umfang eine DGUV V3 Prüfung, Wartung oder technische Betreuung für Ihren Betrieb sinnvoll ist.','Wir freuen uns auf einen kurzen fachlichen Austausch.']; if(type==='folge')return [sal,'vielen Dank für den bisherigen Kontakt. Für den Folgebesuch möchten wir gezielt an die bereits angesprochenen Punkte anknüpfen und die nächsten Schritte konkretisieren.','Im Mittelpunkt stehen Ihre konkrete Anwendung, der vorhandene Maschinenbestand, Bedienabläufe, Platzsituation, Servicefähigkeit und der wirtschaftliche Nutzen.','BLOC73 Machinery unterstützt Sie bei der Auswahl professioneller Lebensmitteltechnik. AS Technical Solutions ergänzt diesen Ansatz durch technische Betreuung, Service, Wartung, Inbetriebnahme, Reparatur und DGUV-Prüfungen.','Der Folgetermin dient dazu, offene Fragen sauber zu klären und eine Empfehlung vorzubereiten, die technisch passt und im Alltag funktioniert.','Wir freuen uns auf den weiteren Austausch mit Ihnen.']; return [sal,'im Rahmen unserer Außendiensttour möchten wir Ihnen BLOC73 Machinery kurz vorstellen. Wir stehen für praxisnahe Beratung, hochwertige Maschinenlösungen und eine gezielte Auswahl professioneller Lebensmitteltechnik für Betriebe, die zuverlässig, hygienisch und wirtschaftlich arbeiten müssen.','Für lebensmittelverarbeitende Betriebe sind Hygiene, Verarbeitungssicherheit, Leistung, Service und Wirtschaftlichkeit entscheidend. Genau auf diese Anforderungen ist unser Maschinenportfolio ausgelegt.','Unser Portfolio umfasst unter anderem Schneidtechnik von GRAEF, Vakuum- und Verpackungstechnik von ZERMAT, Lösungen für Food Processing, Kühlung, Clips, Schlaufen, Gebrauchttechnik sowie weitere Maschinenbereiche für Handwerk, Gastronomie, Gemeinschaftsverpflegung und Industrie.','Über AS Technical Solutions ergänzen wir den Vertrieb um technische Kompetenz: Service, Wartung, Inbetriebnahme, Reparatur, technische Optimierung und DGUV-Prüfungen. Dadurch erhalten Sie nicht nur ein Angebot, sondern eine Lösung, die im Betrieb auch langfristig funktioniert.','Unser Ansatz ist bewusst praxisnah: Wir prüfen Bedarf, Anwendung, Platzsituation, Investitionsziel und Servicefähigkeit. So entsteht eine Empfehlung, die technisch passt und wirtschaftlich sinnvoll ist.','Bei unserem Besuch geht es um eine kurze fachliche Einordnung direkt vor Ort: Welche Prozesse laufen bereits gut, wo gibt es Potenzial und welche Lösung kann Ihren Betrieb tatsächlich entlasten?'];}
+  function letterCss88(){return '@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#e9e9e9;color:#111;font-family:Arial,Helvetica,sans-serif}.toolbar88{position:sticky;top:0;z-index:20;background:#111;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:center;box-shadow:0 2px 18px rgba(0,0,0,.35)}.toolbar88 button{border:1px solid #d6b46a;background:#222;color:#fff;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}.toolbar88 .primary{background:#d6b46a;color:#111}.toolbar88 span{font-size:10pt;color:#ddd;margin-left:8px}.page88{width:210mm;height:297mm;margin:12px auto;background:#fff;position:relative;overflow:hidden;box-shadow:0 18px 70px rgba(0,0,0,.32);padding:16mm 20mm 16mm 24mm;page-break-after:always}.page88:last-child{page-break-after:auto}.top88{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:8mm;margin-bottom:8mm}.brand88{font-size:20pt;font-weight:900;letter-spacing:.01em;line-height:1.05}.sub88{font-size:9.2pt;color:#444;margin-top:2mm}.qr88{border:1px solid #d3d3d3;padding:3.2mm;width:56mm;display:grid;grid-template-columns:24mm 1fr;gap:4mm;align-items:center;background:#fff}.qr88 img{width:24mm;height:24mm;display:block}.qr88 div{font-size:8pt;line-height:1.25;color:#555}.qr88 b{display:block;color:#111;font-size:9pt;margin-bottom:1mm}.qr88 small{display:block;color:#666;font-size:7.1pt;word-break:break-all;margin-top:1mm}.sender88{font-size:7.5pt;color:#666;border-bottom:1px solid #ccc;padding-bottom:1mm;width:82mm;margin-bottom:3mm}.addr88{font-size:10.5pt;line-height:1.35;min-height:31mm;margin-bottom:6mm}.date88{text-align:right;font-size:10.2pt;margin-bottom:8mm}.subject88{font-size:14.8pt;line-height:1.23;font-weight:900;margin:0 0 7mm}.text88{max-width:164mm}.text88 p{font-size:10.65pt;line-height:1.46;margin:0 0 3.45mm;text-align:left}.text88 .sal{margin-bottom:4.5mm}.sig88{margin-top:7mm}.sig88 p{font-size:10.4pt;line-height:1.36;margin:0 0 3mm}.foot88{position:absolute;left:24mm;right:20mm;bottom:9mm;border-top:1px solid #d5d5d5;padding-top:2.2mm;font-size:7.7pt;line-height:1.25;color:#666}@media print{html,body{background:#fff}.toolbar88{display:none}.page88{margin:0;box-shadow:none;width:210mm;height:297mm}}';}
+  function page88(r,type){const co=company88(r)||'Kunde'; const addr=address88(r).split(/\n|,\s*/).filter(Boolean).map(h88).join('<br>'); const paragraphs=body88(r,type).map((p,i)=>i===0?'<p class="sal">'+h88(p)+'</p>':'<p>'+h88(p)+'</p>').join(''); return '<section class="page88"><div class="top88"><div><div class="brand88">BLOC73 Machinery</div><div class="sub88">eine Marke der AS Technical Solutions GmbH</div></div><div class="qr88"><img src="'+h88(QR_BLOC73_V88)+'" alt="QR-Code BLOC73 Machinery"><div><b>BLOC73 Machinery</b><span>Maschinen · Beratung · Lösungen</span><small>'+h88(BLOC73_URL_V88)+'</small></div></div></div><div class="sender88">AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst</div><div class="addr88"><b>'+h88(co)+'</b><br>'+addr+'</div><div class="date88">Sendenhorst, '+h88(fmt88(today88()))+'</div><h1 class="subject88">'+h88(subject88(type))+'</h1><main class="text88">'+paragraphs+'</main><div class="sig88"><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p></div><div class="foot88">AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</div></section>';}
+  function openPdfPreview88(rows,type,title){rows=(Array.isArray(rows)?rows:[rows]).filter(Boolean); const pages=rows.map(r=>page88(r,type)).join(''); const tools='<div class="toolbar88"><button class="primary" onclick="window.print()">PDF erstellen / Drucken</button><button onclick="window.close()">Schließen</button><span>'+h88(rows.length)+' A4-Seite(n) · PDF-Vorschau · keine Word-Datei</span></div>'; const doc='<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+h88(title||'BLOC73 Brief PDF')+'</title><style>'+letterCss88()+'</style></head><body>'+tools+pages+'</body></html>'; const w=window.open('','_blank'); if(!w){alert('PDF-Vorschau konnte nicht geöffnet werden. Bitte Popups für das CRM erlauben.'); return;} w.document.open(); w.document.write(doc); w.document.close(); try{w.focus();}catch(e){}}
+  function findRow88(module,id){const arr=Array.isArray(db[module])?db[module]:[]; return arr.find(x=>String(x.id)===String(id));}
+  function dialog88(){let d=document.getElementById('letterDialog88'); if(d)return d; d=document.createElement('dialog'); d.id='letterDialog88'; d.innerHTML='<div class="modal-head"><h3>PDF-Brief vor Besuch</h3><button class="x" type="button" onclick="closeLetter88()">×</button></div><div class="modal-body"><input type="hidden" id="letterModule88"><input type="hidden" id="letterId88"><div class="notice"><b>PDF-Brief:</b> saubere A4-Vorschau mit QR-Code zu www.bloc73machinery.com. Kein Word-Dokument.</div><div style="height:12px"></div><div class="form-grid"><div class="field"><label>Kunde</label><input id="letterCompany88" class="input" readonly></div><div class="field"><label>Briefart</label><select id="letterType88" class="select"><option value="erst">Erstbesuch / Unternehmensvorstellung</option><option value="dguv">DGUV V3 / technische Prüfung</option><option value="folge">Folgebesuch / Anknüpfung</option></select></div><div class="field wide"><label>Adresse für A4-PDF-Brief</label><textarea id="letterAddress88" placeholder="Firma, Straße, PLZ Ort"></textarea></div></div></div><div class="modal-foot"><button class="btn" type="button" onclick="closeLetter88()">Abbrechen</button><button class="btn primary" type="button" onclick="createPdfLetter88()">PDF-Vorschau öffnen</button></div>'; document.body.appendChild(d); return d;}
+  window.closeLetter88=function(){const d=document.getElementById('letterDialog88'); if(d)d.close();};
+  window.openLetter88=function(module,id){const r=findRow88(module,id)||findRow88('tours',id)||findRow88('customers',id); if(!r){alert('Datensatz nicht gefunden.'); return;} const d=dialog88(); d.dataset.module=module||'tours'; d.dataset.id=String(id); document.getElementById('letterModule88').value=module||'tours'; document.getElementById('letterId88').value=String(id); document.getElementById('letterCompany88').value=company88(r)||'Kunde'; document.getElementById('letterAddress88').value=address88(r); document.getElementById('letterType88').value='erst'; if(typeof d.showModal==='function')d.showModal(); else alert('Briefdialog wird von diesem Browser nicht unterstützt.');};
+  window.createPdfLetter88=function(){const module=document.getElementById('letterModule88').value||'tours'; const id=document.getElementById('letterId88').value; const r=findRow88(module,id)||findRow88('tours',id)||findRow88('customers',id); if(!r){alert('Datensatz nicht gefunden.'); return;} const addr=String(document.getElementById('letterAddress88').value||'').trim(); if(!addr){alert('Ohne Adresse wird kein Brief erstellt.'); return;} r.address=addr; const type=document.getElementById('letterType88').value||'erst'; r.briefPreparedAt=new Date().toISOString(); r.briefStatus='PDF-Brief vorbereitet'; r.lastLetterType=type; r.lastLetterDate=today88(); if(!Array.isArray(r.letterHistory))r.letterHistory=[]; r.letterHistory.push({type:type,date:today88(),at:new Date().toISOString(),source:'v88_pdf'}); if(!Array.isArray(db.letters))db.letters=[]; db.letters.unshift({id:(typeof uid==='function'?uid():('id_'+Date.now())),company:company88(r),target:r.target||'',address:address88(r),type:type,date:today88(),source:module,sourceId:r.id,createdAt:new Date().toISOString()}); try{persist();}catch(e){} closeLetter88(); openPdfPreview88([r],type,'BLOC73_'+file88(subject88(type))+'_'+file88(company88(r))+'_'+today88()); try{renderNav();renderContent();}catch(e){}};
+  window.openLetterChoice69=window.openLetter88; window.openPreVisitLetter69=window.openLetter88; window.openPreVisitLetter67=window.openLetter88; window.prepareVisitLetter65=function(id){return window.openLetter88('tours',id);}; window.createVisitLetterWord65=function(id){return window.openLetter88('tours',id);}; window.printTourLetter52=function(id){return window.openLetter88('tours',id);};
+  window.openPreVisitLettersVisible67=function(){const rows=(Array.isArray(db.tours)?db.tours:[]).filter(r=>!r.hidden&&!r.closedAt&&address88(r)); if(!rows.length){alert('Keine sichtbaren Tourkunden mit Adresse vorhanden.'); return;} const typeRaw=prompt('Briefart für sichtbare Tourkunden:\n\nerst = Erstbesuch\ndguv = DGUV\nfolge = Folgebesuch','erst'); const type=['erst','dguv','folge'].includes(String(typeRaw||'').toLowerCase())?String(typeRaw).toLowerCase():'erst'; openPdfPreview88(rows,type,'BLOC73_'+file88(subject88(type))+'_sichtbare_Tagestour_'+today88());};
+  function setVersion88(){try{document.title='BLOC73 CRM · v88 · Profi-Stand';}catch(e){} try{const p=document.querySelector('.brand p'); if(p)p.textContent='v88 · Profi-Stand';}catch(e){}}
+  setVersion88(); setTimeout(setVersion88,50); setTimeout(setVersion88,300);
+  const oldSetActive88=window.setActive||(typeof setActive==='function'?setActive:null); if(oldSetActive88){window.setActive=function(k){const r=oldSetActive88.apply(this,arguments); setTimeout(setVersion88,0); if(k==='dashboard')setTimeout(function(){try{renderContent();}catch(e){}},20); return r;}; try{setActive=window.setActive;}catch(e){}}
+  try{if(active==='dashboard')renderContent();}catch(e){}
 })();
 
 </script>
