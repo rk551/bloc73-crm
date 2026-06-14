@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
-  <title>BLOC73 CRM · v63 · stabil + CSV + Word</title>
+  <title>BLOC73 CRM · v69 · Briefauswahl + Händler-Suche</title>
   <style>
     :root{
       --bg:#101010; --panel:#171717; --panel2:#1f1f1f; --panel3:#242424; --line:#333; --text:#f4f4f4; --muted:#a9a9a9;
@@ -32,7 +32,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v47 · Kunden leer + Tour löschen</p></div></div>
+    <div class="brand"><div class="logo">B73</div><div><h1>BLOC73 CRM</h1><p>v83 · Briefkopf QR</p></div></div>
     <div class="nav" id="nav"></div>
     <div class="footer">Single-User HTML CRM<br>Daten lokal im Browser + Backup</div>
   </aside>
@@ -3049,6 +3049,7 @@ closeGraefWeek=function(){
 <script>
 // === v53: A4-Besuchsbriefe mit bearbeitbarer Adresse und QR-Code ===
 (function(){
+  const QR70_DGUV='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAGaAQAAAAAefbjOAAAC6klEQVR4nO2cTY6jMBBGXw1IvTRSH2COAjdr9c3gKH0DvIxk9M3CNpD0YtST6SQdihUhfsJWSp/rzzHx5Wv69XUGHHLIIYcccsih54SsXC1MZpafDdHMrFsMYh0w3GV6Dt0e6iVJM9DPACwGNNJIo3wnSefQ7abn0O2hWATABhrZEFs0hpPZENs8ICvIvabn0P2gqVtMY0hANouEDd/yJoceEmovH/QjGID1ozBok4j/4U0O/SwoSBrrQ43542KSTnk7kZTuNz2Hbg1NZmbWAcQWe/tosSG+yIb4ImDJoca9pufQrXeNs1T2Yru7qcN0MeDR1+TQNRA5qiwxZ6O6YTTSGBJnEWkJQTU++JocugZC+yshzVsWongP0gzZy+jdIp4dWjWiyZ7l5kBmtdDciL7KiGvE80P1Rw5FI0rUERJAMYZsFoBrxAGgnR9xoQf02psFhOQWcQCoxhoRICQ0dTNMv1Mr4msNMeJrEtGz2EeAqmc5r67kTI0wsjJorXQl9yMOANUfeatuhkT1MYuDkceNHn0eAqJWuddYY/UiszLMJTNRHAy3iGeHdtHnRZBZ8lJhy0c0bhEHgPYWsX+WqlqsJTDPRxwDqrtGWN1GONsh8tYB4BpxCGiXxS5CUTOVmwtRElbBY40jQKtGqBqDUk1OhepWjLUE5hrx/FD1I5TYEpc7eSh5zPOI9MHX5NA10M4iignUYHQnFNSkhGvEcaBYmqZK5y2g9w6kD8vnNXZm8VPW5NC/QOf9ETpTBthFHVvKwjXiqaFcvap9dE0SuVlmaSHMGLED4msCFtOtp+fQzaHVjygxZwkuqkZs3+JddceC4nqoE7C3mbxh7M+ChpP3Yh8SCpLezUzv1iLpZEUy4otsuPv0HPpm6NOZrqmbsV5Lmw92EWYZGJqGtUn/wdfk0DXQpR9Rahi7Msd2LNz9iCNAa0oKYO3JL9UMqXZTpVoPdYt4dsj09zGXl/8zmUMOOeSQQw45BPAHujvooozwO+cAAAAASUVORK5CYII=';
   const QR53='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAIAAABkZftOAAAGAklEQVR4nO3dsZJcJxBAUY9L///LcuCYAJvWhdlz4tXb2ae5RdAFfH7//v0X8Gf9XX8A+ImEBwHhQUB4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQeDX7j/4fD4Tn+O46X2Gu+9h9XlWz5n++V2vf/5pu983Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrdSnc+5O+eZngvtvofq53fnaaecev4r37cVKx4EhAcB4UFAeBAQHgSEBwHhQeDYHG9lej/YtFO/95V9ZSun5n7T88NXvm9WPAgIDwLCg4DwICA8CAgPAsKDwPgc73Wn5k7T867qvMrX55MVKx4EhAcB4UFAeBAQHgSEBwHhQcAc7z+qzqWs5mav3193GyseBIQHAeFBQHgQEB4EhAcB4UFgfI5XnYe5q7pHbncOtvs5p8/DXKnmfq9836x4EBAeBIQHAeFBQHgQEB4EhAeBY3M8+7L+NX0O5/T5mdX5nLte/75Z8SAgPAgIDwLCg4DwICA8CAgPAp9X9i9Nu22/WXU+p+/Dn2HFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ3reJvbzuGcNj3PvO2ewF1WPAgIDwLCg4DwICA8CAgPAsKDwPgcb2X6/Mldt52Hecr0OZnT72f685x6P7u/14oHAeFBQHgQEB4EhAcB4UFAeBDI5njT97+9so/rlfvlXjlv85V9m1Y8CAgPAsKDgPAgIDwICA8CwoPA9hzvlXvkTs33ps8FfX0+tvr81d91237IFSseBIQHAeFBQHgQEB4EhAcB4UHg88q9bdNzv12v7Ptaqc7VvO29Ve/BigcB4UFAeBAQHgSEBwHhQUB4EDi2H6/an3ZqDlPtDzz1nOl753bdNq9bqc5lteJBQHgQEB4EhAcB4UFAeBAQHgS253jVuYXV/Xjfeu7l9HNWpvfvvbI/0IoHAeFBQHgQEB4EhAcB4UFAeBDYPlfz9TnY9Nzmlb/3trnoT5vHWvEgIDwICA8CwoOA8CAgPAgIDwLH9uOtVOcWrtx2L9z0c6r3vOu2OeE0Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrcyfb9cpZoL3Tb/XLntfsKV6X2Au//vVjwICA8CwoOA8CAgPAgIDwLCg8CxOd6u6X1Wu6bnh7vPv21f2W3793bd9vmteBAQHgSEBwHhQUB4EBAeBIQHge053vT5kLuq+9amVfvEVl45B/W2+fCKFQ8CwoOA8CAgPAgIDwLCg4DwIPCZPgfylFfuT6vO29xVvYdpt53LumLFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ2Hubtfa3pe98r+wNv271X377kfD76Q8CAgPAgIDwLCg4DwICA8CBw7V3P35185L7G6j27X9H656jzPV97/LiseBIQHAeFBQHgQEB4EhAcB4UFge453al70yvmT026bg516b6fmhKeev/t73Y8HX0h4EBAeBIQHAeFBQHgQEB4ExvfjVc+f3u+3Mj03u+3+uum57rey4kFAeBAQHgSEBwHhQUB4EBAeBMb34/001bzutjnY9H683d97272FVjwICA8CwoOA8CAgPAgIDwLCg8B1+/FOeWXe+Po+ut3nf+v9hLuseBAQHgSEBwHhQUB4EBAeBIQHge053ko1V5meK07/XbfNRU/tT6vmjSu37W+04kFAeBAQHgSEBwHhQUB4EBAeBI7N8VZum+ec2oe2+5zb9o/dNte6bZ45/f9lxYOA8CAgPAgIDwLCg4DwICA8CIzP8b7VbfewTe9b2zX9d536nNV7tuJBQHgQEB4EhAcB4UFAeBAQHgR+3BzvlTnS9L7B6Xnj9Hzs1Odf2f27dp9vxYOA8CAgPAgIDwLCg4DwICA8CHyqcyZPmZ7brEw//9TvXane267bziM9xYoHAeFBQHgQEB4EhAcB4UFAeBA4th/vtvvNTvnWcy93n39qX9/Kbe9ner+fFQ8CwoOA8CAgPAgIDwLCg4DwILC9Hw/4/6x4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQUB4EBAeBIQHgX8AckqcuK4HOCoAAAAASUVORK5CYII=';
   const SITE53='https://bloc73machinery.com/';
   function h53(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
@@ -3165,218 +3166,2859 @@ closeGraefWeek=function(){
   try{document.title='BLOC73 CRM · v53 · A4 Briefe mit QR';}catch(e){}
   try{renderNav(); if(active==='tours')renderContent();}catch(e){}
 })();
-</script>
 
-
-<script>
-/* === v63: Stabiler v61-Fix – HTML/JS Fehler behoben, Struktur unverändert === */
+/* === v65: Stabiler Außendienstprozess – Brief vor Besuch + Besuch abschließen === */
 (function(){
   'use strict';
-  const V61='v63';
-  const QR61='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAIAAABkZftOAAAGAklEQVR4nO3dsZJcJxBAUY9L///LcuCYAJvWhdlz4tXb2ae5RdAFfH7//v0X8Gf9XX8A+ImEBwHhQUB4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQeDX7j/4fD4Tn+O46X2Gu+9h9XlWz5n++V2vf/5pu983Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrdSnc+5O+eZngvtvofq53fnaaecev4r37cVKx4EhAcB4UFAeBAQHgSEBwHhQeDYHG9lej/YtFO/95V9ZSun5n7T88NXvm9WPAgIDwLCg4DwICA8CAgPAsKDwPgc73Wn5k7T867qvMrX55MVKx4EhAcB4UFAeBAQHgSEBwHhQcAc7z+qzqWs5mav3193GyseBIQHAeFBQHgQEB4EhAcB4UFgfI5XnYe5q7pHbncOtvs5p8/DXKnmfq9836x4EBAeBIQHAeFBQHgQEB4EhAeBY3M8+7L+NX0O5/T5mdX5nLte/75Z8SAgPAgIDwLCg4DwICA8CAgPAp9X9i9Nu22/WXU+p+/Dn2HFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ3reJvbzuGcNj3PvO2ewF1WPAgIDwLCg4DwICA8CAgPAsKDwPgcb2X6/Mldt52Hecr0OZnT72f685x6P7u/14oHAeFBQHgQEB4EhAcB4UFAeBDI5njT97+9so/rlfvlXjlv85V9m1Y8CAgPAsKDgPAgIDwICA8CwoPA9hzvlXvkTs33ps8FfX0+tvr81d91237IFSseBIQHAeFBQHgQEB4EhAcB4UHg88q9bdNzv12v7Ptaqc7VvO29Ve/BigcB4UFAeBAQHgSEBwHhQUB4EDi2H6/an3ZqDlPtDzz1nOl753bdNq9bqc5lteJBQHgQEB4EhAcB4UFAeBAQHgS253jVuYXV/Xjfeu7l9HNWpvfvvbI/0IoHAeFBQHgQEB4EhAcB4UFAeBDYPlfz9TnY9Nzmlb/3trnoT5vHWvEgIDwICA8CwoOA8CAgPAgIDwLH9uOtVOcWrtx2L9z0c6r3vOu2OeE0Kx4EhAcB4UFAeBAQHgSEBwHhQWB7jrcyfb9cpZoL3Tb/XLntfsKV6X2Au//vVjwICA8CwoOA8CAgPAgIDwLCg8CxOd6u6X1Wu6bnh7vPv21f2W3793bd9vmteBAQHgSEBwHhQUB4EBAeBIQHge053vT5kLuq+9amVfvEVl45B/W2+fCKFQ8CwoOA8CAgPAgIDwLCg4DwIPCZPgfylFfuT6vO29xVvYdpt53LumLFg4DwICA8CAgPAsKDgPAgIDwIjJ+rWZ2Hubtfa3pe98r+wNv271X377kfD76Q8CAgPAgIDwLCg4DwICA8CBw7V3P35185L7G6j27X9H656jzPV97/LiseBIQHAeFBQHgQEB4EhAcB4UFge453al70yvmT026bg516b6fmhKeev/t73Y8HX0h4EBAeBIQHAeFBQHgQEB4ExvfjVc+f3u+3Mj03u+3+uum57rey4kFAeBAQHgSEBwHhQUB4EBAeBMb34/001bzutjnY9H683d97272FVjwICA8CwoOA8CAgPAgIDwLCg8B1+/FOeWXe+Po+ut3nf+v9hLuseBAQHgSEBwHhQUB4EBAeBIQHge053ko1V5meK07/XbfNRU/tT6vmjSu37W+04kFAeBAQHgSEBwHhQUB4EBAeBI7N8VZum+ec2oe2+5zb9o/dNte6bZ45/f9lxYOA8CAgPAgIDwLCg4DwICA8CIzP8b7VbfewTe9b2zX9d536nNV7tuJBQHgQEB4EhAcB4UFAeBAQHgR+3BzvlTnS9L7B6Xnj9Hzs1Odf2f27dp9vxYOA8CAgPAgIDwLCg4DwICA8CHyqcyZPmZ7brEw//9TvXane267bziM9xYoHAeFBQHgQEB4EhAcB4UFAeBA4th/vtvvNTvnWcy93n39qX9/Kbe9ner+fFQ8CwoOA8CAgPAgIDwLCg4DwILC9Hw/4/6x4EBAeBIQHAeFBQHgQEB4EhAcB4UFAeBAQHgSEBwHhQUB4EBAeBIQHgX8AckqcuK4HOCoAAAAASUVORK5CYII=';
-  const SITE61='https://bloc73machinery.com/';
-  function h61(v){return String(v??'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
-  function txt61(v){return String(v??'').replace(/[\r\n]+/g,' ').trim();}
-  function date61(v){try{return v?new Date(String(v)+'T12:00:00').toLocaleDateString('de-DE'):'';}catch(e){return String(v||'');}}
-  function isoToday61(){return new Date().toISOString().slice(0,10);}
-  function safeName61(v){return String(v||'BLOC73').replace(/[^a-z0-9äöüÄÖÜß_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,80)||'BLOC73';}
-  function csv61(v){return '"'+String(v??'').replace(/"/g,'""').replace(/[\r\n]+/g,' ')+'"';}
-  function download61(content,name,type){
+  const V65='v65';
+  function H65(v){return String(v==null?'':v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});}
+  function J65(v){return JSON.stringify(String(v==null?'':v));}
+  function N65(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+  function now65(){return new Date().toISOString();}
+  function today65(){return new Date().toISOString().slice(0,10);}
+  function date65(v){if(!v)return '';try{return new Date(String(v).slice(0,10)+'T12:00:00').toLocaleDateString('de-DE');}catch(e){return String(v||'');}}
+  function fileName65(v){return String(v||'BLOC73').replace(/[^a-z0-9äöüÄÖÜß_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,90)||'BLOC73';}
+  function findTour65(id){return (db.tours||[]).find(function(x){return String(x.id)===String(id);});}
+  function address65(r){
+    const street=String(r.street||r.strasse||r['straße']||'').trim();
+    const zip=String(r.zip||r.plz||'').trim();
+    const city=String(r.city||r.ort||'').trim();
+    const built=[street,[zip,city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return String(r.address||r.adresse||built||'').trim();
+  }
+  function key65(r){return N65((r.company||r.name||'')+' '+address65(r));}
+  function save65(){try{persist();}catch(e){try{localStorage.setItem('bloc73_crm_v10',JSON.stringify(db));}catch(_){}}}
+  function refresh65(){save65();try{renderNav();}catch(e){}try{renderContent();}catch(e){}}
+  function ensureArrays65(){['customers','leads','offers','tasks','calendar','tours','visited','graef'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});}
+  function download65(content,name,type){
     if(typeof download==='function') return download(content,name,type||'text/plain;charset=utf-8');
-    const blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+    const blob=new Blob([content],{type:type||'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);
   }
-  function monday61(d){
-    if(typeof mondayOfDateString==='function') return mondayOfDateString(d||isoToday61());
-    const x=new Date((d||isoToday61())+'T12:00:00'); const day=x.getDay()||7; x.setDate(x.getDate()+1-day); return x.toISOString().slice(0,10);
+  function week65(iso){try{return typeof isoWeekKey==='function'?isoWeekKey(new Date(String(iso||today65()).slice(0,10)+'T12:00:00')):'';}catch(e){return '';}}
+  function existingCustomer65(t){
+    const k=key65(t);
+    return (db.customers||[]).some(function(c){return key65(c)===k || (N65(c.company) && N65(c.company)===N65(t.company));});
   }
-  function addDays61(iso,n){
-    if(typeof addDaysToIso==='function') return addDaysToIso(iso,n);
-    const x=new Date((iso||isoToday61())+'T12:00:00'); x.setDate(x.getDate()+Number(n||0)); return x.toISOString().slice(0,10);
-  }
-  function weekKey61(start){return (typeof weekKeyFromStart==='function')?weekKeyFromStart(start):start;}
-  function weekday61(iso){return ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date((iso||isoToday61())+'T12:00:00').getDay()];}
-  function rowsForWeek61(startIso){
-    const start=monday61(startIso); const end=addDays61(start,6);
-    const rows=(typeof rowsForTourWeekStart==='function'?rowsForTourWeekStart(start):(db.tours||[]).filter(function(t){return String(t.tourDate||'')>=start && String(t.tourDate||'')<=end;}));
-    return (rows||[]).slice().sort(function(a,b){return String(a.tourDate||'').localeCompare(String(b.tourDate||'')) || ((+a.order||0)-(+b.order||0));});
-  }
-  window.exportTourWeekCSV61=function(startOverride){
-    const input=document.getElementById('tourWeekExportStart');
-    const start=monday61(startOverride || (input&&input.value) || isoToday61());
-    const week=weekKey61(start);
-    const rows=rowsForWeek61(start);
-    if(!rows.length) return alert('Keine Tagestouren für '+week+' ab '+date61(start)+' gefunden.');
-    const headers=['KW','Wochenstart Montag','Wochentag','Datum','Reihenfolge','Firma','Bestandskunde','Zielgruppe','Adresse','Telefon','Website','Status','Besucht am','GRAEF informiert','Was wurde besprochen?','Notizen'];
-    const lines=[headers.map(csv61).join(';')];
-    rows.forEach(function(r){
-      lines.push([week,date61(start),weekday61(r.tourDate),date61(r.tourDate),r.order||'',r.company||'',(r.isExistingCustomer||r.bestandskunde)?'Ja':'Nein',r.target||'',r.address||[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '),r.phone||'',r.website||'',r.status||'',r.visitedAt?date61(r.visitedAt):'',r.graefInfo||'Nein',r.discussion||'',r.notes||''].map(csv61).join(';'));
-    });
-    download61('﻿'+lines.join('\n'),'BLOC73_Tagestouren_'+week+'_'+start+'.csv','text/csv;charset=utf-8');
-  };
-  // Tourenplanung: CSV-Button sauber ergänzen, ohne die stabile Planung zu verändern.
-  const baseTourHTML61=(typeof window.tourHTML==='function'?window.tourHTML:(typeof tourHTML==='function'?tourHTML:null));
-  if(baseTourHTML61){
-    window.tourHTML=function(){
-      let html=baseTourHTML61();
-      if(!html.includes('exportTourWeekCSV61')){
-        html=html.replace('<button class="btn primary" onclick="exportTourWeekExcel()">Woche Excel herunterladen</button>','<button class="btn primary" onclick="exportTourWeekExcel()">Woche Excel herunterladen</button><button class="btn ok" onclick="exportTourWeekCSV61()">Woche CSV herunterladen</button>');
-      }
-      return html;
-    };
-    try{tourHTML=window.tourHTML;}catch(e){}
-  }
-  function isOpenTour61(r){return !!r && !r.closedAt && !r.hidden && !['geschlossen','closed','erledigt','gelöscht','geloescht'].includes(String(r.status||'').toLowerCase());}
-  function visibleTourRows61(){
-    const q=String(document.getElementById('listQ')?.value||'').toLowerCase().trim();
-    return (db.tours||[]).filter(isOpenTour61).filter(function(r){return !q || JSON.stringify(r).toLowerCase().includes(q);}).sort(function(a,b){return String(a.tourDate||'').localeCompare(String(b.tourDate||'')) || ((+a.order||0)-(+b.order||0));});
-  }
-  function address61(r){
-    const company=String(r.company||r.name||'').trim()||'Kunde';
-    let street=String(r.street||r.strasse||r['straße']||'').trim();
-    let zip=String(r.zip||r.plz||'').trim(); let city=String(r.city||r.ort||'').trim(); let full=String(r.address||r.adresse||'').trim();
-    if((!street || (!zip&&!city)) && full){
-      const parts=full.split(/[,\n]/).map(function(x){return x.trim();}).filter(Boolean);
-      if(!street && parts[0]) street=parts[0];
-      if((!zip&&!city) && parts[1]){ const m=parts[1].match(/^(\d{4,5})\s+(.+)$/); if(m){zip=m[1];city=m[2];} else city=parts[1]; }
+
+  window.createVisitLetterWord65=function(id){
+    ensureArrays65();
+    const t=findTour65(id); if(!t)return alert('Tour-Eintrag nicht gefunden.');
+    let addr=address65(t);
+    if(!addr){
+      const entered=prompt('Adresse für den Besuchsbrief eintragen:', '');
+      if(!entered)return;
+      t.address=entered.trim(); addr=address65(t);
     }
-    const lines=[company]; if(street) lines.push(street); if(zip||city) lines.push([zip,city].filter(Boolean).join(' ')); if(lines.length===1 && full) lines.push(full);
-    return {company,street,zip,city,full,lines,incomplete:lines.length<3};
+    const company=String(t.company||'Kunde').trim()||'Kunde';
+    const target=String(t.target||'').trim();
+    const html='<!doctype html><html><head><meta charset="utf-8"><title>BLOC73 Besuchsbrief</title><style>'+ 
+      '@page{size:A4;margin:20mm}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:11pt;line-height:1.45}'+
+      '.head{border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:24px}.brand{font-size:20pt;font-weight:900;letter-spacing:.5px}.sub{color:#555;font-size:10pt}'+
+      '.addr{white-space:pre-line;margin:18px 0 28px 0}.date{text-align:right;margin-bottom:22px}.subject{font-weight:800;font-size:13pt;margin:0 0 18px}.box{border:1px solid #c8c8c8;background:#f6f6f6;padding:12px;margin:18px 0}.foot{margin-top:32px;border-top:1px solid #ddd;padding-top:10px;color:#555;font-size:9pt}'+
+      'ul{margin-top:8px}li{margin-bottom:4px}a{color:#111}</style></head><body>'+ 
+      '<div class="head"><div class="brand">BLOC73 Machinery</div><div class="sub">eine Marke der AS Technical Solutions GmbH · Lebensmittelmaschinen · Service · Vertrieb · DGUV</div></div>'+ 
+      '<div class="addr"><b>'+H65(company)+'</b><br>'+H65(addr).replace(/, /g,'<br>')+'</div>'+ 
+      '<div class="date">Sendenhorst, '+H65(date65(today65()))+'</div>'+ 
+      '<div class="subject">Vor-Ort-Besuch · Maschinen, Service und technische Lösungen für Ihren Betrieb</div>'+ 
+      '<p>Sehr geehrte Damen und Herren,</p>'+ 
+      '<p>im Rahmen unserer Außendiensttour bereiten wir den Besuch bei Ihnen vor. Ziel ist ein kurzes, fachliches Gespräch darüber, wo Maschinen, Service oder Prozesslösungen in Ihrem Betrieb wirtschaftlich sinnvoll unterstützen können.</p>'+ 
+      '<div class="box"><b>Für Ihren Betrieb können insbesondere folgende Bereiche relevant sein:</b><ul>'+ 
+      '<li>professionelle Schneidtechnik, unter anderem GRAEF Voll- und Halbautomaten</li>'+ 
+      '<li>Vakuum-, Verpackungs- und Traysealer-Lösungen, unter anderem ZERMAT</li>'+ 
+      '<li>Food-Processing-Technik wie Würfeln, Schneiden, Formen, Wolfen oder Kuttern</li>'+ 
+      '<li>Service, Wartung, technische Betreuung und DGUV V3 Prüfung über AS Technical Solutions</li>'+ 
+      '<li>Verbrauchsmaterialien wie Clips und Schlaufen für laufende Produktionsprozesse</li>'+ 
+      '</ul></div>'+ 
+      '<p>Wir möchten nicht pauschal verkaufen, sondern sauber einordnen, welche Lösung technisch und wirtschaftlich zu Ihrem Betrieb passt. Deshalb ist der direkte Vor-Ort-Eindruck entscheidend.</p>'+ 
+      '<p>Weitere Informationen finden Sie unter <a href="https://bloc73machinery.com/">www.bloc73machinery.com</a>.</p>'+ 
+      '<p>Mit freundlichen Grüßen<br><br><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p>'+ 
+      '<div class="foot">AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de</div>'+ 
+      '</body></html>';
+    t.briefPreparedAt=now65();
+    t.briefStatus='Brief vor Besuch erstellt';
+    t.updatedAt=now65();
+    save65();
+    download65(html,'BLOC73_Besuchsbrief_'+fileName65(company)+'_'+today65()+'.doc','application/msword;charset=utf-8');
+    try{renderContent();renderNav();}catch(e){}
+  };
+
+  window.prepareVisitLetter65=function(id){
+    createVisitLetterWord65(id);
+  };
+
+  function ensureDialog65(){
+    let d=document.getElementById('visitCloseDialog65');
+    if(d)return d;
+    d=document.createElement('dialog');
+    d.id='visitCloseDialog65';
+    d.innerHTML='<div class="modal-head"><h3 id="visitCloseTitle65">Besuch abschließen</h3><button class="x" type="button" onclick="closeVisitClose65()">×</button></div><div class="modal-body" id="visitCloseBody65"></div><div class="modal-foot"><button type="button" class="btn" onclick="closeVisitClose65()">Abbrechen</button><button type="button" class="btn primary" onclick="saveVisitClose65()">Besuch speichern</button></div>';
+    document.body.appendChild(d);
+    return d;
   }
-  window.editTourAddress61=function(id){
-    const r=(db.tours||[]).find(function(x){return String(x.id)===String(id);});
-    if(!r) return alert('Tour-Eintrag nicht gefunden.');
-    const a=address61(r);
-    const company=prompt('Firmenname:',a.company||''); if(company===null)return;
-    const street=prompt('Straße und Hausnummer:',a.street||''); if(street===null)return;
-    const zip=prompt('PLZ:',a.zip||''); if(zip===null)return;
-    const city=prompt('Ort:',a.city||''); if(city===null)return;
-    r.company=String(company||'').trim(); r.street=String(street||'').trim(); r.zip=String(zip||'').trim(); r.city=String(city||'').trim();
-    r.address=[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '); r.updatedAt=new Date().toISOString();
-    persist(); renderContent();
+  window.closeVisitClose65=function(){const d=document.getElementById('visitCloseDialog65');if(d&&d.open)d.close();};
+
+  window.openVisitClose65=function(id){
+    ensureArrays65();
+    const t=findTour65(id); if(!t)return alert('Tour-Eintrag nicht gefunden.');
+    const d=ensureDialog65();
+    d.dataset.tourId=String(id);
+    document.getElementById('visitCloseTitle65').textContent='Besuch abschließen · '+(t.company||'Kunde');
+    const body=document.getElementById('visitCloseBody65');
+    body.innerHTML='<div class="notice"><b>Außendienst-Abschluss:</b> Hier wird der Besuch sauber verarbeitet. Brief wird vor dem Besuch erstellt; danach werden Besuch, Lead, Wiedervorlage, Angebot und GRAEF sauber gespeichert.</div>'+ 
+      '<div style="height:12px"></div>'+ 
+      '<div class="form-grid">'+
+      '<div class="field wide"><label>Kunde</label><input class="input" value="'+H65(t.company||'')+'" readonly></div>'+ 
+      '<div class="field wide"><label>Adresse</label><textarea id="v65_addr">'+H65(address65(t))+'</textarea></div>'+ 
+      '<div class="field wide"><label>Was wurde besprochen?</label><textarea id="v65_discussion" placeholder="Bedarf, Ansprechpartner, Maschine, Einwand, Interesse, nächster Schritt …">'+H65(t.discussion||'')+'</textarea></div>'+ 
+      '<div class="field wide"><label>Interne Notiz</label><textarea id="v65_notes" placeholder="Priorität, Potenzial, Wettbewerber, Maschinenbestand, Servicebedarf …">'+H65(t.notes||'')+'</textarea></div>'+ 
+      '<div class="field"><label>Ergebnis</label><select id="v65_outcome" class="select"><option>Besucht</option><option>Interesse vorhanden</option><option>Lead erstellt</option><option>GRAEF informiert</option><option>Wiedervorlage</option><option>Angebot erforderlich</option><option>Kein Interesse</option><option>Nicht vorhanden</option></select></div>'+ 
+      '<div class="field"><label>Produktbereich / Thema</label><input id="v65_product" class="input" value="'+H65(t.product||'')+'" placeholder="z. B. GRAEF, ZERMAT, DGUV, Service"></div>'+ 
+      '<div class="field"><label>Wiedervorlage</label><input id="v65_follow" class="input" type="date" value="'+H65(t.nextDate||'')+'"></div>'+ 
+      '<div class="field"><label>Angebotswert netto</label><input id="v65_offerValue" class="input" type="number" placeholder="optional"></div>'+ 
+      '<div class="field wide"><label>Angebotstitel</label><input id="v65_offerTitle" class="input" value="Angebot nach Besuch: '+H65(t.company||'Kunde')+'"></div>'+ 
+      '</div>'+ 
+      '<div class="field"><label>Aktionen speichern</label><div class="actions">'+
+      '<label class="pill ok"><input id="v65_visited" type="checkbox" checked> Besuch speichern</label>'+ 
+      '<label class="pill"><input id="v65_lead" type="checkbox"> Lead erstellen/aktualisieren</label>'+ 
+      '<label class="pill"><input id="v65_graef" type="checkbox"> GRAEF informiert</label>'+ 
+      '<label class="pill"><input id="v65_followup" type="checkbox"> Wiedervorlage in Kalender + Aufgabe</label>'+ 
+      '<label class="pill"><input id="v65_offer" type="checkbox"> Angebot als Entwurf</label>'+ 
+      '<label class="pill danger"><input id="v65_nointerest" type="checkbox"> Kein Interesse</label>'+ 
+      '<label class="pill danger"><input id="v65_gone" type="checkbox"> Nicht vorhanden</label>'+ 
+      '<label class="pill ok"><input id="v65_remove" type="checkbox" checked> Aus aktiver Tagestour entfernen</label>'+ 
+      '</div></div>';
+    d.showModal();
   };
-  function targetText61(target){
-    const t=String(target||'').toLowerCase();
-    if(t.includes('pflege')||t.includes('senior')||t.includes('heim')) return 'Gerade in Pflegeheimen und Heimküchen zählen zuverlässige Technik, hygienische Abläufe, planbarer Service und einfache Bedienbarkeit. Genau hier verbinden wir passende Maschinenlösungen mit technischer Betreuung.';
-    if(t.includes('klinik')||t.includes('kranken')) return 'In Kliniken und Großküchen müssen Maschinen zuverlässig laufen, sicher prüfbar sein und tägliche Abläufe entlasten. Wir unterstützen bei Auswahl, Service, Wartung und DGUV-relevanten Themen.';
-    if(t.includes('gastro')||t.includes('hotel')||t.includes('restaurant')) return 'In Gastronomie, Hotellerie und Catering geht es um saubere Ergebnisse, schnelle Abläufe und wirtschaftliche Lösungen. Wir beraten praxisnah und empfehlen nur Technik, die wirklich zum Betrieb passt.';
-    if(t.includes('metz')||t.includes('fleisch')) return 'Für Metzgereien und Fleischereien sind Schnittbild, Verarbeitungssicherheit, Hygiene, Leistung und Service entscheidend. Genau auf diese Anforderungen ist unser Maschinenportfolio ausgelegt.';
-    return 'Bei professioneller Lebensmitteltechnik zählen Wirtschaftlichkeit, Sicherheit, Hygiene und zuverlässiger Service. Genau dafür stehen BLOC73 Machinery und AS Technical Solutions.';
+
+  function upsertVisited65(t,result){
+    ensureArrays65();
+    const k=key65(t); let row=db.visited.find(function(v){return key65(v)===k;});
+    const data={company:t.company||'',target:t.target||'',visitedAt:today65(),result:result||'Besucht',address:address65(t),phone:t.phone||'',website:t.website||'',notes:t.notes||'',discussion:t.discussion||'',updatedAt:now65()};
+    if(row)Object.assign(row,data);else db.visited.unshift(Object.assign({id:uid(),createdAt:now65()},data));
   }
-  function wordCss61(){return '@page Section1{size:21cm 29.7cm;margin:18mm 18mm 15mm 18mm} div.Section1{page:Section1} body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.8pt;line-height:1.45} .page{width:174mm;min-height:260mm;page-break-after:always;position:relative} .sender{font-size:8.5pt;color:#555;border-bottom:1px solid #ccc;padding-bottom:8px} .date{text-align:right;margin-top:22px} .addr{margin-top:42px;width:88mm;min-height:35mm;line-height:1.42} .missing{color:#9b1c1c;font-weight:bold;margin-top:6px} .subject{margin-top:26px;font-weight:bold} h1{font-size:15.5pt;line-height:1.2;margin:20px 0 14px} p{margin:0 0 10px} .box{border-left:4px solid #1d5f9d;background:#f4f7fb;padding:12px;margin:12px 0} .bottom{display:table;width:100%;margin-top:18px} .sig{display:table-cell;vertical-align:bottom;width:70%} .qr{display:table-cell;vertical-align:bottom;text-align:center;width:30%;font-size:8.5pt;border:1px solid #ccc;padding:8px} .qr img{width:95px;height:95px} .foot{position:absolute;bottom:0;left:0;right:0;border-top:1px solid #ccc;padding-top:6px;font-size:8.5pt;color:#666}';}
-  function letterWord61(r,idx,total){
-    const a=address61(r); const target=String(r.target||'Lebensmittelbetrieb');
-    const addr=a.lines.map(function(x){return '<div>'+h61(x)+'</div>';}).join('')+(a.incomplete?'<div class="missing">Adresse bitte vor dem Versand prüfen/ergänzen.</div>':'');
-    return '<div class="page"><div class="sender">AS Technical Solutions GmbH · Industrieweg 13–15 · 48324 Sendenhorst</div><div class="date">Sendenhorst, '+h61(new Date().toLocaleDateString('de-DE'))+'</div><div class="addr">'+addr+'</div><div class="subject">Vorstellung BLOC73 Machinery / AS Technical Solutions</div><h1>Professionelle Lebensmitteltechnik, ehrliche Beratung und technischer Service aus einer Hand</h1><p>Sehr geehrte Damen und Herren,</p><p>im Rahmen unserer Außendiensttour möchten wir Ihnen unser Unternehmen kurz vorstellen. <b>BLOC73 Machinery</b> steht für praxisnahe Beratung, hochwertige Maschinenlösungen und eine klare Auswahl professioneller Lebensmitteltechnik für Betriebe, die zuverlässig, hygienisch und wirtschaftlich arbeiten müssen.</p><p>'+h61(targetText61(target))+'</p><p>Unser Portfolio umfasst unter anderem Schneidtechnik von <b>GRAEF</b>, Vakuum- und Verpackungstechnik von <b>ZERMAT</b>, Lösungen für Food Processing, Kühlung, Clips, Schlaufen, Gebrauchttechnik sowie weitere Maschinenbereiche für Handwerk, Gastronomie, Gemeinschaftsverpflegung und Industrie.</p><p>Über <b>AS Technical Solutions</b> ergänzen wir den Vertrieb um technische Kompetenz: Service, Wartung, Inbetriebnahme, Reparatur, technische Optimierung und DGUV-Prüfungen. Dadurch erhalten Sie nicht nur ein Angebot, sondern eine Lösung, die im Betrieb langfristig funktioniert.</p><div class="box"><b>Unser Ansatz:</b> Wir verkaufen keine Maschine von der Stange, sondern prüfen Bedarf, Anwendung, Platzsituation, Investitionsziel und Servicefähigkeit. So entsteht eine Empfehlung, die technisch passt und wirtschaftlich sinnvoll ist.</div><div class="bottom"><div class="sig"><p>Gerne stehen wir Ihnen für eine kurze Einschätzung, ein persönliches Gespräch oder eine konkrete Maschinenberatung zur Verfügung.</p><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH · BLOC73 Machinery<br>Mobil: +49 160 91658700<br>E-Mail: r.kutschke@as-technical.de</p></div><div class="qr"><img src="'+QR61+'"><br><b>Direkt zur Website</b><br>'+h61(SITE61)+'</div></div><div class="foot">'+h61(a.company)+' · '+h61(target)+' · Brief '+idx+'/'+total+' · www.bloc73machinery.com</div></div>';
+  function upsertLead65(t){
+    ensureArrays65();
+    const k=key65(t); let row=db.leads.find(function(l){return key65(l)===k;});
+    const data={company:t.company||'',target:t.target||'',status:'Neu',source:'Besuch / Tagestour',address:address65(t),phone:t.phone||'',email:t.email||'',website:t.website||'',nextDate:t.nextDate||'',notes:t.notes||'',discussion:t.discussion||'',updatedAt:now65()};
+    if(row)Object.assign(row,data);else{row=Object.assign({id:uid(),createdAt:now65()},data);db.leads.unshift(row);}
+    t.leadId=row.id;
   }
-  window.downloadWordLetters61=function(rows,title){
-    rows=(rows||[]).filter(Boolean); if(!rows.length) return alert('Keine Tourkunden für Word-Brief gefunden.');
-    const pages=rows.map(function(r,i){return letterWord61(r,i+1,rows.length);}).join('');
-    const html='<!doctype html><html><head><meta charset="utf-8"><title>'+h61(title||'BLOC73 Besuchsbriefe')+'</title><style>'+wordCss61()+'</style></head><body><div class="Section1">'+pages+'</div></body></html>';
-    download61(html,safeName61(title||'BLOC73_Besuchsbriefe')+'.doc','application/msword;charset=utf-8');
-  };
-  window.downloadTourLetterWord61=function(id){const r=(db.tours||[]).find(function(x){return String(x.id)===String(id);}); if(!r)return alert('Tour-Eintrag nicht gefunden.'); window.downloadWordLetters61([r],'BLOC73_Brief_'+safeName61(r.company||'Kunde'));};
-  window.downloadVisibleTourLettersWord61=function(){window.downloadWordLetters61(visibleTourRows61(),'BLOC73_Briefe_sichtbare_Tour');};
-  window.downloadTourLettersByDateWord61=function(){const def=isoToday61(); const d=prompt('Für welches Tourdatum sollen Word-Briefe erstellt werden? Format: JJJJ-MM-TT',def); if(!d)return; window.downloadWordLetters61((db.tours||[]).filter(function(r){return isOpenTour61(r)&&String(r.tourDate||'')===String(d);}),'BLOC73_Briefe_'+d);};
-  window.downloadTourLettersByWeekWord61=function(){const def=monday61(isoToday61()); const d=prompt('Wochenstart Montag für Word-Briefe eingeben. Format: JJJJ-MM-TT',def); if(!d)return; const start=monday61(d); const end=addDays61(start,6); window.downloadWordLetters61((db.tours||[]).filter(function(r){return isOpenTour61(r)&&String(r.tourDate||'')>=start&&String(r.tourDate||'')<=end;}),'BLOC73_Briefe_Woche_'+start);};
-  function copyText61(text,label){
-    if(navigator.clipboard&&window.isSecureContext) navigator.clipboard.writeText(text).then(function(){alert((label||'Text')+' kopiert.');}).catch(function(){prompt('Bitte manuell kopieren:',text);});
-    else prompt('Bitte kopieren:',text);
+  function upsertGraef65(t){
+    ensureArrays65();
+    const k=key65(t), w=week65(today65()); let row=db.graef.find(function(g){return key65(g)===k && String(g.week||'')===String(w);});
+    const data={company:t.company||'',target:t.target||'',informedAt:today65(),week:w,address:address65(t),phone:t.phone||'',website:t.website||'',notes:t.notes||'',discussion:t.discussion||'',updatedAt:now65()};
+    if(row)Object.assign(row,data);else db.graef.unshift(Object.assign({id:uid(),createdAt:now65()},data));
+    t.graefInfo='Ja';
   }
-  window.openCustomerTomTom61=function(id){
-    const r=(db.customers||[]).find(function(x){return String(x.id)===String(id);}); if(!r)return;
-    const q=[r.company,r.address,[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-    copyText61(q,'Adresse');
-    const app='tomtomgo://x-callback-url/navigate?destination='+encodeURIComponent(q);
-    window.location.href=app;
-    setTimeout(function(){window.open('https://plan.tomtom.com/de/','_blank','noopener');},900);
-  };
-  window.openCustomerTomTomPlan61=function(id){
-    const r=(db.customers||[]).find(function(x){return String(x.id)===String(id);}); if(!r)return;
-    const q=[r.company,r.address,[r.street,[r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-    copyText61(q,'Adresse'); window.open('https://plan.tomtom.com/de/','_blank','noopener');
-  };
-  // Backup stabil und zerstörungsfrei.
-  function moduleKeys61(){return ['customers','leads','offers','tasks','calendar','tours','visited','graef','products','marketing','marketingDrafts','webHits','deletedLeads','deletedOffers'];}
-  function normalizeBackup61(parsed){
-    let data=parsed;
-    if(parsed&&parsed._bloc73Backup&&parsed.data) data=parsed.data;
-    else if(parsed&&parsed.data&&typeof parsed.data==='object'&&(parsed.data.customers||parsed.data.tours||parsed.data.leads)) data=parsed.data;
-    else if(parsed&&parsed.db&&typeof parsed.db==='object') data=parsed.db;
-    if(!data||typeof data!=='object') throw new Error('Backup-Struktur nicht erkannt.');
-    const base=(typeof freshDB==='function')?freshDB():{};
-    const out=Object.assign({},base,data);
-    moduleKeys61().forEach(function(k){if(!Array.isArray(out[k])) out[k]=[];});
-    if((!out.products||!out.products.length)&&base.products) out.products=base.products;
-    return out;
+  function upsertFollow65(t){
+    ensureArrays65();
+    const date=document.getElementById('v65_follow')&&document.getElementById('v65_follow').value;
+    if(!date){alert('Bitte Wiedervorlage-Datum eintragen.');return false;}
+    const title='Wiedervorlage nach Besuch: '+(t.company||'Kunde');
+    const customer=t.company||'';
+    const cal={title:title,date:date,time:'09:00',customer:customer,type:'Wiedervorlage',notes:t.notes||'',discussion:t.discussion||'',source:'Besuchsabschluss',updatedAt:now65()};
+    const ce=db.calendar.find(function(c){return String(c.date||'')===String(date)&&N65(c.customer)===N65(customer)&&N65(c.title)===N65(title);});
+    if(ce)Object.assign(ce,cal);else db.calendar.unshift(Object.assign({id:uid(),createdAt:now65()},cal));
+    const task={title:title,customer:customer,type:'Nachfassen',due:date,status:'Offen',notes:t.notes||'',discussion:t.discussion||'',updatedAt:now65()};
+    const te=db.tasks.find(function(a){return String(a.due||'')===String(date)&&N65(a.customer)===N65(customer)&&N65(a.title)===N65(title);});
+    if(te)Object.assign(te,task);else db.tasks.unshift(Object.assign({id:uid(),createdAt:now65()},task));
+    t.nextDate=date;
+    return true;
   }
-  function summary61(data){return 'Kunden: '+(data.customers||[]).length+'\nLeads: '+(data.leads||[]).length+'\nAngebote: '+(data.offers||[]).length+'\nTagestouren: '+(data.tours||[]).length+'\nBesuchte Kunden: '+(data.visited||[]).length+'\nGRAEF: '+(data.graef||[]).length;}
-  window.exportBackup=function(){
-    try{persist();}catch(e){}
-    const safe=normalizeBackup61(db||{});
-    const payload={_bloc73Backup:{version:V61,exportedAt:new Date().toISOString(),app:'BLOC73 CRM',customers:(safe.customers||[]).length,records:moduleKeys61().reduce(function(n,k){return n+(Array.isArray(safe[k])?safe[k].length:0);},0)},data:safe};
-    try{localStorage.setItem('bloc73_backup_last_export',new Date().toISOString());}catch(e){}
-    download61(JSON.stringify(payload,null,2),'bloc73_crm_backup_'+isoToday61()+'_'+V61+'.json','application/json');
+  function createOffer65(t){
+    ensureArrays65();
+    const title=(document.getElementById('v65_offerTitle')&&document.getElementById('v65_offerTitle').value)||('Angebot nach Besuch: '+(t.company||'Kunde'));
+    const value=(document.getElementById('v65_offerValue')&&document.getElementById('v65_offerValue').value)||'';
+    const product=(document.getElementById('v65_product')&&document.getElementById('v65_product').value)||t.product||'';
+    db.offers.unshift({id:uid(),title:title,customer:t.company||'',product:product,value:value,status:'Entwurf',offerDate:today65(),followDate:t.nextDate||'',icloudLink:'',notes:t.notes||'',discussion:t.discussion||'',tourId:t.id,createdAt:now65(),updatedAt:now65()});
+  }
+
+  window.saveVisitClose65=function(){
+    const d=document.getElementById('visitCloseDialog65'); const id=d&&d.dataset.tourId; const t=findTour65(id);
+    if(!t)return alert('Tour-Eintrag nicht gefunden.');
+    t.address=(document.getElementById('v65_addr')&&document.getElementById('v65_addr').value)||address65(t);
+    t.discussion=(document.getElementById('v65_discussion')&&document.getElementById('v65_discussion').value)||'';
+    t.notes=(document.getElementById('v65_notes')&&document.getElementById('v65_notes').value)||'';
+    t.product=(document.getElementById('v65_product')&&document.getElementById('v65_product').value)||'';
+    const outcome=(document.getElementById('v65_outcome')&&document.getElementById('v65_outcome').value)||'Besucht';
+    t.visitOutcome=outcome;t.updatedAt=now65();
+    if(document.getElementById('v65_visited')&&document.getElementById('v65_visited').checked)upsertVisited65(t,outcome);
+    if(document.getElementById('v65_lead')&&document.getElementById('v65_lead').checked){upsertLead65(t);t.status='Lead erstellt';}
+    if(document.getElementById('v65_graef')&&document.getElementById('v65_graef').checked){upsertGraef65(t);if(!t.status||t.status==='Geplant')t.status='GRAEF informiert';}
+    if(document.getElementById('v65_followup')&&document.getElementById('v65_followup').checked){if(!upsertFollow65(t))return;if(!t.status||t.status==='Geplant')t.status='Wiedervorlage';}
+    if(document.getElementById('v65_offer')&&document.getElementById('v65_offer').checked){createOffer65(t);if(!t.status||t.status==='Geplant')t.status='Angebot erforderlich';}
+    if(document.getElementById('v65_nointerest')&&document.getElementById('v65_nointerest').checked){t.status='Kein Interesse';upsertVisited65(t,'Kein Interesse');}
+    if(document.getElementById('v65_gone')&&document.getElementById('v65_gone').checked){t.status='Nicht vorhanden';upsertVisited65(t,'Nicht vorhanden');}
+    if(!t.status||t.status==='Geplant')t.status=outcome;
+    if(document.getElementById('v65_remove')&&document.getElementById('v65_remove').checked){t.closedAt=now65();t.hidden=true;t.active=false;}
+    window.closeVisitClose65();
+    refresh65();
   };
-  window.importBackupFile61=function(file){
-    if(!file)return; const reader=new FileReader();
-    reader.onload=function(){
-      try{
-        const parsed=JSON.parse(String(reader.result||''));
-        const data=normalizeBackup61(parsed);
-        if(!confirm('Backup gefunden. Enthalten:\n\n'+summary61(data)+'\n\nAktuelle Daten auf diesem Gerät ersetzen?'))return;
-        db=data; persist();
-        try{localStorage.setItem('bloc73_backup_last_import',new Date().toISOString());}catch(e){}
-        renderNav(); renderContent();
-        alert('Backup erfolgreich geladen.\n\n'+summary61(db));
-      }catch(err){
-        alert('Backup konnte nicht geladen werden:\n\n'+(err&&err.message?err.message:String(err)));
-      }
-    };
-    reader.onerror=function(){alert('Datei konnte nicht gelesen werden.');}; reader.readAsText(file);
-  };
-  window.importBackup=function(e){const input=e&&e.target; const file=input&&input.files&&input.files[0]; if(input)input.value=''; window.importBackupFile61(file);};
-  window.importBackup41=window.importBackup;
-  try{importBackup=window.importBackup;importBackup41=window.importBackup;exportBackup=window.exportBackup;}catch(e){}
-  const prevBackupCenter61=window.backupCenterHTML41;
-  window.backupCenterHTML41=function(){
-    const data=normalizeBackup61(db||{}); const rows=moduleKeys61().map(function(k){return '<div class="backup-row41"><strong>'+h61((modules&&modules[k]&&modules[k].title)||k)+'</strong><span>'+((data[k]||[]).length)+' Datensätze</span></div>';}).join('');
-    return '<div class="grid"><div class="panel" style="grid-column:span 12"><div class="panel-head"><div><h3>Backup-Zentrale · v61</h3><div class="muted">Stabile Sicherung und Wiederherstellung aller CRM-Daten.</div></div><div class="toolbar"><button class="btn primary" onclick="exportBackup()">Backup JSON herunterladen</button><label class="btn ok">Backup laden<input type="file" accept="application/json,.json" hidden onchange="importBackup(event)"></label></div></div><div class="panel-body"><div class="notice"><b>v61 geprüft:</b> Backup enthält Kunden, Leads, Angebote, Aufgaben, Kalender, Tagestouren, besuchte Kunden, GRAEF, Produkte und Marketing.</div><div style="height:14px"></div><div class="backup-list41">'+rows+'</div></div></div></div>';
-  };
-  try{backupCenterHTML41=window.backupCenterHTML41;}catch(e){}
-  // Row/List Overrides zuletzt setzen, damit keine ältere Funktion dazwischenfunkt.
-  const prevRow61=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+
+  const prevRow65=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
   window.rowHTML=function(m,r){
-    const P=(typeof pill==='function')?pill:function(v){return '<span class="pill">'+h61(v||'')+'</span>';};
-    const idArg=JSON.stringify(r&&r.id?String(r.id):'');
-    const addr=(r&&r.address)||[r&&r.street,[r&&r.zip,r&&r.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-    const routeArg=JSON.stringify(addr || (r&&r.company) || '');
-    if(m==='customers'){
-      return `<tr><td><b>${h61(r.company||'')}</b><br><span class="muted small">${h61(r.phone||'')}</span></td><td>${P(r.target||'')}</td><td>${P(r.status||'')}</td><td>${h61(addr)}</td><td><div class="row-actions"><button class="btn primary" onclick='openCustomerTomTom61(${idArg})'>TomTom App</button><button class="btn" onclick='openCustomerTomTomPlan61(${idArg})'>Plan.TomTom</button><button class="btn" onclick='openMapsFor(${routeArg})'>Route</button><button class="btn" onclick='openModal("customers",${idArg})'>Bearbeiten</button><button class="btn danger" onclick='deleteRecord("customers",${idArg})'>Löschen</button></div></td></tr>`;
-    }
     if(m==='tours'){
-      const label=(r.isExistingCustomer||r.bestandskunde)?'<span class="badge ok">Bestandskunde</span>':'';
-      return `<tr><td>${h61(date61(r.tourDate))}</td><td>${h61(r.order||'')}</td><td><b>${h61(r.company||'')}</b><br><span class="muted small">${h61(addr)}</span><br>${label}</td><td>${P(r.status||'Geplant')}</td><td>${P(r.graefInfo||'Nein')}</td><td>${h61((r.discussion||'').slice(0,120))}</td><td><div class="row-actions"><button class="btn ok" onclick='markTourVisited(${idArg})'>Besucht</button><button class="btn primary" onclick='markTourLead(${idArg})'>Lead</button><button class="btn" onclick='markTourFollowUp(${idArg})'>Wiedervorlage</button><button class="btn warn" onclick='markTourGraef(${idArg})'>GRAEF</button><button class="btn" onclick='editTourAddress61(${idArg})'>Adresse bearbeiten</button><button class="btn primary" onclick='downloadTourLetterWord61(${idArg})'>Brief Word</button><button class="btn danger" onclick='markTourNoInterest(${idArg})'>Kein Interesse</button><button class="btn danger" onclick='markTourGone(${idArg})'>Nicht vorhanden</button><button class="btn" onclick='openMapsFor(${routeArg})'>Route</button><button class="btn primary" onclick='openTomTomApp49(${idArg})'>TomTom App</button><button class="btn" onclick='openModal("tours",${idArg})'>Bearbeiten</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick='deleteTourOnly47(${idArg})'>Tour löschen</button></div></td></tr>`;
+      const id=J65(r.id); const route=J65(address65(r)||r.company||''); const addr=address65(r);
+      const brief=r.briefPreparedAt?'<span class="pill ok">Brief vorbereitet</span>':'<span class="pill warn">Brief offen</span>';
+      const best=existingCustomer65(r)?'<span class="pill ok">Bestandskunde</span>':((r.isExistingCustomer||r.bestandskunde)?'<span class="pill ok">Bestandskunde</span>':'');
+      const p=(typeof pill==='function')?pill:function(v){return '<span class="pill">'+H65(v)+'</span>';};
+      return '<tr><td>'+H65(date65(r.tourDate))+'</td><td>'+H65(r.order||'')+'</td><td><b>'+H65(r.company||'')+'</b><br><span class="muted small">'+H65(addr)+'</span><br>'+best+' '+brief+'</td><td>'+p(r.status||'Geplant')+'</td><td>'+p(r.graefInfo||'Nein')+'</td><td>'+H65(String(r.discussion||'').slice(0,120))+'</td><td><div class="row-actions"><button class="btn primary" onclick="prepareVisitLetter65('+id+')">Brief vor Besuch</button><button class="btn ok" style="font-weight:900" onclick="openVisitClose65('+id+')">Besuch abschließen</button><button class="btn" onclick="editTourAddress53('+id+')">Adresse</button><button class="btn" onclick="openMapsFor('+route+')">Route</button><button class="btn primary" onclick="openTomTomApp49('+id+')">TomTom App</button><button class="btn" onclick="openModal(&quot;tours&quot;,'+id+')">Bearbeiten</button><button class="btn danger" style="font-weight:900;border-color:#9b2b2b" onclick="deleteTourOnly47('+id+')">Tour löschen</button></div></td></tr>';
     }
-    return prevRow61?prevRow61(m,r):'';
+    if(m==='customers'){
+      const act=(prevRow65?prevRow65(m,r):'');
+      if(act && act.indexOf('TomTom Kunde')<0){
+        const addr=J65(address65(r)||r.company||'');
+        return act.replace('<button class="btn" onclick="openModal(\'customers\',\''+String(r.id)+'\')">Bearbeiten</button>','<button class="btn primary" onclick="openTomTomCustomer65('+addr+')">TomTom Kunde</button><button class="btn" onclick="openModal(\'customers\',\''+String(r.id)+'\')">Bearbeiten</button>');
+      }
+      return act;
+    }
+    return prevRow65?prevRow65(m,r):'';
   };
   try{rowHTML=window.rowHTML;}catch(e){}
-  const prevList61=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+
+  window.openTomTomCustomer65=function(text){
+    const q=String(text||'').trim(); if(!q)return alert('Keine Adresse vorhanden.');
+    try{navigator.clipboard&&navigator.clipboard.writeText(q);}catch(e){}
+    const url='https://plan.tomtom.com/search/'+encodeURIComponent(q);
+    window.open(url,'_blank','noopener');
+  };
+
+  const prevList65=window.listHTML || (typeof listHTML==='function'?listHTML:null);
   window.listHTML=function(m){
-    let html=prevList61?prevList61(m):'';
-    if(m==='tours'){
-      html=html.replace('Briefe sichtbare Tour','Word sichtbare Tour').replace('Briefe nach Datum','Word nach Datum').replace('Briefe Woche','Word Woche');
-      html=html.replace(/onclick="printVisibleTourLetters52\(\)"/g,'onclick="downloadVisibleTourLettersWord61()"').replace(/onclick="printTourLettersByDate52\(\)"/g,'onclick="downloadTourLettersByDateWord61()"').replace(/onclick="printTourLettersByWeek52\(\)"/g,'onclick="downloadTourLettersByWeekWord61()"');
-      if(!html.includes('exportTourWeekCSV61')){
-        html=html.replace("<button class=\"btn\" onclick=\"exportCSV('tours')\">CSV alle Tourdaten</button>","<button class=\"btn\" onclick=\"exportCSV('tours')\">CSV alle Tourdaten</button><button class=\"btn ok\" onclick=\"exportTourWeekCSV61()\">Woche CSV</button>");
-      }
-      html=html.replace('A4-Briefdruck:', 'Word-Briefe:').replace('A4-Briefe','Word-Briefe').replace('Brief A4','Brief Word');
+    let html=prevList65?prevList65(m):'';
+    if(m==='tours' && html.indexOf('v65 Außendienst')<0){
+      html=html.replace('<b>Besuchsbrief:</b> Pro Tourkunde kannst du rechts <b>Brief</b> klicken. Für die komplette sichtbare Planung nutzt du <b>Briefe sichtbare Tour</b>. Die Briefe öffnen als A4-Druckansicht und können normal gedruckt oder als PDF gespeichert werden.','<b>v65 Außendienst:</b> Erst <b>Brief vor Besuch</b> als Word-Datei erstellen und ausdrucken. Nach dem Termin über <b>Besuch abschließen</b> sauber speichern: Besuch, Lead, GRAEF, Wiedervorlage, Angebot, kein Interesse oder nicht vorhanden.');
     }
     return html;
   };
   try{listHTML=window.listHTML;}catch(e){}
-  try{document.title='BLOC73 CRM · v63 · stabil + CSV + Word'; const p=document.querySelector('.brand p'); if(p)p.textContent='v61 · stabil geprüft';}catch(e){}
-  try{if(active==='tourplanner'||active==='tours'||active==='customers'||active==='backup')renderContent();}catch(e){}
+
+  try{document.title='BLOC73 CRM · v65 · stabiler Außendienstprozess'; const p=document.querySelector('.brand p'); if(p)p.textContent='v65 · stabiler Außendienstprozess';}catch(e){}
+  try{renderNav(); if(active==='tours'||active==='customers')renderContent();}catch(e){}
 })();
+
+
+
+/* === v67: Brief direkt beim Kunden + Tagestour-Zeile stabil + Premium-A4-Text === */
+(function(){
+  'use strict';
+  const V67='v67';
+  function H67(v){return String(v==null?'':v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});}
+  function J67(v){return JSON.stringify(String(v==null?'':v));}
+  function N67(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+  function today67(){return new Date().toISOString().slice(0,10);}
+  function now67(){return new Date().toISOString();}
+  function date67(v){try{return v?new Date(String(v).slice(0,10)+'T12:00:00').toLocaleDateString('de-DE'):new Date().toLocaleDateString('de-DE');}catch(e){return String(v||'');}}
+  function file67(v){return String(v||'BLOC73').replace(/[^a-z0-9äöüÄÖÜß_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,90)||'BLOC73';}
+  function save67(){try{persist();}catch(e){try{localStorage.setItem('bloc73_crm_v10',JSON.stringify(db));}catch(_){}}}
+  function refresh67(){save67();try{renderNav();}catch(e){}try{renderContent();}catch(e){}}
+  function ensure67(){['customers','leads','offers','tasks','calendar','tours','visited','graef','products'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});}
+  function addr67(r){
+    r=r||{};
+    const street=String(r.street||r.strasse||r['straße']||'').trim();
+    const zip=String(r.zip||r.plz||'').trim();
+    const city=String(r.city||r.ort||'').trim();
+    const built=[street,[zip,city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return String(r.address||r.adresse||built||'').trim();
+  }
+  function key67(r){return N67((r&& (r.company||r.name||r.title) || '')+' '+addr67(r));}
+  function findRow67(module,id){ensure67();return (db[module]||[]).find(function(x){return String(x.id)===String(id);});}
+  function p67(v){try{return typeof pill==='function'?pill(v):'<span class="pill">'+H67(v)+'</span>'; }catch(e){return '<span class="pill">'+H67(v)+'</span>';}}
+  function existingCustomer67(r){const k=key67(r);return (db.customers||[]).some(function(c){return key67(c)===k || (N67(c.company)&&N67(c.company)===N67(r.company));});}
+  function addressLines67(r){const a=addr67(r);return a?H67(a).replace(/\s*,\s*/g,'<br>'):'<span style="color:#9b1c1c;font-weight:700">Adresse bitte vor dem Besuch ergänzen.</span>';}
+
+  function css67(){return '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;background:#e9e9e9;color:#111;font-family:Arial,Helvetica,sans-serif}.toolbar67{position:sticky;top:0;z-index:20;background:#111;color:#fff;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}.toolbar67 button,.toolbar67 a{border:1px solid #555;background:#252525;color:#fff;border-radius:9px;padding:8px 11px;text-decoration:none;cursor:pointer}.toolbar67 .primary{background:#d6b46a;color:#111;border-color:#d6b46a;font-weight:800}.page67{width:210mm;min-height:297mm;margin:12px auto;background:#fff;padding:19mm 18mm 15mm 22mm;page-break-after:always;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18)}.page67:last-child{page-break-after:auto}.top67{border-bottom:2px solid #151515;padding-bottom:8mm;margin-bottom:10mm}.brand67{font-size:19pt;font-weight:900;letter-spacing:.2px}.sub67{font-size:9.5pt;color:#555;margin-top:1mm}.addr67{font-size:10.6pt;line-height:1.38;margin:0 0 9mm 0;min-height:24mm}.date67{text-align:right;font-size:10.5pt;margin-bottom:8mm}.subject67{font-weight:900;font-size:12.4pt;margin:0 0 6mm 0}.text67{font-size:10.75pt;line-height:1.43}.text67 p{margin:0 0 4.3mm 0}.sig67{margin-top:8mm}.foot67{position:absolute;left:22mm;right:18mm;bottom:10mm;border-top:1px solid #cfcfcf;padding-top:3mm;font-size:8.4pt;line-height:1.35;color:#555}.mark67{font-weight:700}.tag67{display:inline-block;border:1px solid #ddd;background:#f6f6f6;border-radius:999px;padding:1.5mm 3mm;margin-top:1mm;font-size:8.5pt;color:#555}@media print{body{background:#fff}.toolbar67{display:none}.page67{margin:0;box-shadow:none;width:210mm;min-height:297mm}}';}
+
+  function bodyText67(r){
+    const target=String((r&&r.target)||'').trim();
+    const targetLine=target && /metz|fleisch/i.test(target)
+      ? 'Für Metzgereien und Fleischereien sind Schnittbild, Verarbeitungssicherheit, Hygiene, Leistung und Service entscheidend. Genau auf diese Anforderungen ist unser Maschinenportfolio ausgelegt.'
+      : 'Für Lebensmittelbetriebe zählen zuverlässige Abläufe, saubere Ergebnisse, Hygiene, Wirtschaftlichkeit und ein Service, der erreichbar ist, wenn er gebraucht wird. Genau daran orientieren wir unsere Beratung.';
+    return '<p>Sehr geehrte Damen und Herren,</p>'+ 
+      '<p>im Rahmen unserer Außendiensttour möchten wir Ihnen <span class="mark67">BLOC73 Machinery</span> kurz vorstellen. Wir stehen für praxisnahe Beratung, hochwertige Maschinenlösungen und eine gezielte Auswahl professioneller Lebensmitteltechnik für Betriebe, die zuverlässig, hygienisch und wirtschaftlich arbeiten müssen.</p>'+ 
+      '<p>'+H67(targetLine)+'</p>'+ 
+      '<p>Unser Portfolio umfasst unter anderem Schneidtechnik von GRAEF, Vakuum- und Verpackungstechnik von ZERMAT, Lösungen für Food Processing, Kühlung, Clips, Schlaufen, Gebrauchttechnik sowie weitere Maschinenbereiche für Handwerk, Gastronomie, Gemeinschaftsverpflegung und Industrie.</p>'+ 
+      '<p>Über <span class="mark67">AS Technical Solutions</span> ergänzen wir den Vertrieb um technische Kompetenz: Service, Wartung, Inbetriebnahme, Reparatur, technische Optimierung und DGUV-Prüfungen. Dadurch erhalten Sie nicht nur ein Angebot, sondern eine Lösung, die im Betrieb auch langfristig funktioniert.</p>'+ 
+      '<p>Unser Ansatz ist bewusst praxisnah: Wir verkaufen keine Maschine „von der Stange“, sondern prüfen Bedarf, Anwendung, Platzsituation, Investitionsziel und Servicefähigkeit. So entsteht eine Empfehlung, die technisch passt und wirtschaftlich sinnvoll ist.</p>'+ 
+      '<p>Bei unserem Besuch geht es um eine kurze fachliche Einordnung direkt vor Ort: Welche Prozesse laufen bereits gut, wo gibt es Potenzial und welche Lösung kann Ihren Betrieb tatsächlich entlasten?</p>'+ 
+      '<p class="sig67">Mit freundlichen Grüßen<br><br><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p>';
+  }
+
+  function page67(r){
+    const company=String((r&& (r.company||r.name))||'Kunde').trim()||'Kunde';
+    return '<section class="page67">'+
+      '<div class="top67"><div class="brand67">BLOC73 Machinery</div><div class="sub67">eine Marke der AS Technical Solutions GmbH · Lebensmitteltechnik · Vertrieb · Service · DGUV</div></div>'+
+      '<div class="addr67"><b>'+H67(company)+'</b><br>'+addressLines67(r)+'</div>'+
+      '<div class="date67">Sendenhorst, '+H67(date67(today67()))+'</div>'+
+      '<div class="subject67">Vorstellung von BLOC73 Machinery und AS Technical Solutions</div>'+
+      '<div class="text67">'+bodyText67(r)+'</div>'+
+      '<div class="foot67">AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Robert Kutschke · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</div>'+
+      '</section>';
+  }
+
+  function letterDoc67(rows,title,toolbar){
+    rows=Array.isArray(rows)?rows.filter(Boolean):[];
+    const pages=rows.map(page67).join('');
+    let tools='';
+    if(toolbar){
+      const word='<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+H67(title||'BLOC73 Besuchsbrief')+'</title><style>'+css67()+'</style></head><body>'+pages+'</body></html>';
+      const blob=new Blob([word],{type:'application/msword;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const fname=file67(title||'BLOC73_Besuchsbrief')+'.doc';
+      setTimeout(function(){try{URL.revokeObjectURL(url);}catch(e){}},300000);
+      tools='<div class="toolbar67"><button class="primary" onclick="window.print()">Drucken / als PDF sichern</button><a href="'+H67(url)+'" download="'+H67(fname)+'">Word-Datei herunterladen</a><button onclick="window.close()">Schließen</button><span>'+H67(rows.length)+' A4-Seite(n) · jeder Kunde eine eigene Seite</span></div>';
+    }
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+H67(title||'BLOC73 Besuchsbrief')+'</title><style>'+css67()+'</style></head><body>'+tools+pages+'</body></html>';
+  }
+
+  window.openPreVisitLetter67=function(module,id){
+    ensure67();
+    module=module||'tours';
+    const r=findRow67(module,id) || findRow67('tours',id) || findRow67('customers',id);
+    if(!r)return alert('Kunde/Tour-Eintrag nicht gefunden.');
+    let a=addr67(r);
+    if(!a){
+      const entered=prompt('Adresse für diesen A4-Brief eintragen:', '');
+      if(!entered)return;
+      r.address=entered.trim();
+    }
+    r.briefPreparedAt=now67();
+    r.briefStatus='Brief vorbereitet';
+    r.updatedAt=now67();
+    save67();
+    const name='BLOC73_Besuchsbrief_'+file67(r.company||r.name||'Kunde')+'_'+today67();
+    const html=letterDoc67([r],name,true);
+    const w=window.open('','_blank');
+    if(!w){
+      const blob=new Blob([letterDoc67([r],name,false)],{type:'application/msword;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');link.href=url;link.download=name+'.doc';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);
+      alert('Popup blockiert. Der Brief wurde als Word-Datei heruntergeladen.');
+      refresh67();
+      return;
+    }
+    w.document.open();w.document.write(html);w.document.close();
+    refresh67();
+  };
+
+  window.openPreVisitLettersVisible67=function(){
+    const rows=(db.tours||[]).filter(function(r){return !r.hidden && !r.closedAt;}).sort(function(a,b){return String(a.tourDate||'').localeCompare(String(b.tourDate||'')) || ((+a.order||0)-(+b.order||0));});
+    if(!rows.length)return alert('Keine sichtbaren Tourkunden vorhanden.');
+    rows.forEach(function(r){r.briefPreparedAt=r.briefPreparedAt||now67();r.briefStatus='Brief vorbereitet';r.updatedAt=now67();});
+    save67();
+    const html=letterDoc67(rows,'BLOC73_Besuchsbriefe_sichtbare_Tagestour',true);
+    const w=window.open('','_blank');
+    if(!w)return alert('Popup blockiert. Bitte Popups für diese Seite erlauben.');
+    w.document.open();w.document.write(html);w.document.close();refresh67();
+  };
+
+  window.prepareVisitLetter65=function(id){return window.openPreVisitLetter67('tours',id);};
+  window.createVisitLetterWord65=function(id){return window.openPreVisitLetter67('tours',id);};
+  window.printTourLetter52=function(id){return window.openPreVisitLetter67('tours',id);};
+
+  window.editAddress67=function(module,id){
+    const r=findRow67(module,id); if(!r)return alert('Datensatz nicht gefunden.');
+    const entered=prompt('Adresse bearbeiten:', addr67(r));
+    if(entered===null)return;
+    r.address=entered.trim();r.updatedAt=now67();refresh67();
+  };
+  window.openRoute67=function(text){
+    const q=String(text||'').trim(); if(!q)return alert('Keine Adresse vorhanden.');
+    if(typeof openMapsFor==='function')return openMapsFor(q);
+    window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q),'_blank','noopener');
+  };
+  window.openTomTom67=function(text){
+    const q=String(text||'').trim(); if(!q)return alert('Keine Adresse vorhanden.');
+    try{navigator.clipboard&&navigator.clipboard.writeText(q);}catch(e){}
+    window.open('https://plan.tomtom.com/search/'+encodeURIComponent(q),'_blank','noopener');
+  };
+  window.openVisitClose67=function(id){
+    if(typeof window.openVisitClose65==='function')return window.openVisitClose65(id);
+    if(typeof openModal==='function')return openModal('tours',id);
+    alert('Besuchsabschluss-Modul nicht geladen.');
+  };
+  window.deleteTourDirect67=function(id){
+    const r=findRow67('tours',id); const name=r?(r.company||'diesen Tour-Eintrag'):'diesen Tour-Eintrag';
+    if(!confirm('Tour-Eintrag wirklich löschen?\n\n'+name+' wird nur aus der aktiven Tagestour entfernt.'))return;
+    db.tours=(db.tours||[]).filter(function(x){return String(x.id)!==String(id);});refresh67();
+  };
+
+  const prevRow67=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const id=J67(r.id); const route=J67(addr67(r)||r.company||'');
+      const brief=r.briefPreparedAt?'<span class="pill ok">Brief vorbereitet</span>':'<span class="pill warn">Brief offen</span>';
+      const best=existingCustomer67(r)?'<span class="pill ok">Bestandskunde</span>':'';
+      return '<tr><td>'+H67(date67(r.tourDate))+'</td><td>'+H67(r.order||'')+'</td><td><b>'+H67(r.company||'')+'</b><br><span class="muted small">'+H67(addr67(r))+'</span><br>'+best+' '+brief+'</td><td>'+p67(r.status||'Geplant')+'</td><td>'+p67(r.graefInfo||'Nein')+'</td><td>'+H67(String(r.discussion||'').slice(0,120))+'</td><td><div class="row-actions"><button class="btn primary" onclick=\'openPreVisitLetter67("tours",'+id+')\'>Brief vor Besuch</button><button class="btn ok" style="font-weight:900" onclick=\'openVisitClose67('+id+')\'>Besuch abschließen</button><button class="btn" onclick=\'editAddress67("tours",'+id+')\'>Adresse</button><button class="btn" onclick=\'openRoute67('+route+')\'>Route</button><button class="btn primary" onclick=\'openTomTom67('+route+')\'>TomTom</button><button class="btn" onclick=\'openModal("tours",'+id+')\'>Bearbeiten</button><button class="btn danger" onclick=\'deleteTourDirect67('+id+')\'>Tour löschen</button></div></td></tr>';
+    }
+    if(m==='customers'){
+      const id=J67(r.id); const route=J67(addr67(r)||r.company||'');
+      const brief=r.briefPreparedAt?'<br><span class="pill ok">Brief vorbereitet</span>':'<br><span class="pill warn">Brief offen</span>';
+      return '<tr><td><b>'+H67(r.company||'')+'</b><br><span class="muted small">'+H67(r.phone||'')+'</span>'+brief+'</td><td>'+p67(r.target||'')+'</td><td>'+p67(r.status||'')+'</td><td>'+H67(addr67(r))+'</td><td><div class="row-actions"><button class="btn primary" onclick=\'openPreVisitLetter67("customers",'+id+')\'>Brief vor Besuch</button><button class="btn primary" onclick=\'openTomTom67('+route+')\'>TomTom</button><button class="btn" onclick=\'openRoute67('+route+')\'>Route</button><button class="btn" onclick=\'editAddress67("customers",'+id+')\'>Adresse</button><button class="btn" onclick=\'openModal("customers",'+id+')\'>Bearbeiten</button><button class="btn danger" onclick=\'deleteRecord("customers",'+id+')\'>Löschen</button></div></td></tr>';
+    }
+    return prevRow67?prevRow67(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+
+  const prevTableRows67=window.tableRows || (typeof tableRows==='function'?tableRows:null);
+  window.tableRows=function(m,rows){
+    rows=rows||[];
+    if(m==='tours'||m==='customers'){
+      if(!rows.length)return '<tr><td colspan="9"><div class="empty">Noch keine Datensätze.</div></td></tr>';
+      return rows.map(function(r){return window.rowHTML(m,r);}).join('');
+    }
+    return prevTableRows67?prevTableRows67(m,rows):'';
+  };
+  try{tableRows=window.tableRows;}catch(e){}
+
+  const prevList67=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    let html=prevList67?prevList67(m):'';
+    if(m==='tours'){
+      html=html.replace(/<b>v65 Außendienst:<\/b>.*?nicht vorhanden\./,'<b>v67 Außendienst:</b> Pro Kunde direkt in der Tagestour: <b>Brief vor Besuch</b>, <b>Besuch abschließen</b>, Adresse, Route und TomTom. Der Brief öffnet als hochwertige A4-Vorschau und kann gedruckt oder als Word-Datei gespeichert werden.');
+      if(html.indexOf('openPreVisitLettersVisible67')<0){
+        html=html.replace('<button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button>','<button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button><button class="btn primary" onclick="openPreVisitLettersVisible67()">Briefe sichtbare Tour</button>');
+      }
+    }
+    return html;
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+
+  try{document.title='BLOC73 CRM · v67 · A4-Brief + direkte Kundenbuttons';const p=document.querySelector('.brand p');if(p)p.textContent='v67 · A4-Brief + direkte Kundenbuttons';}catch(e){}
+  try{renderNav();if(active==='tours'||active==='customers')renderContent();}catch(e){}
+})();
+
+
+/* v68 Kundenakte 360 - gezielte Erweiterung, keine Strukturänderung */
+(function(){
+  'use strict';
+  function H68(v){return String(v==null?'':v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});}
+  function J68(v){return JSON.stringify(String(v==null?'':v));}
+  function N68(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+  function A68(r){return String((r&&(r.address||r.adresse||r.street||r.strasse))||'').trim();}
+  function C68(r){return String((r&&(r.company||r.customer||r.name||r.title))||'').trim();}
+  function D68(v){
+    if(!v)return '';
+    try{ return new Date(String(v).slice(0,10)+'T12:00:00').toLocaleDateString('de-DE'); }catch(e){ return String(v); }
+  }
+  function money68(v){
+    const n=Number(String(v||'').replace(',','.'));
+    if(!isFinite(n)||!n)return H68(v||'');
+    try{return n.toLocaleString('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0});}catch(e){return H68(v)+' €';}
+  }
+  function find68(module,id){
+    const arr=(db&&db[module])||[];
+    return arr.find(function(x){return String(x.id)===String(id);});
+  }
+  function same68(a,b){
+    if(!a||!b)return false;
+    const ca=N68(C68(a)), cb=N68(C68(b));
+    const aa=N68(A68(a)), ab=N68(A68(b));
+    if(ca&&cb&&ca===cb)return true;
+    if(aa&&ab&&aa===ab)return true;
+    if(ca&&cb&&(ca.includes(cb)||cb.includes(ca))&&ca.length>5&&cb.length>5)return true;
+    return false;
+  }
+  function rel68(base,key){return ((db&&db[key])||[]).filter(function(x){return same68(base,x);});}
+  function mainCustomer68(base){
+    const c=rel68(base,'customers')[0];
+    return c||base;
+  }
+  function status68(base,offers,tasks,graef,visits){
+    const openOffers=offers.filter(function(o){return !/gewonnen|verloren/i.test(String(o.status||''));});
+    const dueTasks=tasks.filter(function(t){return !/erledigt/i.test(String(t.status||''));});
+    const parts=[];
+    if(openOffers.length)parts.push('Offene Angebote nachfassen');
+    if(dueTasks.length)parts.push('Offene Wiedervorlagen/Aufgaben prüfen');
+    if(!visits.length)parts.push('Erstbesuch planen oder dokumentieren');
+    if(!graef.length && /metzgerei|fleischerei|gastro|großküche|grosskueche/i.test(String(base.target||'')))parts.push('GRAEF-Schneidtechnik aktiv prüfen');
+    if(!parts.length)parts.push('Bestand aktiv pflegen und nächsten konkreten Schritt definieren');
+    return parts;
+  }
+  function rows68(rows,cols,empty){
+    if(!rows.length)return '<p class="emptyline">'+H68(empty||'Keine Einträge vorhanden.')+'</p>';
+    return '<table><thead><tr>'+cols.map(function(c){return '<th>'+H68(c[1])+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+cols.map(function(c){
+      const val=typeof c[0]==='function'?c[0](r):r[c[0]];
+      return '<td>'+H68(val||'')+'</td>';
+    }).join('')+'</tr>';}).join('')+'</tbody></table>';
+  }
+  function buildFile68(module,id){
+    const source=find68(module,id)||find68('customers',id)||find68('tours',id);
+    if(!source)return null;
+    const customer=mainCustomer68(source);
+    const visits=[].concat(rel68(customer,'visited'),rel68(customer,'tours')).sort(function(a,b){return String(b.visitedAt||b.tourDate||'').localeCompare(String(a.visitedAt||a.tourDate||''));});
+    const offers=rel68(customer,'offers').sort(function(a,b){return String(b.offerDate||b.followDate||'').localeCompare(String(a.offerDate||a.followDate||''));});
+    const tasks=rel68(customer,'tasks').sort(function(a,b){return String(a.due||'9999').localeCompare(String(b.due||'9999'));});
+    const cal=rel68(customer,'calendar').sort(function(a,b){return String(a.date||'9999').localeCompare(String(b.date||'9999'));});
+    const graef=rel68(customer,'graef').sort(function(a,b){return String(b.informedAt||'').localeCompare(String(a.informedAt||''));});
+    const recommendation=status68(customer,offers,tasks,graef,visits);
+    const openValue=offers.filter(function(o){return !/gewonnen|verloren/i.test(String(o.status||''));}).reduce(function(s,o){return s+(Number(String(o.value||'').replace(',','.'))||0);},0);
+    const docTitle='Kundenakte · '+(C68(customer)||'Kunde');
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+H68(docTitle)+'</title><style>'+css68()+'</style></head><body><div class="toolbar"><button onclick="window.print()">Drucken / PDF</button><button onclick="window.close()">Schließen</button></div><main class="page"><header><div><div class="eyebrow">BLOC73 CRM · Kundenakte 360</div><h1>'+H68(C68(customer)||'Kunde')+'</h1><p class="sub">Vertriebsakte für Besuch, Nachfassen, Angebot und technische Betreuung.</p></div><div class="stamp">Stand<br><b>'+D68(new Date().toISOString().slice(0,10))+'</b></div></header><section class="facts"><div><b>Zielgruppe</b><span>'+H68(customer.target||source.target||'')+'</span></div><div><b>Status</b><span>'+H68(customer.status||source.status||'')+'</span></div><div><b>Offener Angebotswert</b><span>'+money68(openValue)+'</span></div><div><b>GRAEF</b><span>'+(graef.length?'informiert':'offen')+'</span></div></section><section><h2>Stammdaten</h2><div class="info"><p><b>Adresse:</b> '+H68(A68(customer)||A68(source)||'')+'</p><p><b>Telefon:</b> '+H68(customer.phone||source.phone||'')+'</p><p><b>E-Mail:</b> '+H68(customer.email||source.email||'')+'</p><p><b>Website:</b> '+H68(customer.website||source.website||'')+'</p></div></section><section><h2>Chef-Empfehlung / nächster Schritt</h2><ul>'+recommendation.map(function(x){return '<li>'+H68(x)+'</li>';}).join('')+'</ul></section><section><h2>Besuchshistorie</h2>'+rows68(visits,[[function(r){return D68(r.visitedAt||r.tourDate);},'Datum'],[function(r){return r.status||'Besuch';},'Status'],['graefInfo','GRAEF'],[function(r){return r.discussion||r.notes||'';},'Gespräch / Notiz']],'Noch keine Besuche dokumentiert.')+'</section><section><h2>Angebote</h2>'+rows68(offers,[['title','Angebot'],['product','Produkt'],[function(r){return money68(r.value);},'Wert'],['status','Status'],[function(r){return D68(r.followDate||r.offerDate);},'Datum / Nachfassen']],'Keine Angebote vorhanden.')+'</section><section><h2>Wiedervorlagen & Aufgaben</h2>'+rows68(tasks,[['title','Aufgabe'],['type','Typ'],[function(r){return D68(r.due);},'Fällig'],['status','Status'],['notes','Notiz']],'Keine offenen Aufgaben vorhanden.')+'</section><section><h2>Kalender</h2>'+rows68(cal,[[function(r){return D68(r.date)+(r.time?' · '+r.time:'');},'Termin'],['title','Titel'],['type','Typ'],['notes','Notiz']],'Keine Kalendertermine vorhanden.')+'</section><section><h2>GRAEF informiert</h2>'+rows68(graef,[[function(r){return D68(r.informedAt);},'Datum'],['week','KW'],[function(r){return r.discussion||r.notes||'';},'Notiz']],'Noch nicht als GRAEF informiert gespeichert.')+'</section><footer>AS Technical Solutions GmbH · BLOC73 Machinery · Robert Kutschke</footer></main></body></html>';
+  }
+  function css68(){return '@page{size:A4;margin:14mm}body{margin:0;background:#202020;color:#111;font:12px/1.45 Arial,sans-serif}.toolbar{position:sticky;top:0;background:#111;padding:10px;text-align:center;z-index:2}.toolbar button{border:1px solid #d6b46a;background:#d6b46a;color:#111;border-radius:9px;padding:9px 13px;font-weight:800;margin:0 4px}.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:16mm;box-shadow:0 18px 55px rgba(0,0,0,.45)}header{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:12px}.eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7a5b22;font-weight:800}h1{font-size:25px;line-height:1.1;margin:4px 0 5px}h2{font-size:14px;margin:16px 0 7px;color:#111;border-bottom:1px solid #ddd;padding-bottom:4px}.sub{margin:0;color:#555}.stamp{text-align:right;border:1px solid #ddd;padding:10px 12px;min-width:35mm}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 12px}.facts div{border:1px solid #ddd;padding:8px;background:#fafafa}.facts b{display:block;font-size:10px;text-transform:uppercase;color:#666}.facts span{font-weight:800}.info{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px}.info p{margin:2px 0}ul{margin:6px 0 0 18px;padding:0}li{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:10.5px}th,td{border-bottom:1px solid #ddd;text-align:left;vertical-align:top;padding:5px 6px}th{background:#f0f0f0;color:#333}.emptyline{border:1px dashed #ccc;color:#777;padding:10px;margin:0;background:#fafafa}footer{margin-top:18px;border-top:1px solid #ddd;padding-top:8px;color:#666;font-size:10px}@media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:0}section{break-inside:avoid}}';}
+  window.openCustomerFile68=function(module,id){
+    const html=buildFile68(module,id);
+    if(!html)return alert('Kundenakte konnte nicht geöffnet werden: Datensatz nicht gefunden.');
+    const w=window.open('','_blank');
+    if(!w){
+      const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='BLOC73_Kundenakte.html';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);
+      alert('Popup blockiert. Die Kundenakte wurde als HTML-Datei heruntergeladen.');
+      return;
+    }
+    w.document.open();w.document.write(html);w.document.close();
+  };
+  const prevRow68=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    let html=prevRow68?prevRow68(m,r):'';
+    if((m==='tours'||m==='customers') && html && html.indexOf('openCustomerFile68')<0){
+      const btn='<button class="btn warn" onclick=\'openCustomerFile68('+J68(m)+','+J68(r.id)+')\'>Kundenakte</button>';
+      html=html.replace(/(<button[^>]*>Brief vor Besuch<\/button>)/, '$1'+btn);
+    }
+    return html;
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+  const prevList68=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    let html=prevList68?prevList68(m):'';
+    if((m==='customers'||m==='tours') && html.indexOf('Kundenakte 360')<0){
+      html=html.replace('<div class="table-wrap">','<div class="panel-body"><div class="notice"><b>v68 Kundenakte 360:</b> Direkt beim Kunden/Tourkunden öffnet die Kundenakte mit Stammdaten, Besuchen, Angeboten, Aufgaben, Kalender, GRAEF-Status und Chef-Empfehlung.</div></div><div class="table-wrap">');
+    }
+    return html;
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+  try{document.title='BLOC73 CRM · v69 · Briefauswahl + Händler-Suche';const p=document.querySelector('.brand p');if(p)p.textContent='v68 · Kundenakte 360';}catch(e){}
+  try{renderNav();if(active==='tours'||active==='customers')renderContent();}catch(e){}
+})();
+
+
+
+/* v69 Briefauswahl + Händler-Suche - gezielt, ohne Strukturumbau */
+(function(){
+  'use strict';
+  function H69(v){return String(v==null?'':v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});}
+  function J69(v){return JSON.stringify(String(v==null?'':v));}
+  function N69(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+  function today69(){return new Date().toISOString().slice(0,10);}
+  function now69(){return new Date().toISOString();}
+  function D69(v){try{return v?new Date(String(v).slice(0,10)+'T12:00:00').toLocaleDateString('de-DE'):new Date().toLocaleDateString('de-DE');}catch(e){return String(v||'');}}
+  function file69(v){return String(v||'BLOC73').replace(/[^a-z0-9äöüÄÖÜß_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,90)||'BLOC73';}
+  function save69(){try{persist();}catch(e){try{localStorage.setItem('bloc73_crm_v10',JSON.stringify(db));}catch(_){}}}
+  function refresh69(){save69();try{renderNav();}catch(e){}try{renderContent();}catch(e){}}
+  function ensure69(){['customers','offers','tasks','calendar','tours','visited','graef','products','leads','letters'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});}
+  function addr69(r){return (r&&String(r.address||[r.street,r.zip,r.city].filter(Boolean).join(' ')||'').trim())||'';}
+  function company69(r){return String((r&&(r.company||r.name||r.customer))||'').trim();}
+  function key69(r){return N69(company69(r)+' '+addr69(r));}
+  function find69(m,id){ensure69();return (db[m]||[]).find(function(x){return String(x.id)===String(id);});}
+  function p69(v){try{return typeof pill==='function'?pill(v):'<span class="pill">'+H69(v)+'</span>';}catch(e){return '<span class="pill">'+H69(v)+'</span>';}}
+  function existingCustomer69(r){const k=key69(r);return !!(db.customers||[]).find(function(c){return key69(c)===k && String(c.id)!==String(r&&r.id);});}
+  function route69(r){return addr69(r)||company69(r);}
+
+  function initDealerCategories69(){
+    try{
+      if(typeof categoryMap==='undefined' || !categoryMap)return;
+      categoryMap.haendler_gastro={
+        label:'Händler Gastrobedarf',target:'Händler',
+        query:'Gastrobedarf Gastronomiebedarf Großküchentechnik Grossküchentechnik Küchenfachhandel Händler',
+        osm:[
+          'node(around:{r},{lat},{lon})["name"~"Gastro|Gastronomie|Großküche|Grossküche|Küchentechnik|Kuechentechnik|Gastrobedarf",i];',
+          'way(around:{r},{lat},{lon})["name"~"Gastro|Gastronomie|Großküche|Grossküche|Küchentechnik|Kuechentechnik|Gastrobedarf",i];',
+          'node(around:{r},{lat},{lon})["shop"~"kitchen|appliance|hardware|trade|wholesale",i];',
+          'way(around:{r},{lat},{lon})["shop"~"kitchen|appliance|hardware|trade|wholesale",i];'
+        ]
+      };
+      categoryMap.haendler_metzgerei={
+        label:'Händler Metzgereibedarf',target:'Händler',
+        query:'Metzgereibedarf Fleischereibedarf Lebensmitteltechnik Fleischereimaschinen Händler',
+        osm:[
+          'node(around:{r},{lat},{lon})["name"~"Metzgereibedarf|Fleischereibedarf|Fleischereimaschinen|Lebensmitteltechnik|Food Processing|Maschinenhandel",i];',
+          'way(around:{r},{lat},{lon})["name"~"Metzgereibedarf|Fleischereibedarf|Fleischereimaschinen|Lebensmitteltechnik|Food Processing|Maschinenhandel",i];',
+          'node(around:{r},{lat},{lon})["shop"~"trade|wholesale|hardware|appliance",i];',
+          'way(around:{r},{lat},{lon})["shop"~"trade|wholesale|hardware|appliance",i];'
+        ]
+      };
+      categoryMap.haendler_food={
+        label:'Händler Gastro + Metzgerei',target:'Händler',
+        query:'Gastrobedarf Metzgereibedarf Fleischereibedarf Lebensmitteltechnik Händler Großküchentechnik',
+        osm:categoryMap.haendler_gastro.osm.concat(categoryMap.haendler_metzgerei.osm)
+      };
+    }catch(e){}
+  }
+  function ensureDealerOptions69(){
+    initDealerCategories69();
+    const sel=document.getElementById('tourCat');
+    if(!sel || sel.querySelector('option[value="haendler_food"]'))return;
+    const marker=document.createElement('option');marker.disabled=true;marker.textContent='──── Händler / Fachhandel ────';sel.appendChild(marker);
+    [['haendler_food','Händler Gastro + Metzgerei'],['haendler_gastro','Händler Gastrobedarf'],['haendler_metzgerei','Händler Metzgereibedarf']].forEach(function(x){const o=document.createElement('option');o.value=x[0];o.textContent=x[1];sel.appendChild(o);});
+  }
+  initDealerCategories69();
+
+  function lastLetter69(r,type){
+    const hist=Array.isArray(r.letterHistory)?r.letterHistory:[];
+    const row=hist.slice().reverse().find(function(x){return !type || x.type===type;});
+    return row&&row.date?D69(row.date):'';
+  }
+  function letterLabel69(type){return type==='dguv'?'DGUV':(type==='folge'?'Folgebesuch':'Erstbesuch');}
+  function defaultType69(r){
+    const hist=Array.isArray(r.letterHistory)?r.letterHistory:[];
+    if(!hist.length)return 'erst';
+    if(hist.some(function(x){return x.type==='erst';}) && !hist.some(function(x){return x.type==='folge';}))return 'folge';
+    return 'dguv';
+  }
+  function historyInfo69(r){
+    const hist=Array.isArray(r.letterHistory)?r.letterHistory:[];
+    if(!hist.length)return 'Noch kein Brief für diesen Kunden dokumentiert.';
+    return hist.slice(-5).map(function(x){return letterLabel69(x.type)+' am '+D69(x.date);}).join(' · ');
+  }
+
+  function dialog69(){
+    let d=document.getElementById('letterChoice69');
+    if(d)return d;
+    d=document.createElement('dialog');
+    d.id='letterChoice69';
+    d.innerHTML='<div class="modal-head"><h3>Briefauswahl vor Besuch</h3><button class="x" type="button" onclick="window.closeLetterChoice69()">×</button></div>'+ 
+      '<div class="modal-body">'+
+      '<div class="notice"><b>Vertriebslogik:</b> Erstbesuch stellt BLOC73/AS sauber vor. DGUV ist ein eigener Servicebrief. Folgebesuch wiederholt nicht den Erstbrief, sondern knüpft gezielt an den bisherigen Kontakt an.</div>'+ 
+      '<div style="height:12px"></div><div class="form-grid">'+
+      '<div class="field"><label>Kunde</label><input id="letterCompany69" class="input" readonly></div>'+ 
+      '<div class="field"><label>Briefart</label><select id="letterType69" class="select" onchange="window.updateLetterHint69()"><option value="erst">Erstbesuch / Unternehmensvorstellung</option><option value="dguv">DGUV V3 / technische Prüfung</option><option value="folge">Folgebesuch / Anknüpfung</option></select></div>'+ 
+      '<div class="field wide"><label>Adresse für A4-Brief</label><textarea id="letterAddress69" placeholder="Firma, Straße, PLZ Ort"></textarea></div>'+ 
+      '<div class="field wide"><label>Historie / Schutz vor Wiederholung</label><div id="letterHistory69" class="status"></div></div>'+ 
+      '<div class="field wide"><label>Hinweis zur gewählten Briefart</label><div id="letterHint69" class="status"></div></div>'+ 
+      '</div></div>'+ 
+      '<div class="modal-foot"><button class="btn" type="button" onclick="window.closeLetterChoice69()">Abbrechen</button><button class="btn primary" type="button" onclick="window.createSelectedLetter69()">A4-Brief öffnen</button></div>';
+    document.body.appendChild(d);
+    return d;
+  }
+  window.closeLetterChoice69=function(){const d=document.getElementById('letterChoice69');if(d)d.close();};
+  window.updateLetterHint69=function(){
+    const d=document.getElementById('letterChoice69'); if(!d)return;
+    const type=(document.getElementById('letterType69')||{}).value||'erst';
+    const r=find69(d.dataset.module,d.dataset.rowId)||{};
+    const hist=Array.isArray(r.letterHistory)?r.letterHistory:[];
+    let txt='';
+    if(type==='erst')txt='Für den ersten Kontakt: hochwertige Vorstellung von BLOC73 Machinery und AS Technical Solutions. Wird nicht als Folgebesuch wiederholt.';
+    if(type==='dguv')txt='Für Service-/Prüfpotenzial: DGUV V3, Dokumentation, Prüfplakette, technische Nachverfolgung und AS Technical Solutions als Servicepartner.';
+    if(type==='folge'){
+      const already=hist.filter(function(x){return x.type==='folge';}).length;
+      txt=already?'Folgebesuch wurde bereits '+already+'× vorbereitet. Nur erneut nutzen, wenn bewusst ein weiterer Folgetermin vorbereitet wird. Der Text ist kurz und wiederholt nicht die komplette Unternehmensvorstellung.':'Folgebesuch knüpft an den bisherigen Kontakt an und wiederholt nicht den Erstbesuch-Brief.';
+    }
+    const box=document.getElementById('letterHint69'); if(box)box.textContent=txt;
+  };
+  window.openLetterChoice69=function(module,id){
+    ensure69();
+    const r=find69(module,id)||find69('tours',id)||find69('customers',id);
+    if(!r)return alert('Kunde/Tour-Eintrag nicht gefunden.');
+    const d=dialog69(); d.dataset.module=module||'tours'; d.dataset.rowId=String(id);
+    document.getElementById('letterCompany69').value=company69(r)||'Kunde';
+    document.getElementById('letterAddress69').value=addr69(r)||'';
+    document.getElementById('letterType69').value=defaultType69(r);
+    document.getElementById('letterHistory69').textContent=historyInfo69(r);
+    window.updateLetterHint69();
+    if(typeof d.showModal==='function')d.showModal(); else alert('Browser unterstützt den Briefdialog nicht.');
+  };
+
+  function salutation69(){return 'Sehr geehrte Damen und Herren,';}
+  function body69(r,type){
+    const target=N69(r.target||'');
+    const isButcher=target.indexOf('metzgerei')>=0 || target.indexOf('fleisch')>=0;
+    const isGastro=target.indexOf('gastro')>=0 || target.indexOf('restaurant')>=0 || target.indexOf('hotel')>=0;
+    if(type==='dguv'){
+      return [
+        salutation69(),
+        'im Rahmen unserer Außendiensttour möchten wir Ihnen AS Technical Solutions als technischen Partner für Service, Wartung und DGUV V3 Prüfungen vorstellen.',
+        'Gerade in lebensmittelverarbeitenden Betrieben müssen Betriebsmittel zuverlässig, sicher und nachvollziehbar dokumentiert sein. Dazu gehören eine saubere Prüfung, klare Prüfprotokolle, Prüfplaketten und eine strukturierte Nachverfolgung der nächsten Prüftermine.',
+        'Über AS Technical Solutions verbinden wir technische Praxis mit Vertriebserfahrung aus der Lebensmitteltechnik. Wir prüfen nicht nur formal, sondern erkennen im Betrieb auch technische Risiken, Wartungsbedarf und mögliche Schwachstellen an Maschinen und Betriebsmitteln.',
+        'Gerne prüfen wir bei einem kurzen Vor-Ort-Termin, ob und in welchem Umfang eine DGUV V3 Prüfung, Wartung oder technische Betreuung für Ihren Betrieb sinnvoll ist.',
+        'Wir freuen uns auf einen kurzen fachlichen Austausch.'
+      ];
+    }
+    if(type==='folge'){
+      return [
+        salutation69(),
+        'vielen Dank für den bisherigen Kontakt. Für den Folgebesuch möchten wir gezielt an die bereits angesprochenen Punkte anknüpfen und die nächsten Schritte konkretisieren.',
+        'Im Mittelpunkt stehen dabei nicht allgemeine Aussagen, sondern Ihre konkrete Anwendung: Bedarf, Maschinenbestand, Platzsituation, Bedienabläufe, Servicefähigkeit und wirtschaftlicher Nutzen.',
+        'BLOC73 Machinery unterstützt Sie bei der Auswahl professioneller Lebensmitteltechnik. AS Technical Solutions ergänzt diesen Ansatz durch technische Betreuung, Service, Wartung, Inbetriebnahme, Reparatur und DGUV-Prüfungen.',
+        'Der Folgetermin dient dazu, offene Fragen sauber zu klären und eine Empfehlung vorzubereiten, die technisch passt und im Alltag funktioniert.',
+        'Wir freuen uns auf den weiteren Austausch mit Ihnen.'
+      ];
+    }
+    const specific=isButcher?'Für Metzgereien und Fleischereien sind Schnittbild, Verarbeitungssicherheit, Hygiene, Leistung und Service entscheidend. Genau auf diese Anforderungen ist unser Maschinenportfolio ausgelegt.':(isGastro?'Für Gastronomie, Gemeinschaftsverpflegung und Küchenbetriebe zählen sichere Abläufe, hygienische Verarbeitung, zuverlässige Technik und wirtschaftliche Prozesse. Genau darauf ist unser Portfolio ausgerichtet.':'Für lebensmittelverarbeitende Betriebe sind Hygiene, Verarbeitungssicherheit, Leistung, Service und Wirtschaftlichkeit entscheidend. Genau auf diese Anforderungen ist unser Maschinenportfolio ausgelegt.');
+    return [
+      salutation69(),
+      'im Rahmen unserer Außendiensttour möchten wir Ihnen BLOC73 Machinery kurz vorstellen. Wir stehen für praxisnahe Beratung, hochwertige Maschinenlösungen und eine gezielte Auswahl professioneller Lebensmitteltechnik für Betriebe, die zuverlässig, hygienisch und wirtschaftlich arbeiten müssen.',
+      specific,
+      'Unser Portfolio umfasst unter anderem Schneidtechnik von GRAEF, Vakuum- und Verpackungstechnik von ZERMAT, Lösungen für Food Processing, Kühlung, Clips, Schlaufen, Gebrauchttechnik sowie weitere Maschinenbereiche für Handwerk, Gastronomie, Gemeinschaftsverpflegung und Industrie.',
+      'Über AS Technical Solutions ergänzen wir den Vertrieb um technische Kompetenz: Service, Wartung, Inbetriebnahme, Reparatur, technische Optimierung und DGUV-Prüfungen. Dadurch erhalten Sie nicht nur ein Angebot, sondern eine Lösung, die im Betrieb auch langfristig funktioniert.',
+      'Unser Ansatz ist bewusst praxisnah: Wir verkaufen keine Maschine „von der Stange“, sondern prüfen Bedarf, Anwendung, Platzsituation, Investitionsziel und Servicefähigkeit. So entsteht eine Empfehlung, die technisch passt und wirtschaftlich sinnvoll ist.',
+      'Bei unserem Besuch geht es um eine kurze fachliche Einordnung direkt vor Ort: Welche Prozesse laufen bereits gut, wo gibt es Potenzial und welche Lösung kann Ihren Betrieb tatsächlich entlasten?'
+    ];
+  }
+  function subject69(type){
+    if(type==='dguv')return 'DGUV V3 Prüfung und technische Betreuung Ihrer Betriebsmittel';
+    if(type==='folge')return 'Folgetermin zu unserem bisherigen Austausch';
+    return 'Vorstellung von BLOC73 Machinery und AS Technical Solutions';
+  }
+
+  function headerBox69(r,type){
+    if(type==='dguv'){
+      return '<div class="qrhead69"><img src="'+H69(QR70_DGUV)+'" alt="QR-Code AS Technical Kontaktformular"><div class="qrcap69"><b>DGUV Anfrage direkt</b><span>Kontaktformular AS Technical Solutions</span><small>as-technical.de/kontaktformular.php</small></div></div>';
+    }
+    return lastLetter69(r,type)?'<div class="stamp69">'+H69(letterLabel69(type))+' zuletzt<br><b>'+H69(lastLetter69(r,type))+'</b></div>':'<div class="stamp69">Briefart<br><b>'+H69(letterLabel69(type))+'</b></div>';
+  }
+
+  function page69(r,type){
+    const co=company69(r)||'Kunde';
+    const address=(addr69(r)||'').split(/\n|,\s*/).filter(Boolean).map(H69).join('<br>');
+    const paragraphs=body69(r,type).map(function(p,i){return i===0?'<p class="sal">'+H69(p)+'</p>':'<p>'+H69(p)+'</p>';}).join('');
+    const history=headerBox69(r,type);
+    return '<section class="page69"><header><div><div class="brand69">BLOC73 Machinery</div><div class="sub69">eine Marke der AS Technical Solutions GmbH</div></div>'+history+'</header>'+ 
+      '<div class="addr69"><b>'+H69(co)+'</b><br>'+address+'</div>'+ 
+      '<div class="date69">Sendenhorst, '+H69(D69(today69()))+'</div>'+ 
+      '<h1>'+H69(subject69(type))+'</h1>'+ 
+      '<main class="text69">'+paragraphs+'</main>'+ 
+      '<div class="sig69"><p>Mit freundlichen Grüßen</p><p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p></div>'+ 
+      '<footer>AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer></section>';
+  }
+  function css69(){return '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;background:#202020;color:#111;font:11.2pt/1.45 Arial,Helvetica,sans-serif}.toolbar69{position:sticky;top:0;z-index:5;background:#111;color:#eee;padding:10px;text-align:center}.toolbar69 button,.toolbar69 a{display:inline-block;margin:0 5px;border:1px solid #d6b46a;background:#242424;color:#fff;text-decoration:none;border-radius:10px;padding:9px 13px;font-weight:800}.toolbar69 .primary{background:#d6b46a;color:#111}.page69{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:18mm 18mm 13mm;box-shadow:0 20px 70px rgba(0,0,0,.45);position:relative;page-break-after:always;overflow:hidden}header{display:flex;justify-content:space-between;gap:18mm;border-bottom:2px solid #111;padding-bottom:8mm;margin-bottom:12mm}.brand69{font-size:19pt;font-weight:900;letter-spacing:.02em}.sub69{font-size:9.5pt;color:#555;margin-top:1mm}.stamp69{border:1px solid #ddd;padding:6mm 7mm;text-align:right;min-width:38mm;font-size:8.8pt;color:#666}.stamp69 b{font-size:10.5pt;color:#111}.qrhead69{border:1px solid #ddd;padding:4mm;min-width:44mm;display:grid;grid-template-columns:24mm 1fr;gap:4mm;align-items:center}.qrhead69 img{width:24mm;height:24mm;display:block}.qrcap69{font-size:8.2pt;line-height:1.25;text-align:left;color:#555}.qrcap69 b{display:block;font-size:9pt;color:#111;margin-bottom:1mm}.qrcap69 span{display:block}.qrcap69 small{display:block;font-size:7pt;word-break:break-all;color:#666}.addr69{font-size:10.5pt;line-height:1.35;margin-bottom:8mm;min-height:24mm}.date69{text-align:right;font-size:10.5pt;margin-bottom:10mm}h1{font-size:15.5pt;line-height:1.22;margin:0 0 8mm;font-weight:900}.text69 p{margin:0 0 4.1mm;text-align:left}.text69 .sal{margin-bottom:5mm}.sig69{margin-top:8mm}.sig69 p{margin:0 0 3.5mm}footer{position:absolute;left:18mm;right:18mm;bottom:9mm;border-top:1px solid #ddd;padding-top:3mm;color:#666;font-size:8.3pt;line-height:1.25}@media print{body{background:#fff}.toolbar69{display:none}.page69{margin:0;box-shadow:none}}';}
+  function doc69(rows,type,title,toolbar){
+    rows=Array.isArray(rows)?rows.filter(Boolean):[];
+    const pages=rows.map(function(r){return page69(r,type);}).join('');
+    let tools='';
+    if(toolbar){
+      const fname=file69(title||('BLOC73_'+letterLabel69(type)+'_'+today69()))+'.doc';
+      tools='<div class="toolbar69"><button class="primary" onclick="window.print()">Drucken / als PDF sichern</button><button onclick="window.downloadLetterWord69()">Word-Datei herunterladen</button><button onclick="window.close()">Schließen</button><span>'+H69(rows.length)+' A4-Seite(n)</span></div>';
+    }
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+H69(title||'BLOC73 Brief')+'</title><style>'+css69()+'</style></head><body>'+tools+pages+'<script>window.downloadLetterWord69=function(){var html=document.documentElement.outerHTML;var blob=new Blob([html],{type:"application/msword;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download='+JSON.stringify(file69(title||('BLOC73_'+letterLabel69(type)+'_'+today69()))+'.doc')+';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1200)};<\/script></body></html>';
+  }
+  function openDoc69(rows,type,title){
+    const html=doc69(rows,type,title,true);
+    const w=window.open('','_blank');
+    if(!w){
+      const blob=new Blob([doc69(rows,type,title,false)],{type:'application/msword;charset=utf-8'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file69(title)+'.doc';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);
+      alert('Popup blockiert. Der Brief wurde als Word-Datei heruntergeladen.');return;
+    }
+    w.document.open();w.document.write(html);w.document.close();
+  }
+
+  window.createSelectedLetter69=function(){
+    const d=document.getElementById('letterChoice69'); if(!d)return;
+    ensure69();
+    const module=d.dataset.module||'tours'; const id=d.dataset.rowId||''; const r=find69(module,id)||find69('tours',id)||find69('customers',id);
+    if(!r)return alert('Datensatz nicht gefunden.');
+    const type=(document.getElementById('letterType69')||{}).value||'erst';
+    const address=(document.getElementById('letterAddress69')||{}).value||'';
+    if(!String(address).trim())return alert('Bitte Adresse für den A4-Brief eintragen.');
+    r.address=String(address).trim();
+    const hist=Array.isArray(r.letterHistory)?r.letterHistory:(r.letterHistory=[]);
+    if(type==='folge' && hist.some(function(x){return x.type==='folge';})){
+      if(!confirm('Für diesen Kunden wurde bereits ein Folgebesuch-Brief erstellt. Nicht erneut den gleichen Standardbrief verwenden, außer es ist bewusst ein weiterer Folgetermin. Trotzdem erstellen?'))return;
+    }
+    r.briefPreparedAt=now69(); r.briefStatus='Brief vorbereitet'; r.lastLetterType=type; r.lastLetterDate=today69(); r.updatedAt=now69();
+    hist.push({type:type,date:today69(),at:now69(),source:module});
+    db.letters.unshift({id:uid(),company:company69(r),target:r.target||'',address:addr69(r),type:type,date:today69(),source:module,sourceId:r.id,createdAt:now69()});
+    save69(); window.closeLetterChoice69();
+    openDoc69([r],type,'BLOC73_'+letterLabel69(type)+'_'+file69(company69(r))+'_'+today69());
+    refresh69();
+  };
+  window.openPreVisitLetter69=window.openLetterChoice69;
+  window.openPreVisitLetter67=window.openLetterChoice69;
+  window.prepareVisitLetter65=function(id){return window.openLetterChoice69('tours',id);};
+  window.createVisitLetterWord65=function(id){return window.openLetterChoice69('tours',id);};
+  window.printTourLetter52=function(id){return window.openLetterChoice69('tours',id);};
+
+  window.openPreVisitLettersVisible67=function(){
+    ensure69();
+    const rows=(db.tours||[]).filter(function(r){return !r.hidden && !r.closedAt;}).sort(function(a,b){return String(a.tourDate||'').localeCompare(String(b.tourDate||'')) || ((+a.order||0)-(+b.order||0));});
+    if(!rows.length)return alert('Keine sichtbaren Tourkunden vorhanden.');
+    const type=prompt('Briefart für alle sichtbaren Tourkunden eingeben:\n\nerst = Erstbesuch\ndguv = DGUV\nfolge = Folgebesuch','erst');
+    const t=String(type||'').trim().toLowerCase();
+    const clean=(t==='dguv'||t==='folge')?t:'erst';
+    rows.forEach(function(r){r.briefPreparedAt=now69();r.briefStatus='Brief vorbereitet';r.lastLetterType=clean;r.lastLetterDate=today69();r.updatedAt=now69();if(!Array.isArray(r.letterHistory))r.letterHistory=[];r.letterHistory.push({type:clean,date:today69(),at:now69(),source:'tours_batch'});});
+    save69();openDoc69(rows,clean,'BLOC73_'+letterLabel69(clean)+'_sichtbare_Tagestour_'+today69());refresh69();
+  };
+
+  window.editAddress69=function(module,id){
+    const r=find69(module,id); if(!r)return alert('Datensatz nicht gefunden.');
+    const entered=prompt('Adresse bearbeiten:',addr69(r)); if(entered===null)return;
+    r.address=String(entered||'').trim(); r.updatedAt=now69(); refresh69();
+  };
+  window.openRoute69=function(text){const q=String(text||'').trim(); if(!q)return alert('Keine Adresse vorhanden.'); if(typeof openMapsFor==='function')return openMapsFor(q); window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q),'_blank','noopener');};
+  window.openTomTom69=function(text){const q=String(text||'').trim(); if(!q)return alert('Keine Adresse vorhanden.'); try{navigator.clipboard&&navigator.clipboard.writeText(q);}catch(e){} window.open('https://plan.tomtom.com/search/'+encodeURIComponent(q),'_blank','noopener');};
+  window.openVisitClose69=function(id){if(typeof window.openVisitClose67==='function')return window.openVisitClose67(id); if(typeof window.openVisitClose65==='function')return window.openVisitClose65(id); if(typeof openModal==='function')return openModal('tours',id); alert('Besuchsabschluss-Modul nicht geladen.');};
+  window.deleteTour69=function(id){if(typeof window.deleteTourDirect67==='function')return window.deleteTourDirect67(id); if(typeof deleteTourOnly47==='function')return deleteTourOnly47(id); if(!confirm('Tour-Eintrag löschen?'))return; db.tours=(db.tours||[]).filter(function(x){return String(x.id)!==String(id);});refresh69();};
+
+  const prevRow69=window.rowHTML || (typeof rowHTML==='function'?rowHTML:null);
+  window.rowHTML=function(m,r){
+    if(m==='tours'){
+      const id=J69(r.id), rt=J69(route69(r));
+      const brief=r.briefPreparedAt?'<span class="pill ok">'+H69('Brief: '+letterLabel69(r.lastLetterType||'erst'))+'</span>':'<span class="pill warn">Brief offen</span>';
+      const best=existingCustomer69(r)?'<span class="pill ok">Bestandskunde</span>':'';
+      return '<tr><td>'+H69(D69(r.tourDate))+'</td><td>'+H69(r.order||'')+'</td><td><b>'+H69(company69(r))+'</b><br><span class="muted small">'+H69(addr69(r))+'</span><br>'+best+' '+brief+'</td><td>'+p69(r.status||'Geplant')+'</td><td>'+p69(r.graefInfo||'Nein')+'</td><td>'+H69(String(r.discussion||'').slice(0,120))+'</td><td><div class="row-actions"><button class="btn primary" onclick=\'openLetterChoice69("tours",'+id+')\'>Briefauswahl</button><button class="btn ok" style="font-weight:900" onclick=\'openVisitClose69('+id+')\'>Besuch abschließen</button><button class="btn warn" onclick=\'openCustomerFile68("tours",'+id+')\'>Kundenakte</button><button class="btn" onclick=\'editAddress69("tours",'+id+')\'>Adresse</button><button class="btn" onclick=\'openRoute69('+rt+')\'>Route</button><button class="btn primary" onclick=\'openTomTom69('+rt+')\'>TomTom</button><button class="btn" onclick=\'openModal("tours",'+id+')\'>Bearbeiten</button><button class="btn danger" onclick=\'deleteTour69('+id+')\'>Tour löschen</button></div></td></tr>';
+    }
+    if(m==='customers'){
+      const id=J69(r.id), rt=J69(route69(r));
+      const brief=r.briefPreparedAt?'<br><span class="pill ok">'+H69('Brief: '+letterLabel69(r.lastLetterType||'erst'))+'</span>':'<br><span class="pill warn">Brief offen</span>';
+      return '<tr><td><b>'+H69(company69(r))+'</b><br><span class="muted small">'+H69(r.phone||'')+'</span>'+brief+'</td><td>'+p69(r.target||'')+'</td><td>'+p69(r.status||'')+'</td><td>'+H69(addr69(r))+'</td><td><div class="row-actions"><button class="btn primary" onclick=\'openLetterChoice69("customers",'+id+')\'>Briefauswahl</button><button class="btn warn" onclick=\'openCustomerFile68("customers",'+id+')\'>Kundenakte</button><button class="btn primary" onclick=\'openTomTom69('+rt+')\'>TomTom</button><button class="btn" onclick=\'openRoute69('+rt+')\'>Route</button><button class="btn" onclick=\'editAddress69("customers",'+id+')\'>Adresse</button><button class="btn" onclick=\'openModal("customers",'+id+')\'>Bearbeiten</button><button class="btn danger" onclick=\'deleteRecord("customers",'+id+')\'>Löschen</button></div></td></tr>';
+    }
+    return prevRow69?prevRow69(m,r):'';
+  };
+  try{rowHTML=window.rowHTML;}catch(e){}
+
+  const prevTableRows69=window.tableRows || (typeof tableRows==='function'?tableRows:null);
+  window.tableRows=function(m,rows){
+    rows=rows||[];
+    if(m==='tours'||m==='customers'){
+      if(!rows.length)return '<tr><td colspan="9"><div class="empty">Noch keine Datensätze.</div></td></tr>';
+      return rows.map(function(r){return window.rowHTML(m,r);}).join('');
+    }
+    return prevTableRows69?prevTableRows69(m,rows):'';
+  };
+  try{tableRows=window.tableRows;}catch(e){}
+
+  const prevList69=window.listHTML || (typeof listHTML==='function'?listHTML:null);
+  window.listHTML=function(m){
+    let html=prevList69?prevList69(m):'';
+    if((m==='tours'||m==='customers') && html.indexOf('v69 Briefauswahl')<0){
+      html=html.replace('<div class="table-wrap">','<div class="panel-body"><div class="notice"><b>v69 Briefauswahl:</b> Pro Kunde wählst du jetzt <b>Erstbesuch</b>, <b>DGUV</b> oder <b>Folgebesuch</b>. Folgebesuch wiederholt den Erstbrief nicht und wird in der Kundenhistorie dokumentiert.</div></div><div class="table-wrap">');
+    }
+    return html;
+  };
+  try{listHTML=window.listHTML;}catch(e){}
+
+  const prevRenderContent69=window.renderContent || (typeof renderContent==='function'?renderContent:null);
+  window.renderContent=function(){
+    if(prevRenderContent69)prevRenderContent69();
+    setTimeout(function(){try{ensureDealerOptions69();}catch(e){}},0);
+  };
+  try{renderContent=window.renderContent;}catch(e){}
+  const prevAfterRender69=window.afterRender || (typeof afterRender==='function'?afterRender:null);
+  window.afterRender=function(){if(prevAfterRender69)prevAfterRender69();try{ensureDealerOptions69();}catch(e){}};
+  try{afterRender=window.afterRender;}catch(e){}
+
+  try{document.title='BLOC73 CRM · v69 · Briefauswahl + Händler-Suche';const p=document.querySelector('.brand p');if(p)p.textContent='v69 · Briefauswahl + Händler-Suche';}catch(e){}
+  try{renderNav();if(active==='tours'||active==='customers'||active==='tourplanner')renderContent();}catch(e){}
+})();
+
+/* ================================
+   v74 · stabile Mehrfachsuche Tourenplanung
+   Basis: v70 Rollback + DGUV QR bleibt erhalten.
+   Single-Suche bleibt original.
+   Mehrfachsuche nutzt eine gemeinsame Overpass-Abfrage.
+   ================================ */
+(function(){
+  if(window.__bloc73_v74_multi_search_installed) return;
+  window.__bloc73_v74_multi_search_installed = true;
+
+  var originalRunTourSearch74 = window.runTourSearch;
+
+  function H74(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function ensureCats74(){
+    if(typeof categoryMap === 'undefined') return;
+    if(!categoryMap.haendler_mix){
+      categoryMap.haendler_mix = {
+        label:'Händler Gastro + Metzgerei',
+        target:'Händler',
+        query:'Gastrobedarf Metzgereibedarf Lebensmitteltechnik Großküchentechnik Fachhandel',
+        osm:[
+          'node(around:{r},{lat},{lon})["name"~"Gastrobedarf|Metzgereibedarf|Fleischereibedarf|Fleischerbedarf|Lebensmitteltechnik|Großküchentechnik|Küchentechnik",i];',
+          'way(around:{r},{lat},{lon})["name"~"Gastrobedarf|Metzgereibedarf|Fleischereibedarf|Fleischerbedarf|Lebensmitteltechnik|Großküchentechnik|Küchentechnik",i];',
+          'node(around:{r},{lat},{lon})["shop"~"trade|wholesale|industrial_supply|kitchen"];',
+          'way(around:{r},{lat},{lon})["shop"~"trade|wholesale|industrial_supply|kitchen"];'
+        ]
+      };
+    }
+    if(!categoryMap.haendler_gastro){
+      categoryMap.haendler_gastro = {
+        label:'Händler Gastrobedarf',
+        target:'Händler',
+        query:'Gastrobedarf Großküchentechnik Küchentechnik Gastronomiebedarf Fachhandel',
+        osm:[
+          'node(around:{r},{lat},{lon})["name"~"Gastrobedarf|Gastronomiebedarf|Großküche|Großküchentechnik|Küchentechnik",i];',
+          'way(around:{r},{lat},{lon})["name"~"Gastrobedarf|Gastronomiebedarf|Großküche|Großküchentechnik|Küchentechnik",i];'
+        ]
+      };
+    }
+    if(!categoryMap.haendler_metzgerei){
+      categoryMap.haendler_metzgerei = {
+        label:'Händler Metzgereibedarf',
+        target:'Händler',
+        query:'Metzgereibedarf Fleischereibedarf Lebensmitteltechnik Fachhandel',
+        osm:[
+          'node(around:{r},{lat},{lon})["name"~"Metzgereibedarf|Fleischereibedarf|Fleischerbedarf|Lebensmitteltechnik",i];',
+          'way(around:{r},{lat},{lon})["name"~"Metzgereibedarf|Fleischereibedarf|Fleischerbedarf|Lebensmitteltechnik",i];'
+        ]
+      };
+    }
+  }
+
+  var cats74 = [
+    ['metzgerei','Metzgereien'],
+    ['gastro','Gastro / Restaurant / Hotel'],
+    ['krankenhaus','Krankenhäuser / Kliniken'],
+    ['pflegeheim','Pflegeheime'],
+    ['haendler_mix','Händler Gastro + Metzgerei'],
+    ['haendler_gastro','Händler Gastrobedarf'],
+    ['haendler_metzgerei','Händler Metzgereibedarf']
+  ];
+
+  function selectedCats74(){
+    ensureCats74();
+    var checked = Array.prototype.slice.call(document.querySelectorAll('.tourCat74:checked')).map(function(x){return x.value;});
+    var old = document.getElementById('tourCat');
+    if(checked.length) return checked;
+    if(old && old.value) return [old.value];
+    return ['metzgerei'];
+  }
+
+  function installUI74(){
+    ensureCats74();
+    var old = document.getElementById('tourCat');
+    if(!old || document.getElementById('tourCatMulti74')) return;
+
+    var current = old.value || 'metzgerei';
+    var wrap = document.createElement('div');
+    wrap.id = 'tourCatMulti74';
+    wrap.className = 'field';
+    wrap.innerHTML =
+      '<label>Zielgruppen Mehrfachauswahl</label>'+
+      '<div class="notice" style="margin-bottom:8px"><b>v74:</b> Einzelauswahl nutzt die bewährte Suche. Mehrfachauswahl nutzt eine gemeinsame stabile Suche.</div>'+
+      '<div class="split" style="gap:8px">'+
+      cats74.map(function(c){
+        var checked = c[0] === current ? ' checked' : '';
+        return '<label class="pill" style="justify-content:flex-start;cursor:pointer"><input class="tourCat74" type="checkbox" value="'+H74(c[0])+'"'+checked+'> '+H74(c[1])+'</label>';
+      }).join('')+
+      '</div>';
+
+    var parent = old.closest('.field') || old.parentElement;
+    parent.style.display = 'none';
+    parent.parentNode.insertBefore(wrap, parent.nextSibling);
+  }
+
+  var oldAfterRender74 = window.afterRender;
+  window.afterRender = function(){
+    var r = typeof oldAfterRender74 === 'function' ? oldAfterRender74.apply(this, arguments) : undefined;
+    if(typeof active !== 'undefined' && active === 'tourplanner') setTimeout(installUI74,0);
+    return r;
+  };
+
+  var oldRenderTourResults74 = window.renderTourResults;
+  window.renderTourResults = function(){
+    installUI74();
+    if(typeof oldRenderTourResults74 === 'function') return oldRenderTourResults74.apply(this, arguments);
+  };
+
+  function safeAddress74(t){
+    if(typeof formatAddress === 'function') return formatAddress(t || {});
+    return [t['addr:street']&&((t['addr:street']||'')+' '+(t['addr:housenumber']||'')),[t['addr:postcode'],t['addr:city']].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  }
+
+  function classify74(tags, selected){
+    tags = tags || {};
+    var name = String(tags.name || tags.operator || '').toLowerCase();
+    var shop = String(tags.shop || '').toLowerCase();
+    var amenity = String(tags.amenity || '').toLowerCase();
+    var health = String(tags.healthcare || '').toLowerCase();
+    var social = String(tags.social_facility || '').toLowerCase();
+    var tourism = String(tags.tourism || '').toLowerCase();
+
+    if(selected.indexOf('metzgerei') >= 0 && (shop === 'butcher' || name.match(/metzgerei|fleischerei|fleischer/))) return 'Metzgerei';
+    if(selected.indexOf('krankenhaus') >= 0 && (amenity === 'hospital' || health.match(/hospital|clinic/) || name.match(/krankenhaus|klinik|klinikum|reha/))) return 'Krankenhaus';
+    if(selected.indexOf('pflegeheim') >= 0 && (amenity === 'nursing_home' || social.match(/nursing_home|assisted_living|group_home/) || name.match(/pflegeheim|seniorenheim|altenheim/))) return 'Pflegeheim';
+    if(selected.indexOf('gastro') >= 0 && (amenity.match(/restaurant|cafe|fast_food|bar|pub/) || tourism === 'hotel' || name.match(/restaurant|hotel|gasthof|cafe|bistro/))) return 'Gastro';
+    if(name.match(/gastrobedarf|gastronomiebedarf|metzgereibedarf|fleischereibedarf|fleischerbedarf|lebensmitteltechnik|großküchentechnik|grosskuechentechnik|küchentechnik|kuechentechnik/) || shop.match(/trade|wholesale|industrial_supply|kitchen/)) return 'Händler';
+
+    var first = selected[0] || 'metzgerei';
+    return (categoryMap[first] && categoryMap[first].target) || 'Sonstiges';
+  }
+
+  function normalizeMulti74(elements, selected, lat, lon){
+    var seen = new Set();
+    var out = [];
+    (elements || []).forEach(function(el){
+      var t = el.tags || {};
+      var eLat = el.lat || (el.center && el.center.lat);
+      var eLon = el.lon || (el.center && el.center.lon);
+      if(!eLat || !eLon) return;
+
+      var company = t.name || t.operator || 'Betrieb ohne Namen';
+      var address = safeAddress74(t);
+      var key = String(company+' '+address).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+      if(seen.has(key)) return;
+      seen.add(key);
+
+      var dist = typeof distance === 'function' ? Math.round(distance(lat, lon, eLat, eLon)) : 0;
+      var notes = typeof osmNotes === 'function' ? osmNotes(t) : '';
+      out.push({
+        company: company,
+        target: classify74(t, selected),
+        address: address,
+        phone: t.phone || t['contact:phone'] || '',
+        website: t.website || t['contact:website'] || '',
+        lat: eLat,
+        lon: eLon,
+        distanceMeters: dist,
+        distance: dist ? (dist < 1000 ? dist+' m' : (dist/1000).toFixed(1).replace('.',',')+' km') : '',
+        notes: notes
+      });
+    });
+    return out.sort(function(a,b){return Number(a.distanceMeters||999999999)-Number(b.distanceMeters||999999999);});
+  }
+
+  async function fetchMulti74(selected, radius, lat, lon){
+    ensureCats74();
+    var parts = [];
+    selected.forEach(function(cat){
+      var cfg = categoryMap[cat];
+      if(!cfg || !Array.isArray(cfg.osm)) return;
+      cfg.osm.forEach(function(q){
+        parts.push(q.replaceAll('{r}',radius).replaceAll('{lat}',lat).replaceAll('{lon}',lon));
+      });
+    });
+
+    if(!parts.length) return [];
+    var query = '[out:json][timeout:35];\n(\n'+parts.join('\n')+'\n);\nout center tags 250;';
+    var endpoints = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+    var lastErr = null;
+
+    for(var i=0;i<endpoints.length;i++){
+      try{
+        var res = await fetch(endpoints[i],{
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+          body:'data='+encodeURIComponent(query)
+        });
+        if(!res.ok) throw new Error(res.status+' '+res.statusText);
+        var data = await res.json();
+        return normalizeMulti74(data.elements || [], selected, lat, lon);
+      }catch(e){
+        lastErr = e;
+      }
+    }
+    throw new Error('OpenStreetMap/Overpass nicht erreichbar: '+(lastErr && lastErr.message ? lastErr.message : ''));
+  }
+
+  window.runTourSearch = async function(){
+    ensureCats74();
+    var selected = selectedCats74();
+    var old = document.getElementById('tourCat');
+
+    if(selected.length === 1 && old && ['metzgerei','gastro','pflegeheim','krankenhaus'].indexOf(selected[0]) >= 0 && typeof originalRunTourSearch74 === 'function'){
+      old.value = selected[0];
+      return originalRunTourSearch74.apply(this, arguments);
+    }
+
+    var radius = Number((document.getElementById('tourRadius')||{}).value || 10000);
+    if(!tourState.lat || !tourState.lon){
+      if(typeof findPlaces === 'function') await findPlaces();
+      if(!tourState.lat || !tourState.lon) return;
+    }
+
+    tourState.loading = true;
+    tourState.results = [];
+    if(typeof renderTourResults === 'function') renderTourResults();
+
+    var labels = selected.map(function(c){return (categoryMap[c] && categoryMap[c].label) || c;}).join(' + ');
+    if(typeof setTourStatus === 'function') setTourStatus('Mehrfachsuche läuft: '+labels+' …');
+
+    try{
+      var hits = await fetchMulti74(selected, radius, tourState.lat, tourState.lon);
+      var hide = document.getElementById('hideVisited');
+      if(hide && hide.checked && typeof isVisited === 'function') hits = hits.filter(function(h){return !isVisited(h);});
+
+      tourState.results = hits;
+      tourState.loading = false;
+      if(typeof setTourStatus === 'function') setTourStatus(hits.length+' Treffer gefunden · Zielgruppen: '+labels+'. Doppelte Treffer wurden reduziert.');
+      if(typeof renderTourResults === 'function') renderTourResults();
+    }catch(e){
+      tourState.loading = false;
+      if(typeof setTourStatus === 'function') setTourStatus('Mehrfachsuche fehlgeschlagen: '+(e && e.message ? e.message : e)+'. Einzelauswahl funktioniert weiterhin.');
+      if(typeof renderTourResults === 'function') renderTourResults();
+    }
+  };
+
+  window.openGoogleSearch = function(){
+    ensureCats74();
+    var selected = selectedCats74();
+    var place = (document.getElementById('placeQuery')||{}).value || '';
+    var terms = selected.map(function(c){return (categoryMap[c] && categoryMap[c].query) || c;}).join(' OR ');
+    window.open('https://www.google.com/maps/search/'+encodeURIComponent(terms+' '+place),'_blank');
+  };
+
+  setTimeout(function(){
+    if(typeof active !== 'undefined' && active === 'tourplanner') installUI74();
+  },250);
+})();
+
+
+/* ================================
+   v75 · Händler-Suche stabilisiert
+   Basis: v74 bleibt erhalten.
+   Händler werden zusätzlich mit Google-Maps-Suchbuttons unterstützt,
+   weil Händler in OpenStreetMap oft nicht sauber getaggt sind.
+   ================================ */
+(function(){
+  if(window.__bloc73_v75_dealer_search_installed) return;
+  window.__bloc73_v75_dealer_search_installed = true;
+
+  function H75(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function selectedCats75(){
+    if(typeof window.getTourCategories73 === 'function') return window.getTourCategories73();
+    if(typeof getTourCategories73 === 'function') return getTourCategories73();
+    var checked = Array.prototype.slice.call(document.querySelectorAll('.tourCat74:checked,.tourCat73:checked')).map(function(x){return x.value;});
+    var old = document.getElementById('tourCat');
+    if(checked.length) return checked;
+    if(old && old.value) return [old.value];
+    return ['metzgerei'];
+  }
+
+  function place75(){
+    return (document.getElementById('placeQuery') || {}).value || '';
+  }
+
+  function dealerSelected75(){
+    var cats = selectedCats75();
+    return cats.some(function(c){ return String(c).indexOf('haendler') === 0 || c === 'händler' || c === 'haendler'; });
+  }
+
+  function dealerTerms75(){
+    var cats = selectedCats75();
+    var terms = [];
+    if(cats.indexOf('haendler_mix') >= 0 || cats.indexOf('haendler') >= 0){
+      terms.push('Gastrobedarf', 'Metzgereibedarf', 'Fleischereibedarf', 'Lebensmitteltechnik', 'Großküchentechnik');
+    }
+    if(cats.indexOf('haendler_gastro') >= 0){
+      terms.push('Gastrobedarf', 'Gastronomiebedarf', 'Großküchentechnik', 'Küchentechnik');
+    }
+    if(cats.indexOf('haendler_metzgerei') >= 0){
+      terms.push('Metzgereibedarf', 'Fleischereibedarf', 'Fleischerbedarf', 'Lebensmitteltechnik');
+    }
+    if(!terms.length) terms = ['Gastrobedarf','Metzgereibedarf','Lebensmitteltechnik'];
+    return Array.from(new Set(terms));
+  }
+
+  window.openDealerGoogle75 = function(term){
+    var q = String(term || 'Gastrobedarf Metzgereibedarf Lebensmitteltechnik') + ' ' + place75();
+    window.open('https://www.google.com/maps/search/' + encodeURIComponent(q), '_blank');
+  };
+
+  window.openDealerAllGoogle75 = function(){
+    var q = dealerTerms75().join(' OR ') + ' ' + place75();
+    window.open('https://www.google.com/maps/search/' + encodeURIComponent(q), '_blank');
+  };
+
+  window.copyDealerSearchTerms75 = function(){
+    var txt = dealerTerms75().map(function(t){ return t + ' ' + place75(); }).join('\n');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){ alert('Händler-Suchbegriffe kopiert.'); });
+    } else {
+      prompt('Händler-Suchbegriffe kopieren:', txt);
+    }
+  };
+
+  function dealerPanel75(){
+    if(!dealerSelected75()) return '';
+    var terms = dealerTerms75();
+    return '<div class="notice" id="dealerHelp75" style="margin-bottom:12px">'+
+      '<b>Händler-Suche:</b> Händler sind in OpenStreetMap oft unvollständig gepflegt. Wenn wenige Treffer kommen, bitte die Google-Maps-Suche nutzen und passende Händler anschließend manuell als Kunde/Lead übernehmen.'+
+      '<div class="actions" style="margin-top:10px">'+
+      terms.map(function(t){
+        return '<button class="btn" onclick="openDealerGoogle75(\''+H75(String(t).replace(/'/g,"\\'"))+'\')">'+H75(t)+'</button>';
+      }).join('')+
+      '<button class="btn primary" onclick="openDealerAllGoogle75()">Alle Händlerbegriffe</button>'+
+      '<button class="btn ghost" onclick="copyDealerSearchTerms75()">Suchbegriffe kopieren</button>'+
+      '</div></div>';
+  }
+
+  var oldRenderTourResults75 = window.renderTourResults;
+  window.renderTourResults = function(){
+    var r = typeof oldRenderTourResults75 === 'function' ? oldRenderTourResults75.apply(this, arguments) : undefined;
+    var box = document.getElementById('tourResults');
+    if(box && dealerSelected75() && !document.getElementById('dealerHelp75')){
+      box.insertAdjacentHTML('beforebegin', dealerPanel75());
+    }
+    return r;
+  };
+
+  var oldRunTourSearch75 = window.runTourSearch;
+  window.runTourSearch = async function(){
+    var isDealer = dealerSelected75();
+    var beforeCount = (tourState && Array.isArray(tourState.results)) ? tourState.results.length : 0;
+    var result = await oldRunTourSearch75.apply(this, arguments);
+
+    if(isDealer){
+      setTimeout(function(){
+        var count = (tourState && Array.isArray(tourState.results)) ? tourState.results.length : 0;
+        if(typeof setTourStatus === 'function'){
+          if(count === 0){
+            setTourStatus('Händler-Suche: OSM hat keine Händler gefunden. Das ist bei Händlern normal. Nutze unten die Google-Maps-Suchbuttons und übernimm passende Treffer manuell als Kunde/Lead.');
+          } else if(count < 5){
+            setTourStatus('Händler-Suche: '+count+' OSM-Treffer gefunden. Händlerdaten sind oft unvollständig — zusätzlich Google-Maps-Suchbuttons nutzen.');
+          }
+        }
+        if(typeof renderTourResults === 'function') renderTourResults();
+      }, 200);
+    }
+    return result;
+  };
+
+  var oldOpenGoogleSearch75 = window.openGoogleSearch;
+  window.openGoogleSearch = function(){
+    if(dealerSelected75()){
+      return window.openDealerAllGoogle75();
+    }
+    return typeof oldOpenGoogleSearch75 === 'function' ? oldOpenGoogleSearch75.apply(this, arguments) : undefined;
+  };
+})();
+
+
+/* ================================
+   v76 · Händler aus Google Maps in Planung übernehmen
+   Basis: v75 bleibt erhalten.
+   Keine Änderung an Kalender, Briefen, Kundenakte, Backup oder Optik.
+   ================================ */
+(function(){
+  if(window.__bloc73_v76_dealer_import_installed) return;
+  window.__bloc73_v76_dealer_import_installed = true;
+
+  function H76(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function today76(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function now76(){
+    return new Date().toISOString();
+  }
+
+  function selectedTourDate76(){
+    try{
+      if(typeof plannerSelectedTourDate === 'function') return plannerSelectedTourDate();
+    }catch(e){}
+    var d = document.getElementById('tourDate');
+    return (d && d.value) || today76();
+  }
+
+  function targetFromDealer76(){
+    return 'Händler';
+  }
+
+  function parseDealerText76(txt){
+    txt = String(txt || '').replace(/\r/g,'\n').trim();
+    var lines = txt.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+    var result = {company:'',address:'',phone:'',website:'',notes:''};
+
+    if(lines.length) result.company = lines[0];
+
+    var addressParts = [];
+    lines.slice(1).forEach(function(line){
+      var low = line.toLowerCase();
+
+      if(!result.website && /(https?:\/\/|www\.|\.de|\.com|\.eu|\.net)/i.test(line)){
+        result.website = line.match(/https?:\/\/\S+|www\.\S+|\S+\.(de|com|eu|net)\S*/i)?.[0] || line;
+        if(result.website && !/^https?:\/\//i.test(result.website)) result.website = 'https://' + result.website;
+        return;
+      }
+
+      if(!result.phone && /(\+49|0[0-9][0-9\s\/().-]{5,})/.test(line)){
+        result.phone = line.match(/(\+49|0)[0-9\s\/().-]{5,}/)?.[0] || line;
+        return;
+      }
+
+      if(/\d{5}/.test(line) || /straße|str\.|weg|platz|allee|ring|gasse|damm|ufer/i.test(line)){
+        addressParts.push(line);
+        return;
+      }
+
+      if(line !== result.company && !/route|website|telefon|öffnungszeiten|rezension|bewertung|geöffnet|geschlossen/i.test(low)){
+        if(!result.notes) result.notes = line;
+      }
+    });
+
+    result.address = addressParts.join(', ');
+    return result;
+  }
+
+  function ensureDealerDialog76(){
+    var old = document.getElementById('dealerImport76');
+    if(old) return old;
+
+    var d = document.createElement('dialog');
+    d.id = 'dealerImport76';
+    d.innerHTML =
+      '<div class="modal-head"><h3>Händler in Tagestour übernehmen</h3><button class="x" type="button" onclick="closeDealerImport76()">×</button></div>'+
+      '<div class="modal-body">'+
+        '<div class="notice"><b>Workflow:</b> Händler in Google Maps öffnen, Firmendaten markieren/kopieren, hier einfügen, prüfen und direkt in die Tagestour speichern.</div>'+
+        '<div style="height:12px"></div>'+
+        '<div class="field wide"><label>Google-Maps-Text einfügen</label><textarea id="dealerPaste76" placeholder="Beispiel:\nMuster Gastrobedarf GmbH\nIndustriestraße 12, 09111 Chemnitz\n0371 123456\nwww.muster.de"></textarea></div>'+
+        '<div class="actions"><button class="btn" type="button" onclick="parseDealerPaste76()">Text auswerten</button><button class="btn ghost" type="button" onclick="clearDealerImport76()">Leeren</button></div>'+
+        '<div style="height:12px"></div>'+
+        '<div class="form-grid">'+
+          '<div class="field"><label>Firma</label><input class="input" id="dealerCompany76"></div>'+
+          '<div class="field"><label>Telefon</label><input class="input" id="dealerPhone76"></div>'+
+          '<div class="field wide"><label>Adresse</label><textarea id="dealerAddress76"></textarea></div>'+
+          '<div class="field wide"><label>Website</label><input class="input" id="dealerWebsite76"></div>'+
+          '<div class="field"><label>Tourdatum</label><input class="input" type="date" id="dealerTourDate76"></div>'+
+          '<div class="field"><label>Status</label><select class="select" id="dealerStatus76"><option>Geplant</option><option>Lead</option><option>Wiedervorlage</option></select></div>'+
+          '<div class="field wide"><label>Notiz</label><textarea id="dealerNotes76" placeholder="z. B. Google Maps Händlerfund, Gastrobedarf, Metzgereibedarf, Ansprechpartner offen …"></textarea></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="modal-foot">'+
+        '<button class="btn" type="button" onclick="closeDealerImport76()">Abbrechen</button>'+
+        '<button class="btn ok" type="button" onclick="saveDealerAsCustomer76()">Als Kunde speichern</button>'+
+        '<button class="btn primary" type="button" onclick="saveDealerToTour76()">In Tagestour übernehmen</button>'+
+      '</div>';
+    document.body.appendChild(d);
+    return d;
+  }
+
+  window.openDealerImport76 = function(){
+    var d = ensureDealerDialog76();
+    var date = document.getElementById('dealerTourDate76');
+    if(date) date.value = selectedTourDate76();
+    d.showModal();
+  };
+
+  window.closeDealerImport76 = function(){
+    var d = document.getElementById('dealerImport76');
+    if(d) d.close();
+  };
+
+  window.clearDealerImport76 = function(){
+    ['dealerPaste76','dealerCompany76','dealerPhone76','dealerAddress76','dealerWebsite76','dealerNotes76'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+  };
+
+  window.parseDealerPaste76 = function(){
+    var txt = (document.getElementById('dealerPaste76') || {}).value || '';
+    var p = parseDealerText76(txt);
+    if(document.getElementById('dealerCompany76')) document.getElementById('dealerCompany76').value = p.company || '';
+    if(document.getElementById('dealerAddress76')) document.getElementById('dealerAddress76').value = p.address || '';
+    if(document.getElementById('dealerPhone76')) document.getElementById('dealerPhone76').value = p.phone || '';
+    if(document.getElementById('dealerWebsite76')) document.getElementById('dealerWebsite76').value = p.website || '';
+    if(document.getElementById('dealerNotes76')) document.getElementById('dealerNotes76').value = p.notes || 'Händler aus Google Maps übernommen.';
+  };
+
+  function readDealer76(){
+    var company = (document.getElementById('dealerCompany76') || {}).value || '';
+    var address = (document.getElementById('dealerAddress76') || {}).value || '';
+    var phone = (document.getElementById('dealerPhone76') || {}).value || '';
+    var website = (document.getElementById('dealerWebsite76') || {}).value || '';
+    var notes = (document.getElementById('dealerNotes76') || {}).value || '';
+    var date = (document.getElementById('dealerTourDate76') || {}).value || selectedTourDate76();
+    var status = (document.getElementById('dealerStatus76') || {}).value || 'Geplant';
+
+    company = String(company).trim();
+    address = String(address).trim();
+
+    if(!company) throw new Error('Bitte Firma eintragen.');
+    if(!address) throw new Error('Bitte Adresse eintragen.');
+
+    return {
+      company: company,
+      address: address,
+      phone: String(phone).trim(),
+      website: String(website).trim(),
+      notes: String(notes).trim() || 'Händler aus Google Maps übernommen.',
+      tourDate: date,
+      status: status
+    };
+  }
+
+  function nextTourOrder76(date){
+    var arr = (db.tours || []).filter(function(t){ return t.tourDate === date; });
+    var max = 0;
+    arr.forEach(function(t){
+      var n = Number(t.order || 0);
+      if(n > max) max = n;
+    });
+    return max + 1;
+  }
+
+  function sameDealerExists76(data){
+    var key = String((data.company || '') + ' ' + (data.address || '')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    return (db.tours || []).concat(db.customers || []).some(function(r){
+      var rk = String((r.company || '') + ' ' + (r.address || '')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+      return rk && rk === key;
+    });
+  }
+
+  window.saveDealerAsCustomer76 = function(){
+    try{
+      var data = readDealer76();
+      if(sameDealerExists76(data) && !confirm('Dieser Händler scheint bereits vorhanden zu sein. Trotzdem als Kunde speichern?')) return;
+
+      db.customers = db.customers || [];
+      db.customers.unshift({
+        id: uid(),
+        company: data.company,
+        target: targetFromDealer76(),
+        status: 'Interessent',
+        address: data.address,
+        phone: data.phone,
+        email: '',
+        website: data.website,
+        lastVisit: '',
+        graefInfo: 'Nein',
+        nextDate: '',
+        notes: data.notes,
+        discussion: '',
+        createdAt: now76(),
+        updatedAt: now76()
+      });
+      persist();
+      closeDealerImport76();
+      if(typeof renderNav === 'function') renderNav();
+      if(typeof setActive === 'function') setActive('customers');
+    }catch(e){
+      alert(e.message || e);
+    }
+  };
+
+  window.saveDealerToTour76 = function(){
+    try{
+      var data = readDealer76();
+      if(sameDealerExists76(data) && !confirm('Dieser Händler scheint bereits vorhanden zu sein. Trotzdem in die Tour übernehmen?')) return;
+
+      db.tours = db.tours || [];
+      db.tours.push({
+        id: uid(),
+        tourDate: data.tourDate,
+        weekStart: (typeof mondayOfDateString === 'function') ? mondayOfDateString(data.tourDate) : '',
+        weekKey: (typeof mondayOfDateString === 'function' && typeof weekKeyFromStart === 'function') ? weekKeyFromStart(mondayOfDateString(data.tourDate)) : '',
+        order: nextTourOrder76(data.tourDate),
+        company: data.company,
+        target: targetFromDealer76(),
+        address: data.address,
+        phone: data.phone,
+        website: data.website,
+        status: data.status === 'Lead' ? 'Geplant' : data.status,
+        graefInfo: 'Nein',
+        visitedAt: '',
+        notes: data.notes,
+        discussion: '',
+        source: 'Google Maps Händlerimport',
+        createdAt: now76(),
+        updatedAt: now76()
+      });
+
+      if(data.status === 'Lead'){
+        db.customers = db.customers || [];
+        db.customers.unshift({
+          id: uid(),
+          company: data.company,
+          target: targetFromDealer76(),
+          status: 'Interessent',
+          address: data.address,
+          phone: data.phone,
+          email: '',
+          website: data.website,
+          lastVisit: '',
+          graefInfo: 'Nein',
+          nextDate: '',
+          notes: data.notes,
+          discussion: '',
+          createdAt: now76(),
+          updatedAt: now76()
+        });
+      }
+
+      persist();
+      closeDealerImport76();
+      if(typeof renderNav === 'function') renderNav();
+      if(typeof setActive === 'function') setActive('tours');
+    }catch(e){
+      alert(e.message || e);
+    }
+  };
+
+  function addButton76(){
+    if(!document.body) return;
+    var help = document.getElementById('dealerHelp75');
+    if(help && !document.getElementById('dealerImportBtn76')){
+      var div = document.createElement('div');
+      div.id = 'dealerImportBtn76';
+      div.className = 'actions';
+      div.style.marginTop = '10px';
+      div.innerHTML = '<button class="btn primary" onclick="openDealerImport76()">Google-Händler in Planung übernehmen</button>';
+      help.appendChild(div);
+    }
+  }
+
+  var oldRenderTourResults76 = window.renderTourResults;
+  window.renderTourResults = function(){
+    var r = typeof oldRenderTourResults76 === 'function' ? oldRenderTourResults76.apply(this, arguments) : undefined;
+    setTimeout(addButton76, 0);
+    return r;
+  };
+
+  setTimeout(addButton76, 500);
+})();
+
+
+/* ================================
+   v77 · Website-Kontaktdaten übernehmen
+   Basis: v76 bleibt erhalten.
+   Ziel: Händler/Kunden über Website/Impressum/Kontakttext in Tagestour oder Kunden speichern.
+   ================================ */
+(function(){
+  if(window.__bloc73_v77_website_contact_installed) return;
+  window.__bloc73_v77_website_contact_installed = true;
+
+  function H77(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function today77(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function now77(){
+    return new Date().toISOString();
+  }
+
+  function normalizeUrl77(url){
+    url = String(url || '').trim();
+    if(!url) return '';
+    if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    return url;
+  }
+
+  function rootUrl77(url){
+    try{
+      var u = new URL(normalizeUrl77(url));
+      return u.origin;
+    }catch(e){
+      return normalizeUrl77(url);
+    }
+  }
+
+  function selectedTourDate77(){
+    try{
+      if(typeof plannerSelectedTourDate === 'function') return plannerSelectedTourDate();
+    }catch(e){}
+    var d = document.getElementById('tourDate');
+    return (d && d.value) || today77();
+  }
+
+  function parseWebsiteContact77(raw, url){
+    raw = String(raw || '').replace(/\r/g, '\n');
+    var text = raw.replace(/<script[\s\S]*?<\/script>/gi,' ')
+      .replace(/<style[\s\S]*?<\/style>/gi,' ')
+      .replace(/<br\s*\/?>/gi,'\n')
+      .replace(/<\/p>|<\/div>|<\/li>|<\/tr>|<\/h\d>/gi,'\n')
+      .replace(/<[^>]+>/g,' ')
+      .replace(/&nbsp;/g,' ')
+      .replace(/&amp;/g,'&')
+      .replace(/\s+\n/g,'\n')
+      .replace(/\n\s+/g,'\n')
+      .replace(/[ \t]{2,}/g,' ')
+      .trim();
+
+    var lines = text.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+    var joined = lines.join('\n');
+
+    var email = '';
+    var emailMatch = joined.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    if(emailMatch) email = emailMatch[0];
+
+    var phone = '';
+    var phoneRegex = /(?:Tel\.?|Telefon|Phone|Mobil|Mobile|Fon)[:\s]*((?:\+49|0049|0)[0-9\s\/().-]{6,})/i;
+    var phoneMatch = joined.match(phoneRegex) || joined.match(/(\+49|0049|0)[0-9\s\/().-]{8,}/);
+    if(phoneMatch) phone = (phoneMatch[1] || phoneMatch[0]).replace(/\s{2,}/g,' ').trim();
+
+    var website = normalizeUrl77(url);
+    if(!website){
+      var webMatch = joined.match(/https?:\/\/[^\s<>"']+|www\.[^\s<>"']+/i);
+      if(webMatch) website = normalizeUrl77(webMatch[0]);
+    }
+
+    var company = '';
+    var companyHints = [
+      /(?:Firma|Unternehmen|Betreiber|Anbieter|Diensteanbieter)[:\s]+([^\n]{3,80})/i,
+      /^([A-ZÄÖÜ][^\n]{2,80}(?:GmbH|UG|KG|OHG|AG|e\.K\.|GbR|GmbH & Co\. KG))/m
+    ];
+    for(var i=0;i<companyHints.length && !company;i++){
+      var cm = joined.match(companyHints[i]);
+      if(cm) company = (cm[1] || cm[0]).trim();
+    }
+    if(!company){
+      for(var j=0;j<lines.length;j++){
+        if(/GmbH|UG|KG|OHG|AG|e\.K\.|GbR|Gastrobedarf|Metzgereibedarf|Fleischereibedarf|Lebensmitteltechnik|Großküchentechnik/i.test(lines[j])){
+          company = lines[j].replace(/^Firma[:\s]*/i,'').trim();
+          break;
+        }
+      }
+    }
+    if(!company && website){
+      try{
+        var host = new URL(website).hostname.replace(/^www\./,'');
+        company = host.split('.')[0].replace(/[-_]/g,' ');
+        company = company.charAt(0).toUpperCase()+company.slice(1);
+      }catch(e){}
+    }
+
+    var address = '';
+    var addressLines = [];
+    for(var k=0;k<lines.length;k++){
+      var line = lines[k];
+      if(/\d{5}\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß .-]+/.test(line) || /(straße|str\.|weg|platz|allee|ring|gasse|damm|ufer|industriestraße|industriegebiet)/i.test(line)){
+        addressLines.push(line);
+        if(k+1 < lines.length && /\d{5}/.test(lines[k+1])) addressLines.push(lines[k+1]);
+        if(k+1 < lines.length && /^[0-9]{5}\s+/.test(lines[k+1])) addressLines.push(lines[k+1]);
+      }
+    }
+    if(addressLines.length){
+      var seen = {};
+      address = addressLines.filter(function(x){
+        var n = x.toLowerCase();
+        if(seen[n]) return false;
+        seen[n] = true;
+        return true;
+      }).slice(0,3).join(', ');
+    } else {
+      var mAddr = joined.match(/([A-ZÄÖÜa-zäöüß .-]+(?:straße|str\.|weg|platz|allee|ring|gasse|damm|ufer)[^\n,]*\s+\d+[a-z]?(?:\s*,\s*)?\n?\s*\d{5}\s+[A-ZÄÖÜa-zäöüß .-]+)/i);
+      if(mAddr) address = mAddr[1].replace(/\n/g,', ').trim();
+    }
+
+    var notes = 'Kontaktdaten aus Website/Impressum übernommen.';
+    if(url) notes += ' Quelle: '+url;
+
+    return {
+      company: company || '',
+      address: address || '',
+      phone: phone || '',
+      email: email || '',
+      website: website || '',
+      notes: notes
+    };
+  }
+
+  function ensureWebsiteDialog77(){
+    var old = document.getElementById('websiteImport77');
+    if(old) return old;
+
+    var d = document.createElement('dialog');
+    d.id = 'websiteImport77';
+    d.innerHTML =
+      '<div class="modal-head"><h3>Website-Kontaktdaten übernehmen</h3><button class="x" type="button" onclick="closeWebsiteImport77()">×</button></div>'+
+      '<div class="modal-body">'+
+        '<div class="notice"><b>Workflow:</b> Website/Impressum-Link einfügen. Das CRM versucht direkt auszulesen. Wenn die Website es blockiert, Website öffnen, Impressum/Kontakt kopieren und unten einfügen.</div>'+
+        '<div style="height:12px"></div>'+
+        '<div class="form-grid">'+
+          '<div class="field wide"><label>Website / Impressum / Kontakt-Link</label><input class="input" id="webUrl77" placeholder="https://www.beispiel.de/impressum"></div>'+
+          '<div class="field wide"><div class="actions"><button class="btn primary" type="button" onclick="tryWebsiteFetch77()">Website automatisch auslesen</button><button class="btn" type="button" onclick="openWebsite77()">Website öffnen</button><button class="btn ghost" type="button" onclick="openImpressum77()">Impressum/Kontakt öffnen</button></div></div>'+
+          '<div class="field wide"><label>Website-Text / Impressum / Kontakt einfügen</label><textarea id="webPaste77" placeholder="Hier kopierten Text aus Impressum/Kontakt einfügen …"></textarea></div>'+
+          '<div class="field wide"><div class="actions"><button class="btn" type="button" onclick="parseWebsitePaste77()">Text auswerten</button><button class="btn ghost" type="button" onclick="clearWebsiteImport77()">Leeren</button></div></div>'+
+          '<div class="field"><label>Firma</label><input class="input" id="webCompany77"></div>'+
+          '<div class="field"><label>Telefon</label><input class="input" id="webPhone77"></div>'+
+          '<div class="field"><label>E-Mail</label><input class="input" id="webEmail77"></div>'+
+          '<div class="field"><label>Website</label><input class="input" id="webWebsite77"></div>'+
+          '<div class="field wide"><label>Adresse</label><textarea id="webAddress77"></textarea></div>'+
+          '<div class="field"><label>Zielgruppe</label><select class="select" id="webTarget77"><option>Händler</option><option>Metzgerei</option><option>Gastro</option><option>Krankenhaus</option><option>Pflegeheim</option><option>Großküche</option><option>Sonstiges</option></select></div>'+
+          '<div class="field"><label>Tourdatum</label><input class="input" type="date" id="webTourDate77"></div>'+
+          '<div class="field wide"><label>Notiz</label><textarea id="webNotes77"></textarea></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="modal-foot">'+
+        '<button class="btn" type="button" onclick="closeWebsiteImport77()">Abbrechen</button>'+
+        '<button class="btn ok" type="button" onclick="saveWebsiteAsCustomer77()">Als Kunde speichern</button>'+
+        '<button class="btn primary" type="button" onclick="saveWebsiteToTour77()">In Tagestour übernehmen</button>'+
+      '</div>';
+    document.body.appendChild(d);
+    return d;
+  }
+
+  window.openWebsiteImport77 = function(){
+    var d = ensureWebsiteDialog77();
+    var td = document.getElementById('webTourDate77');
+    if(td) td.value = selectedTourDate77();
+    d.showModal();
+  };
+
+  window.closeWebsiteImport77 = function(){
+    var d = document.getElementById('websiteImport77');
+    if(d) d.close();
+  };
+
+  window.clearWebsiteImport77 = function(){
+    ['webUrl77','webPaste77','webCompany77','webPhone77','webEmail77','webWebsite77','webAddress77','webNotes77'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+  };
+
+  window.openWebsite77 = function(){
+    var url = normalizeUrl77((document.getElementById('webUrl77')||{}).value || '');
+    if(!url) return alert('Bitte Website-Link einfügen.');
+    window.open(url,'_blank');
+  };
+
+  window.openImpressum77 = function(){
+    var base = rootUrl77((document.getElementById('webUrl77')||{}).value || '');
+    if(!base) return alert('Bitte Website-Link einfügen.');
+    window.open(base.replace(/\/$/,'') + '/impressum','_blank');
+    setTimeout(function(){ window.open(base.replace(/\/$/,'') + '/kontakt','_blank'); }, 200);
+  };
+
+  function fillWebsite77(data){
+    if(document.getElementById('webCompany77')) document.getElementById('webCompany77').value = data.company || '';
+    if(document.getElementById('webAddress77')) document.getElementById('webAddress77').value = data.address || '';
+    if(document.getElementById('webPhone77')) document.getElementById('webPhone77').value = data.phone || '';
+    if(document.getElementById('webEmail77')) document.getElementById('webEmail77').value = data.email || '';
+    if(document.getElementById('webWebsite77')) document.getElementById('webWebsite77').value = data.website || '';
+    if(document.getElementById('webNotes77')) document.getElementById('webNotes77').value = data.notes || '';
+  }
+
+  window.parseWebsitePaste77 = function(){
+    var txt = (document.getElementById('webPaste77')||{}).value || '';
+    var url = (document.getElementById('webUrl77')||{}).value || '';
+    var data = parseWebsiteContact77(txt, url);
+    fillWebsite77(data);
+  };
+
+  window.tryWebsiteFetch77 = async function(){
+    var url = normalizeUrl77((document.getElementById('webUrl77')||{}).value || '');
+    if(!url) return alert('Bitte Website-Link einfügen.');
+    try{
+      var res = await fetch(url, {mode:'cors'});
+      if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      var txt = await res.text();
+      var data = parseWebsiteContact77(txt, url);
+      fillWebsite77(data);
+      if(!data.phone && !data.email && !data.address){
+        alert('Website wurde gelesen, aber Kontaktdaten sind nicht eindeutig. Bitte Impressum/Kontakt öffnen und Text einfügen.');
+      }
+    }catch(e){
+      alert('Direktes Auslesen wurde vom Browser oder von der Website blockiert. Das ist normal. Bitte Website/Impressum öffnen, Kontaktdaten kopieren und im Textfeld einfügen.');
+      window.open(url,'_blank');
+    }
+  };
+
+  function readWebsite77(){
+    var company = String((document.getElementById('webCompany77')||{}).value || '').trim();
+    var address = String((document.getElementById('webAddress77')||{}).value || '').trim();
+    if(!company) throw new Error('Bitte Firma eintragen.');
+    if(!address) throw new Error('Bitte Adresse eintragen.');
+
+    return {
+      company: company,
+      address: address,
+      phone: String((document.getElementById('webPhone77')||{}).value || '').trim(),
+      email: String((document.getElementById('webEmail77')||{}).value || '').trim(),
+      website: String((document.getElementById('webWebsite77')||{}).value || '').trim(),
+      target: String((document.getElementById('webTarget77')||{}).value || 'Händler').trim(),
+      tourDate: String((document.getElementById('webTourDate77')||{}).value || selectedTourDate77()).trim(),
+      notes: String((document.getElementById('webNotes77')||{}).value || 'Kontaktdaten aus Website übernommen.').trim()
+    };
+  }
+
+  function nextOrder77(date){
+    var arr = (db.tours || []).filter(function(t){return t.tourDate === date;});
+    var max = 0;
+    arr.forEach(function(t){
+      var n = Number(t.order || 0);
+      if(n > max) max = n;
+    });
+    return max + 1;
+  }
+
+  function duplicate77(data){
+    var key = String(data.company + ' ' + data.address).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    return (db.customers || []).concat(db.tours || []).some(function(r){
+      var rk = String((r.company || '') + ' ' + (r.address || '')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+      return rk && rk === key;
+    });
+  }
+
+  window.saveWebsiteAsCustomer77 = function(){
+    try{
+      var d = readWebsite77();
+      if(duplicate77(d) && !confirm('Dieser Kontakt scheint bereits vorhanden zu sein. Trotzdem speichern?')) return;
+      db.customers = db.customers || [];
+      db.customers.unshift({
+        id: uid(),
+        company: d.company,
+        target: d.target,
+        status: 'Interessent',
+        address: d.address,
+        phone: d.phone,
+        email: d.email,
+        website: d.website,
+        lastVisit: '',
+        graefInfo: 'Nein',
+        nextDate: '',
+        notes: d.notes,
+        discussion: '',
+        createdAt: now77(),
+        updatedAt: now77()
+      });
+      persist();
+      closeWebsiteImport77();
+      if(typeof renderNav === 'function') renderNav();
+      if(typeof setActive === 'function') setActive('customers');
+    }catch(e){ alert(e.message || e); }
+  };
+
+  window.saveWebsiteToTour77 = function(){
+    try{
+      var d = readWebsite77();
+      if(duplicate77(d) && !confirm('Dieser Kontakt scheint bereits vorhanden zu sein. Trotzdem in die Tour übernehmen?')) return;
+      db.tours = db.tours || [];
+      db.tours.push({
+        id: uid(),
+        tourDate: d.tourDate,
+        weekStart: (typeof mondayOfDateString === 'function') ? mondayOfDateString(d.tourDate) : '',
+        weekKey: (typeof mondayOfDateString === 'function' && typeof weekKeyFromStart === 'function') ? weekKeyFromStart(mondayOfDateString(d.tourDate)) : '',
+        order: nextOrder77(d.tourDate),
+        company: d.company,
+        target: d.target,
+        address: d.address,
+        phone: d.phone,
+        website: d.website,
+        status: 'Geplant',
+        graefInfo: 'Nein',
+        visitedAt: '',
+        notes: d.notes,
+        discussion: '',
+        source: 'Website-Kontaktimport',
+        createdAt: now77(),
+        updatedAt: now77()
+      });
+      persist();
+      closeWebsiteImport77();
+      if(typeof renderNav === 'function') renderNav();
+      if(typeof setActive === 'function') setActive('tours');
+    }catch(e){ alert(e.message || e); }
+  };
+
+  function addWebsiteButtons77(){
+    var help = document.getElementById('dealerHelp75');
+    if(help && !document.getElementById('websiteImportBtn77')){
+      var div = document.createElement('div');
+      div.id = 'websiteImportBtn77';
+      div.className = 'actions';
+      div.style.marginTop = '10px';
+      div.innerHTML = '<button class="btn primary" onclick="openWebsiteImport77()">Website-Kontaktdaten übernehmen</button>';
+      help.appendChild(div);
+    }
+
+    var topActions = document.querySelector('.top .actions');
+    if(topActions && !document.getElementById('websiteTopBtn77')){
+      var b = document.createElement('button');
+      b.id = 'websiteTopBtn77';
+      b.className = 'btn';
+      b.type = 'button';
+      b.textContent = 'Website-Kontakt';
+      b.onclick = window.openWebsiteImport77;
+      topActions.appendChild(b);
+    }
+  }
+
+  var oldRenderContent77 = window.renderContent;
+  window.renderContent = function(){
+    var r = typeof oldRenderContent77 === 'function' ? oldRenderContent77.apply(this, arguments) : undefined;
+    setTimeout(addWebsiteButtons77, 0);
+    return r;
+  };
+
+  var oldRenderTourResults77 = window.renderTourResults;
+  window.renderTourResults = function(){
+    var r = typeof oldRenderTourResults77 === 'function' ? oldRenderTourResults77.apply(this, arguments) : undefined;
+    setTimeout(addWebsiteButtons77, 0);
+    return r;
+  };
+
+  setTimeout(addWebsiteButtons77, 500);
+})();
+
+
+/* ================================
+   v78 · Website-/Händler-Einfügen direkt in Tourenplanung sichtbar
+   Basis: v77 bleibt erhalten.
+   Fix: Button sitzt dauerhaft in der Tourenplanung, nicht nur oben oder im Händler-Hinweis.
+   ================================ */
+(function(){
+  if(window.__bloc73_v78_planning_insert_buttons) return;
+  window.__bloc73_v78_planning_insert_buttons = true;
+
+  function addPlanningInsertButtons78(){
+    if(typeof active !== 'undefined' && active !== 'tourplanner') return;
+    if(document.getElementById('planningInsertBlock78')) return;
+
+    var status = document.getElementById('tourStatus');
+    if(!status) return;
+
+    var block = document.createElement('div');
+    block.id = 'planningInsertBlock78';
+    block.className = 'notice';
+    block.style.margin = '12px 0';
+    block.innerHTML =
+      '<b>Kontakt in Planung einfügen</b><br>'+
+      '<span class="small">Website, Impressum oder Google-Maps-Kontakt übernehmen und direkt als Tourkunde speichern.</span>'+
+      '<div class="actions" style="margin-top:10px">'+
+        '<button class="btn primary" type="button" onclick="openWebsiteImport77()">Website-Kontakt einfügen</button>'+
+        '<button class="btn" type="button" onclick="openDealerImport76()">Google-Händler einfügen</button>'+
+      '</div>';
+
+    status.parentNode.insertBefore(block, status);
+  }
+
+  var oldRenderContent78 = window.renderContent;
+  window.renderContent = function(){
+    var r = typeof oldRenderContent78 === 'function' ? oldRenderContent78.apply(this, arguments) : undefined;
+    setTimeout(addPlanningInsertButtons78, 0);
+    return r;
+  };
+
+  var oldAfterRender78 = window.afterRender;
+  window.afterRender = function(){
+    var r = typeof oldAfterRender78 === 'function' ? oldAfterRender78.apply(this, arguments) : undefined;
+    setTimeout(addPlanningInsertButtons78, 0);
+    return r;
+  };
+
+  setTimeout(addPlanningInsertButtons78, 500);
+})();
+
+
+/* ================================
+   v79 · Chef-Dashboard / Vertriebskennzahlen
+   Basis: v78 bleibt erhalten.
+   Nur Dashboard-Erweiterung. Keine Änderung an Touren, Briefen, Kalender, Backup oder Kundenakten.
+   ================================ */
+(function(){
+  if(window.__bloc73_v79_chef_dashboard_installed) return;
+  window.__bloc73_v79_chef_dashboard_installed = true;
+
+  var oldDashboardHTML79 = window.dashboardHTML;
+
+  function H79(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function today79(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function monday79(iso){
+    try{
+      if(typeof mondayOfDateString === 'function') return mondayOfDateString(iso || today79());
+    }catch(e){}
+    var d = new Date((iso || today79()) + 'T12:00:00');
+    var day = d.getDay() || 7;
+    d.setDate(d.getDate() + 1 - day);
+    return d.toISOString().slice(0,10);
+  }
+
+  function addDays79(iso, days){
+    try{
+      if(typeof addDaysToIso === 'function') return addDaysToIso(iso, days);
+    }catch(e){}
+    var d = new Date((iso || today79()) + 'T12:00:00');
+    d.setDate(d.getDate() + Number(days || 0));
+    return d.toISOString().slice(0,10);
+  }
+
+  function dateInRange79(d, start, end){
+    if(!d) return false;
+    return String(d) >= String(start) && String(d) <= String(end);
+  }
+
+  function fmt79(d){
+    try{
+      if(typeof formatDate === 'function') return formatDate(d);
+    }catch(e){}
+    return d || '';
+  }
+
+  function number79(v){
+    return Number(String(v || '0').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')) || 0;
+  }
+
+  function euro79(v){
+    var n = number79(v);
+    return n.toLocaleString('de-DE', {maximumFractionDigits:0}) + ' €';
+  }
+
+  function isOpenOffer79(o){
+    var s = String(o.status || '').toLowerCase();
+    return !/gewonnen|verloren|abgesagt|storniert|erledigt/.test(s);
+  }
+
+  function rowText79(r){
+    return String([r.company,r.title,r.customer,r.target,r.status,r.notes,r.discussion,r.product,r.area,r.type,r.address].filter(Boolean).join(' ')).toLowerCase();
+  }
+
+  function dguvPotential79(r){
+    var t = rowText79(r);
+    return /dguv|prüfung|pruefung|betriebsmittel|wartung|service|lebensmittelmaschine|maschine|metzgerei|fleischerei|gastro|pflegeheim|krankenhaus|großküche|grosskueche/.test(t);
+  }
+
+  function uniqueByCompany79(rows){
+    var seen = {};
+    var out = [];
+    rows.forEach(function(r){
+      var key = String((r.company || r.customer || r.title || '') + ' ' + (r.address || '')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+      if(!key || seen[key]) return;
+      seen[key] = true;
+      out.push(r);
+    });
+    return out;
+  }
+
+  function nextActions79(){
+    var today = today79();
+    var offers = (db.offers || []).filter(isOpenOffer79).filter(function(o){
+      return o.followDate && o.followDate <= addDays79(today, 7);
+    }).slice(0,6).map(function(o){
+      return {kind:'Angebot', date:o.followDate || '', title:o.title || o.customer || 'Angebot', sub:o.customer || o.product || '', module:'offers'};
+    });
+
+    var tasks = (db.tasks || []).filter(function(t){
+      return String(t.status || '').toLowerCase() !== 'erledigt' && t.due && t.due <= addDays79(today, 7);
+    }).slice(0,6).map(function(t){
+      return {kind:'Aufgabe', date:t.due || '', title:t.title || 'Aufgabe', sub:t.customer || t.type || '', module:'tasks'};
+    });
+
+    var tours = (db.tours || []).filter(function(t){
+      return t.tourDate && t.tourDate <= addDays79(today, 3) && String(t.status || '').toLowerCase() !== 'besucht';
+    }).slice(0,6).map(function(t){
+      return {kind:'Tour', date:t.tourDate || '', title:t.company || 'Tourkunde', sub:t.target || t.address || '', module:'tours'};
+    });
+
+    return offers.concat(tasks).concat(tours).sort(function(a,b){
+      return String(a.date || '9999').localeCompare(String(b.date || '9999'));
+    }).slice(0,10);
+  }
+
+  function chefDashboard79(){
+    var start = monday79(today79());
+    var end = addDays79(start, 6);
+
+    var toursWeek = (db.tours || []).filter(function(t){return dateInRange79(t.tourDate, start, end);});
+    var toursOpen = toursWeek.filter(function(t){return String(t.status || '').toLowerCase() !== 'besucht';});
+    var visitedWeek = (db.visited || []).filter(function(v){return dateInRange79(v.visitedAt, start, end);});
+    var graefWeek = (db.graef || []).filter(function(g){return dateInRange79(g.informedAt, start, end) || String(g.week || '') === (typeof weekKeyFromStart === 'function' ? weekKeyFromStart(start) : '');});
+
+    var openOffers = (db.offers || []).filter(isOpenOffer79);
+    var openOfferValue = openOffers.reduce(function(sum,o){return sum + number79(o.value);},0);
+    var wonOffers = (db.offers || []).filter(function(o){return String(o.status || '').toLowerCase().indexOf('gewonnen') >= 0;});
+    var lostOffers = (db.offers || []).filter(function(o){return String(o.status || '').toLowerCase().indexOf('verloren') >= 0;});
+    var quoteBase = wonOffers.length + lostOffers.length;
+    var closeRate = quoteBase ? Math.round((wonOffers.length / quoteBase) * 100) : 0;
+
+    var dueTasks = (db.tasks || []).filter(function(t){return String(t.status || '').toLowerCase() !== 'erledigt' && t.due && t.due <= today79();});
+    var dueOffers = openOffers.filter(function(o){return o.followDate && o.followDate <= today79();});
+    var dguvRows = uniqueByCompany79([].concat(db.customers || [], db.tours || [], db.visited || []).filter(dguvPotential79)).slice(0,25);
+
+    var actions = nextActions79();
+
+    var actionHtml = actions.length ? actions.map(function(a){
+      return '<tr><td><span class="pill warn">'+H79(a.kind)+'</span></td><td>'+H79(fmt79(a.date))+'</td><td><b>'+H79(a.title)+'</b><br><span class="muted small">'+H79(a.sub)+'</span></td><td><button class="btn" onclick="setActive(\''+H79(a.module)+'\')">Öffnen</button></td></tr>';
+    }).join('') : '<tr><td colspan="4"><div class="empty">Keine dringenden nächsten Schritte.</div></td></tr>';
+
+    var dguvHtml = dguvRows.length ? dguvRows.slice(0,8).map(function(r){
+      return '<tr><td><b>'+H79(r.company || r.customer || r.title || 'Kontakt')+'</b><br><span class="muted small">'+H79(r.address || '')+'</span></td><td>'+H79(r.target || '')+'</td><td><button class="btn" onclick="setActive(\'customers\')">Kunden</button></td></tr>';
+    }).join('') : '<tr><td colspan="3"><div class="empty">Noch kein klares DGUV-Potenzial erkannt.</div></td></tr>';
+
+    return ''+
+      '<div class="panel" style="margin-top:16px">'+
+        '<div class="panel-head"><div><h3>Chef-Dashboard · Vertriebssteuerung</h3><div class="muted">KW-Auswertung, offene Nachfasspunkte, Angebotswert und DGUV-Potenzial.</div></div><div class="actions"><button class="btn" onclick="setActive(\'tours\')">Tagestouren</button><button class="btn" onclick="setActive(\'offers\')">Angebote</button><button class="btn" onclick="setActive(\'tasks\')">Aufgaben</button></div></div>'+
+        '<div class="panel-body">'+
+          '<div class="notice"><b>Aktuelle Woche:</b> '+H79(fmt79(start))+' bis '+H79(fmt79(end))+' · Ziel: Besuche abschließen, Angebote nachfassen, DGUV-Potenzial sichern.</div>'+
+          '<div style="height:14px"></div>'+
+          '<div class="kpis">'+
+            '<div class="kpi"><b>'+H79(visitedWeek.length)+'</b><span>Besuche diese Woche</span></div>'+
+            '<div class="kpi"><b>'+H79(toursOpen.length)+'</b><span>offene Tourkunden KW</span></div>'+
+            '<div class="kpi"><b>'+H79(openOffers.length)+'</b><span>offene Angebote</span></div>'+
+            '<div class="kpi"><b>'+H79(euro79(openOfferValue))+'</b><span>offener Angebotswert</span></div>'+
+          '</div>'+
+          '<div class="kpis">'+
+            '<div class="kpi"><b>'+H79(dueTasks.length)+'</b><span>überfällige Aufgaben</span></div>'+
+            '<div class="kpi"><b>'+H79(dueOffers.length)+'</b><span>Angebote heute fällig</span></div>'+
+            '<div class="kpi"><b>'+H79(graefWeek.length)+'</b><span>GRAEF diese Woche</span></div>'+
+            '<div class="kpi"><b>'+H79(closeRate)+'%</b><span>Abschlussquote gew./verl.</span></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="grid" style="margin-top:16px">'+
+        '<div class="panel" style="grid-column:span 7"><div class="panel-head"><h3>Nächste Schritte</h3><button class="btn primary" onclick="setActive(\'tasks\')">Aufgaben öffnen</button></div><div class="table-wrap"><table><thead><tr><th>Typ</th><th>Fällig</th><th>Vorgang</th><th>Aktion</th></tr></thead><tbody>'+actionHtml+'</tbody></table></div></div>'+
+        '<div class="panel" style="grid-column:span 5"><div class="panel-head"><h3>DGUV-Potenzial</h3><button class="btn" onclick="setActive(\'customers\')">Kunden öffnen</button></div><div class="table-wrap"><table><thead><tr><th>Kontakt</th><th>Zielgruppe</th><th>Aktion</th></tr></thead><tbody>'+dguvHtml+'</tbody></table></div></div>'+
+      '</div>';
+  }
+
+  window.dashboardHTML = function(){
+    var base = typeof oldDashboardHTML79 === 'function' ? oldDashboardHTML79.apply(this, arguments) : '';
+    return base + chefDashboard79();
+  };
+})();
+
+
+/* ================================
+   v80 · Dashboard als Vertriebs-Cockpit
+   Basis: v79 bleibt erhalten.
+   Änderung nur Dashboard: keine alte Kunden-/Suchübersicht mehr.
+   Auswertungen komplett im Dashboard.
+   ================================ */
+(function(){
+  if(window.__bloc73_v80_sales_cockpit_installed) return;
+  window.__bloc73_v80_sales_cockpit_installed = true;
+
+  function H80(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function today80(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function monday80(iso){
+    try{
+      if(typeof mondayOfDateString === 'function') return mondayOfDateString(iso || today80());
+    }catch(e){}
+    var d = new Date((iso || today80()) + 'T12:00:00');
+    var day = d.getDay() || 7;
+    d.setDate(d.getDate() + 1 - day);
+    return d.toISOString().slice(0,10);
+  }
+
+  function addDays80(iso, days){
+    try{
+      if(typeof addDaysToIso === 'function') return addDaysToIso(iso, days);
+    }catch(e){}
+    var d = new Date((iso || today80()) + 'T12:00:00');
+    d.setDate(d.getDate() + Number(days || 0));
+    return d.toISOString().slice(0,10);
+  }
+
+  function fmt80(d){
+    try{
+      if(typeof formatDate === 'function') return formatDate(d);
+    }catch(e){}
+    return d || '';
+  }
+
+  function inRange80(d,start,end){
+    return !!d && String(d) >= String(start) && String(d) <= String(end);
+  }
+
+  function n80(v){
+    return Number(String(v || '0').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')) || 0;
+  }
+
+  function euro80(v){
+    return n80(v).toLocaleString('de-DE',{maximumFractionDigits:0}) + ' €';
+  }
+
+  function pct80(a,b){
+    if(!b) return '0%';
+    return Math.round((a/b)*100) + '%';
+  }
+
+  function status80(v){
+    return String(v || '').toLowerCase();
+  }
+
+  function openOffer80(o){
+    var s = status80(o.status);
+    return !/gewonnen|verloren|abgesagt|storniert|erledigt/.test(s);
+  }
+
+  function uniqueKey80(r){
+    return String((r.company || r.customer || r.title || '') + ' ' + (r.address || '')).toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+  }
+
+  function unique80(rows){
+    var seen = {};
+    return rows.filter(function(r){
+      var k = uniqueKey80(r);
+      if(!k || seen[k]) return false;
+      seen[k] = true;
+      return true;
+    });
+  }
+
+  function rowText80(r){
+    return String([r.company,r.customer,r.title,r.target,r.status,r.notes,r.discussion,r.product,r.area,r.type,r.address].filter(Boolean).join(' ')).toLowerCase();
+  }
+
+  function dguvPotential80(r){
+    var t = rowText80(r);
+    return /dguv|prüfung|pruefung|betriebsmittel|wartung|service|prüfung|maschinenprüfung|sicherheitsprüfung|metzgerei|fleischerei|gastro|pflegeheim|krankenhaus|großküche|grosskueche/.test(t);
+  }
+
+  function stageCount80(rows, test){
+    return rows.filter(test).length;
+  }
+
+  function bar80(label, value, max, cls){
+    var w = max ? Math.max(3, Math.round((value/max)*100)) : 0;
+    return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:10px"><span>'+H80(label)+'</span><b>'+H80(value)+'</b></div><div style="height:9px;background:#111;border:1px solid #333;border-radius:999px;overflow:hidden"><div style="height:100%;width:'+w+'%;background:linear-gradient(135deg,#d6b46a,#7b5b27)"></div></div></div>';
+  }
+
+  function tableRows80(rows, empty){
+    if(!rows.length) return '<tr><td colspan="4"><div class="empty">'+H80(empty || 'Keine Daten vorhanden.')+'</div></td></tr>';
+    return rows.map(function(r){
+      return '<tr><td><span class="pill warn">'+H80(r.kind || '')+'</span></td><td>'+H80(fmt80(r.date || ''))+'</td><td><b>'+H80(r.title || '')+'</b><br><span class="muted small">'+H80(r.sub || '')+'</span></td><td><button class="btn" onclick="setActive(\''+H80(r.module || 'tasks')+'\')">Öffnen</button></td></tr>';
+    }).join('');
+  }
+
+  function salesCockpit80(){
+    var today = today80();
+    var weekStart = monday80(today);
+    var weekEnd = addDays80(weekStart,6);
+    var next7 = addDays80(today,7);
+
+    var tours = db.tours || [];
+    var visited = db.visited || [];
+    var graef = db.graef || [];
+    var offers = db.offers || [];
+    var tasks = db.tasks || [];
+    var calendar = db.calendar || [];
+
+    var toursWeek = tours.filter(function(t){return inRange80(t.tourDate,weekStart,weekEnd);});
+    var toursDoneWeek = toursWeek.filter(function(t){return status80(t.status).indexOf('besucht') >= 0;});
+    var toursOpenWeek = toursWeek.filter(function(t){return status80(t.status).indexOf('besucht') < 0;});
+    var visitedWeek = visited.filter(function(v){return inRange80(v.visitedAt,weekStart,weekEnd);});
+    var graefWeek = graef.filter(function(g){return inRange80(g.informedAt,weekStart,weekEnd);});
+
+    var openOffers = offers.filter(openOffer80);
+    var wonOffers = offers.filter(function(o){return status80(o.status).indexOf('gewonnen') >= 0;});
+    var lostOffers = offers.filter(function(o){return status80(o.status).indexOf('verloren') >= 0;});
+    var offerValueOpen = openOffers.reduce(function(s,o){return s+n80(o.value);},0);
+    var offerValueWon = wonOffers.reduce(function(s,o){return s+n80(o.value);},0);
+    var closeBase = wonOffers.length + lostOffers.length;
+    var closeRate = closeBase ? Math.round((wonOffers.length/closeBase)*100) : 0;
+
+    var dueTasks = tasks.filter(function(t){return status80(t.status) !== 'erledigt' && t.due && t.due <= today;});
+    var dueNextTasks = tasks.filter(function(t){return status80(t.status) !== 'erledigt' && t.due && t.due > today && t.due <= next7;});
+    var dueOffers = openOffers.filter(function(o){return o.followDate && o.followDate <= today;});
+    var nextOffers = openOffers.filter(function(o){return o.followDate && o.followDate > today && o.followDate <= next7;});
+
+    var dguvPotential = unique80([].concat(db.customers || [], tours || [], visited || []).filter(dguvPotential80));
+    var letters = db.letters || [];
+    var dguvLetters = letters.filter(function(l){return String(l.type || '').toLowerCase() === 'dguv';});
+    var firstLetters = letters.filter(function(l){return String(l.type || '').toLowerCase() === 'erst';});
+    var followLetters = letters.filter(function(l){return String(l.type || '').toLowerCase() === 'folge';});
+
+    var nextActions = []
+      .concat(dueOffers.map(function(o){return {kind:'Angebot fällig',date:o.followDate,title:o.title || o.customer || 'Angebot',sub:o.customer || o.product || '',module:'offers'};}))
+      .concat(dueTasks.map(function(t){return {kind:'Aufgabe fällig',date:t.due,title:t.title || 'Aufgabe',sub:t.customer || t.type || '',module:'tasks'};}))
+      .concat(toursOpenWeek.slice(0,12).map(function(t){return {kind:'Tour offen',date:t.tourDate,title:t.company || 'Tourkunde',sub:(t.target || '')+' · '+(t.address || ''),module:'tours'};}))
+      .concat(nextOffers.map(function(o){return {kind:'Nachfassen',date:o.followDate,title:o.title || o.customer || 'Angebot',sub:o.customer || o.product || '',module:'offers'};}))
+      .concat(dueNextTasks.map(function(t){return {kind:'Aufgabe',date:t.due,title:t.title || 'Aufgabe',sub:t.customer || t.type || '',module:'tasks'};}))
+      .sort(function(a,b){return String(a.date || '9999').localeCompare(String(b.date || '9999'));})
+      .slice(0,14);
+
+    var offerStages = [
+      ['Entwurf', stageCount80(offers,function(o){return status80(o.status).indexOf('entwurf') >= 0;})],
+      ['Gesendet', stageCount80(offers,function(o){return status80(o.status).indexOf('gesendet') >= 0;})],
+      ['Nachfassen', stageCount80(offers,function(o){return status80(o.status).indexOf('nachfassen') >= 0;})],
+      ['Verhandlung', stageCount80(offers,function(o){return status80(o.status).indexOf('verhandlung') >= 0;})],
+      ['Gewonnen', wonOffers.length],
+      ['Verloren', lostOffers.length]
+    ];
+    var maxStage = Math.max.apply(null, offerStages.map(function(x){return x[1];}).concat([1]));
+
+    var targetCounts = {};
+    unique80([].concat(toursWeek, visitedWeek)).forEach(function(r){
+      var t = r.target || 'Sonstiges';
+      targetCounts[t] = (targetCounts[t] || 0) + 1;
+    });
+    var targetRows = Object.keys(targetCounts).sort(function(a,b){return targetCounts[b]-targetCounts[a];}).slice(0,8);
+    var maxTarget = Math.max.apply(null, targetRows.map(function(k){return targetCounts[k];}).concat([1]));
+
+    var dguvRows = dguvPotential.slice(0,10).map(function(r){
+      return '<tr><td><b>'+H80(r.company || r.customer || 'Kontakt')+'</b><br><span class="muted small">'+H80(r.address || '')+'</span></td><td>'+H80(r.target || '')+'</td><td><span class="pill info">Potenzial</span></td><td><button class="btn" onclick="setActive(\'customers\')">Kunden</button></td></tr>';
+    }).join('') || '<tr><td colspan="4"><div class="empty">Noch kein DGUV-Potenzial erkannt.</div></td></tr>';
+
+    return ''+
+      '<div class="panel">'+
+        '<div class="panel-head"><div><h3>Vertriebs-Cockpit</h3><div class="muted">Dashboard ohne Kundenübersicht: Steuerung, Auswertungen, Prioritäten und Wochenleistung.</div></div><div class="actions"><button class="btn" onclick="setActive(\'tourplanner\')">Tour planen</button><button class="btn" onclick="setActive(\'tours\')">Tagestouren</button><button class="btn" onclick="setActive(\'offers\')">Angebote</button><button class="btn" onclick="setActive(\'tasks\')">Aufgaben</button></div></div>'+
+        '<div class="panel-body">'+
+          '<div class="notice"><b>Aktuelle Woche:</b> '+H80(fmt80(weekStart))+' bis '+H80(fmt80(weekEnd))+' · Ziel: Tour abschließen, Angebote nachfassen, DGUV-Potenzial sichern.</div>'+
+          '<div style="height:14px"></div>'+
+          '<div class="kpis">'+
+            '<div class="kpi"><b>'+H80(toursDoneWeek.length + visitedWeek.length)+'</b><span>Besuche / Abschlüsse KW</span></div>'+
+            '<div class="kpi"><b>'+H80(toursOpenWeek.length)+'</b><span>offene Tourkontakte KW</span></div>'+
+            '<div class="kpi"><b>'+H80(openOffers.length)+'</b><span>offene Angebote</span></div>'+
+            '<div class="kpi"><b>'+H80(euro80(offerValueOpen))+'</b><span>offener Angebotswert</span></div>'+
+          '</div>'+
+          '<div class="kpis">'+
+            '<div class="kpi"><b>'+H80(dueTasks.length + dueOffers.length)+'</b><span>heute/überfällig</span></div>'+
+            '<div class="kpi"><b>'+H80(graefWeek.length)+'</b><span>GRAEF informiert KW</span></div>'+
+            '<div class="kpi"><b>'+H80(dguvPotential.length)+'</b><span>DGUV-Potenzial</span></div>'+
+            '<div class="kpi"><b>'+H80(closeRate)+'%</b><span>Abschlussquote</span></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div class="grid" style="margin-top:16px">'+
+        '<div class="panel" style="grid-column:span 7"><div class="panel-head"><h3>Prioritäten / nächste Schritte</h3><button class="btn primary" onclick="setActive(\'tasks\')">Aufgaben öffnen</button></div><div class="table-wrap"><table><thead><tr><th>Typ</th><th>Datum</th><th>Vorgang</th><th>Aktion</th></tr></thead><tbody>'+tableRows80(nextActions,'Keine dringenden Vorgänge.')+'</tbody></table></div></div>'+
+        '<div class="panel" style="grid-column:span 5"><div class="panel-head"><h3>Angebots-Pipeline</h3><button class="btn" onclick="setActive(\'offers\')">Angebote öffnen</button></div><div class="panel-body">'+
+          offerStages.map(function(x){return bar80(x[0],x[1],maxStage);}).join('')+
+          '<div class="notice"><b>Gewonnener Wert:</b> '+H80(euro80(offerValueWon))+' · <b>Offener Wert:</b> '+H80(euro80(offerValueOpen))+'</div>'+
+        '</div></div>'+
+      '</div>'+
+
+      '<div class="grid" style="margin-top:16px">'+
+        '<div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Wochenleistung</h3></div><div class="panel-body">'+
+          bar80('Tourkontakte geplant', toursWeek.length, Math.max(toursWeek.length,1))+
+          bar80('Besuche abgeschlossen', toursDoneWeek.length + visitedWeek.length, Math.max(toursWeek.length, visitedWeek.length,1))+
+          bar80('GRAEF informiert', graefWeek.length, Math.max(toursWeek.length, graefWeek.length,1))+
+          bar80('offene Tourkontakte', toursOpenWeek.length, Math.max(toursWeek.length,1))+
+        '</div></div>'+
+        '<div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Zielgruppen KW</h3></div><div class="panel-body">'+
+          (targetRows.length ? targetRows.map(function(k){return bar80(k,targetCounts[k],maxTarget);}).join('') : '<div class="empty">Noch keine Wochenkontakte.</div>')+
+        '</div></div>'+
+        '<div class="panel" style="grid-column:span 4"><div class="panel-head"><h3>Briefe / Kontaktimpulse</h3></div><div class="panel-body">'+
+          '<div class="kpi" style="margin-bottom:10px"><b>'+H80(firstLetters.length)+'</b><span>Erstbesuch-Briefe</span></div>'+
+          '<div class="kpi" style="margin-bottom:10px"><b>'+H80(dguvLetters.length)+'</b><span>DGUV-Briefe</span></div>'+
+          '<div class="kpi"><b>'+H80(followLetters.length)+'</b><span>Folgebesuch-Briefe</span></div>'+
+        '</div></div>'+
+      '</div>'+
+
+      '<div class="panel" style="margin-top:16px">'+
+        '<div class="panel-head"><h3>DGUV- und Servicepotenzial</h3><div class="actions"><button class="btn" onclick="setActive(\'customers\')">Kunden öffnen</button><button class="btn" onclick="setActive(\'tours\')">Tagestouren öffnen</button></div></div>'+
+        '<div class="table-wrap"><table><thead><tr><th>Kontakt</th><th>Zielgruppe</th><th>Status</th><th>Aktion</th></tr></thead><tbody>'+dguvRows+'</tbody></table></div>'+
+      '</div>';
+  }
+
+  window.dashboardHTML = function(){
+    return salesCockpit80();
+  };
+})();
+
+
+/* ================================
+   v82 · Lead-Pipeline ohne Dashboard-Änderung
+   Basis: v80 bleibt erhalten.
+   Änderung nur: Verkaufsstatus direkt bei Kunden und Tagestouren, Historie, Wiedervorlage.
+   Dashboard bleibt v80 unverändert.
+   ================================ */
+(function(){
+  if(window.__bloc73_v82_sales_pipeline_no_dashboard_installed) return;
+  window.__bloc73_v82_sales_pipeline_no_dashboard_installed = true;
+
+  const SALES_STATUS82 = [
+    'Neu',
+    'Brief vorbereitet',
+    'Besuch geplant',
+    'Besucht',
+    'Interesse',
+    'Lead',
+    'Angebot erstellt',
+    'Nachfassen',
+    'Gewonnen',
+    'Verloren',
+    'Kein Interesse',
+    'Wiedervorlage später'
+  ];
+
+  const PRODUCT_AREAS82 = [
+    'Noch offen',
+    'GRAEF Schneidtechnik',
+    'ZERMAT Vakuum / Verpackung',
+    'Food Processing',
+    'GASER Formtechnik',
+    'DÜKER-REX Kutter / Wolf',
+    'Kühltechnik',
+    'Clips / Schlaufen',
+    'DGUV / Service / Wartung',
+    'Gebrauchttechnik',
+    'Händleraufbau',
+    'Sonstiges'
+  ];
+
+  function H82(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  function today82(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function now82(){
+    return new Date().toISOString();
+  }
+
+  function uid82(){
+    try{
+      if(typeof uid === 'function') return uid();
+    }catch(e){}
+    return 'id_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+  }
+
+  function save82(){
+    try{
+      if(typeof persist === 'function') persist();
+      else localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    }catch(e){}
+  }
+
+  function deriveStatus82(r, module){
+    const s = String(r.status || '').toLowerCase();
+    if(String(r.briefStatus || '').toLowerCase().includes('brief')) return 'Brief vorbereitet';
+    if(s.includes('gewonnen')) return 'Gewonnen';
+    if(s.includes('verloren')) return 'Verloren';
+    if(s.includes('kein') || s.includes('nicht relevant')) return 'Kein Interesse';
+    if(s.includes('besucht')) return 'Besucht';
+    if(s.includes('interess')) return 'Interesse';
+    if(s.includes('lead')) return 'Lead';
+    if(module === 'tours' && r.tourDate) return 'Besuch geplant';
+    return 'Neu';
+  }
+
+  function ensure82(){
+    if(!db.salesLog) db.salesLog = [];
+    if(!Array.isArray(db.salesLog)) db.salesLog = [];
+    ['customers','tours'].forEach(function(m){
+      (db[m] || []).forEach(function(r){
+        if(!r.salesStatus) r.salesStatus = deriveStatus82(r, m);
+        if(!r.productInterest) r.productInterest = '';
+        if(!r.nextStep) r.nextStep = '';
+        if(!r.salesUpdatedAt) r.salesUpdatedAt = r.updatedAt || r.createdAt || now82();
+      });
+    });
+    save82();
+  }
+
+  function findRec82(module,id){
+    return (db[module] || []).find(function(x){return x.id === id;});
+  }
+
+  function statusClass82(s){
+    s = String(s || '');
+    if(['Gewonnen','Besucht','Lead','Interesse'].includes(s)) return 'ok';
+    if(['Brief vorbereitet','Besuch geplant','Nachfassen','Wiedervorlage später','Angebot erstellt'].includes(s)) return 'warn';
+    if(['Verloren','Kein Interesse'].includes(s)) return 'danger';
+    return 'info';
+  }
+
+  function salesPill82(r){
+    const s = r.salesStatus || deriveStatus82(r);
+    return '<span class="pill '+statusClass82(s)+'">'+H82(s)+'</span>';
+  }
+
+  function openModal82(){
+    let d = document.getElementById('salesModal82');
+    if(d) return d;
+
+    d = document.createElement('dialog');
+    d.id = 'salesModal82';
+    d.innerHTML =
+      '<div class="modal-head"><h3>Verkaufsstatus ändern</h3><button class="x" type="button" onclick="closeSalesStatus82()">×</button></div>'+
+      '<div class="modal-body">'+
+        '<input type="hidden" id="salesModule82"><input type="hidden" id="salesId82">'+
+        '<div class="notice"><b>Vertriebslogik:</b> Status, Produktinteresse, nächster Schritt und Wiedervorlage werden direkt am Kontakt gespeichert. Das Dashboard bleibt unverändert.</div>'+
+        '<div style="height:12px"></div>'+
+        '<div class="form-grid">'+
+          '<div class="field"><label>Kunde / Kontakt</label><input class="input" id="salesCompany82" readonly></div>'+
+          '<div class="field"><label>Verkaufsstatus</label><select class="select" id="salesStatus82">'+SALES_STATUS82.map(function(x){return '<option>'+H82(x)+'</option>';}).join('')+'</select></div>'+
+          '<div class="field"><label>Produktbereich / Interesse</label><select class="select" id="salesProduct82">'+PRODUCT_AREAS82.map(function(x){return '<option>'+H82(x)+'</option>';}).join('')+'</select></div>'+
+          '<div class="field"><label>Potenzial netto</label><input class="input" id="salesValue82" type="number" placeholder="z. B. 12000"></div>'+
+          '<div class="field"><label>Wiedervorlage</label><input class="input" id="salesFollow82" type="date"></div>'+
+          '<div class="field"><label>Aufgabe automatisch erstellen</label><select class="select" id="salesTask82"><option value="ja">Ja</option><option value="nein">Nein</option></select></div>'+
+          '<div class="field wide"><label>Nächster Schritt</label><input class="input" id="salesNext82" placeholder="z. B. Angebot senden, DGUV prüfen, Rückruf, Vorführung planen"></div>'+
+          '<div class="field wide"><label>Gespräch / Notiz</label><textarea id="salesNote82" placeholder="Was ist passiert? Was ist der nächste konkrete Schritt?"></textarea></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="modal-foot">'+
+        '<button class="btn" type="button" onclick="closeSalesStatus82()">Abbrechen</button>'+
+        '<button class="btn primary" type="button" onclick="saveSalesStatus82()">Speichern</button>'+
+      '</div>';
+    document.body.appendChild(d);
+    return d;
+  }
+
+  window.openSalesStatus82 = function(module,id){
+    ensure82();
+    const r = findRec82(module,id);
+    if(!r) return alert('Datensatz nicht gefunden.');
+
+    const d = openModal82();
+    document.getElementById('salesModule82').value = module;
+    document.getElementById('salesId82').value = id;
+    document.getElementById('salesCompany82').value = r.company || r.customer || r.title || '';
+    document.getElementById('salesStatus82').value = r.salesStatus || deriveStatus82(r,module);
+    document.getElementById('salesProduct82').value = r.productInterest || r.product || r.area || 'Noch offen';
+    if(!PRODUCT_AREAS82.includes(document.getElementById('salesProduct82').value)) document.getElementById('salesProduct82').value = 'Sonstiges';
+    document.getElementById('salesValue82').value = r.potentialValue || r.value || '';
+    document.getElementById('salesFollow82').value = r.nextDate || r.followDate || '';
+    document.getElementById('salesNext82').value = r.nextStep || '';
+    document.getElementById('salesNote82').value = r.discussion || '';
+    document.getElementById('salesTask82').value = 'ja';
+    d.showModal();
+  };
+
+  window.closeSalesStatus82 = function(){
+    const d = document.getElementById('salesModal82');
+    if(d) d.close();
+  };
+
+  function createTask82(r, follow, next, note){
+    if(!follow || !next) return;
+    db.tasks = db.tasks || [];
+    const exists = db.tasks.some(function(t){
+      return t.customer === (r.company || r.customer || '') && t.due === follow && String(t.title || '').toLowerCase() === String(next || '').toLowerCase();
+    });
+    if(exists) return;
+
+    db.tasks.unshift({
+      id: uid82(),
+      title: next,
+      customer: r.company || r.customer || '',
+      type: 'Nachfassen',
+      due: follow,
+      status: 'Offen',
+      notes: note || '',
+      discussion: '',
+      source: 'Verkaufsstatus v82',
+      createdAt: now82(),
+      updatedAt: now82()
+    });
+  }
+
+  function createCalendar82(r, follow, next, note){
+    if(!follow || !next) return;
+    db.calendar = db.calendar || [];
+    const exists = db.calendar.some(function(c){
+      return c.customer === (r.company || r.customer || '') && c.date === follow && String(c.title || '').toLowerCase().includes(String(next || '').toLowerCase().slice(0,20));
+    });
+    if(exists) return;
+
+    db.calendar.unshift({
+      id: uid82(),
+      title: 'Nachfassen: '+(r.company || r.customer || next),
+      date: follow,
+      time: '09:00',
+      customer: r.company || r.customer || '',
+      type: 'Rückruf',
+      notes: next + (note ? '\n\n' + note : ''),
+      discussion: '',
+      source: 'Verkaufsstatus v82',
+      createdAt: now82(),
+      updatedAt: now82()
+    });
+  }
+
+  window.saveSalesStatus82 = function(){
+    ensure82();
+    const module = document.getElementById('salesModule82').value;
+    const id = document.getElementById('salesId82').value;
+    const r = findRec82(module,id);
+    if(!r) return alert('Datensatz nicht gefunden.');
+
+    const oldStatus = r.salesStatus || deriveStatus82(r,module);
+    const newStatus = document.getElementById('salesStatus82').value;
+    const product = document.getElementById('salesProduct82').value;
+    const value = document.getElementById('salesValue82').value;
+    const follow = document.getElementById('salesFollow82').value;
+    const next = document.getElementById('salesNext82').value.trim();
+    const note = document.getElementById('salesNote82').value.trim();
+    const makeTask = document.getElementById('salesTask82').value === 'ja';
+
+    r.salesStatus = newStatus;
+    r.productInterest = product;
+    r.potentialValue = value;
+    r.nextDate = follow || r.nextDate || '';
+    r.nextStep = next;
+    r.salesUpdatedAt = now82();
+    r.updatedAt = now82();
+
+    if(note){
+      r.discussion = note;
+      r.notes = r.notes ? (r.notes + '\n\n' + today82() + ' · ' + note) : (today82() + ' · ' + note);
+    }
+
+    if(module === 'tours'){
+      if(['Besucht','Interesse','Lead','Angebot erstellt','Nachfassen','Gewonnen'].includes(newStatus)) r.status = 'Besucht';
+      if(['Kein Interesse','Verloren'].includes(newStatus)) r.status = 'Nicht relevant';
+    }
+
+    if(module === 'customers'){
+      if(['Interesse','Lead','Angebot erstellt','Nachfassen'].includes(newStatus)) r.status = 'Interessent';
+      if(newStatus === 'Gewonnen') r.status = 'Bestandskunde';
+      if(['Kein Interesse','Verloren'].includes(newStatus)) r.status = 'Nicht relevant';
+    }
+
+    db.salesLog = db.salesLog || [];
+    db.salesLog.unshift({
+      id: uid82(),
+      module: module,
+      sourceId: id,
+      company: r.company || r.customer || r.title || '',
+      oldStatus: oldStatus,
+      newStatus: newStatus,
+      productInterest: product,
+      potentialValue: value,
+      followDate: follow,
+      nextStep: next,
+      note: note,
+      createdAt: now82()
+    });
+
+    if(makeTask && follow && next){
+      createTask82(r, follow, next, note);
+      createCalendar82(r, follow, next, note);
+    }
+
+    save82();
+    closeSalesStatus82();
+
+    try{ if(typeof renderNav === 'function') renderNav(); }catch(e){}
+    try{ if(typeof renderContent === 'function') renderContent(); }catch(e){}
+  };
+
+  const oldRowHTML82 = window.rowHTML;
+  window.rowHTML = function(m,r){
+    const html = typeof oldRowHTML82 === 'function' ? oldRowHTML82.apply(this, arguments) : '';
+    if(!r || !r.id || (m !== 'customers' && m !== 'tours')) return html;
+
+    const button = '<button class="btn primary" onclick="openSalesStatus82(\''+H82(m)+'\',\''+H82(r.id)+'\')">Verkaufsstatus</button>';
+    const status = '<br>'+salesPill82(r)+'<br><span class="muted small">'+H82(r.nextStep || '')+'</span>';
+
+    let out = html;
+    out = out.replace(/(<div class="row-actions">)/, '$1'+button);
+    if(m === 'customers'){
+      out = out.replace(/(<\/b><br><span class="muted small">)/, '</b>'+status+'<span class="muted small">');
+    }
+    if(m === 'tours'){
+      out = out.replace(/(<b>[^<]*<\/b>)/, '$1'+status);
+    }
+    return out;
+  };
+
+  ensure82();
+})();
+
+
+/* ================================
+   v83 · Briefkopf korrigiert
+   Basis: v82 bleibt erhalten.
+   Änderung nur Briefausgabe:
+   - Kästchen "Erstbesuch zuletzt / Datum" vollständig entfernt
+   - QR-Code zu www.bloc73machinery.com rechts oben
+   - Briefkopf und A4-Formatierung hochwertiger
+   ================================ */
+(function(){
+  if(window.__bloc73_v83_letter_header_fixed) return;
+  window.__bloc73_v83_letter_header_fixed = true;
+
+  const QR_BLOC73_83 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAACZklEQVR4nO2bTY6cMBBGX8VIWRopB8hRzM2iHCk3gKPMDcxyJNCXhQ3N9ChKj0JIOyov3A1+i5JK9evCxEfW9OlDODjvvPPOO++887/ira4OG2YzJjODuQPm7Wy4UB7nz+K78pNGgPkLYgZLWjuIC0BYALBr5HH+7/BztVAbAH3vg5j6tb4z666Wx/lz+O7uWdNXQcprB3TFnK+Ux/kLeBsAUg7vi+Mm5Hd+X5v9RkEJvS+GJguyqQ9Y+gFHLT+b/M4/xE9mZtYDEGTfMpAyAGtJn6+Vx/mTeHS3RoIgSpKW96fPJr/zj/A2bLUuKa+mkXVPp9dSCdtwoTzOn8Xv8XcBorA0CksZVY8890B8df/cJl88cPlbE+Z9iwsageKzk/vnBvktwmYoRpwy+xb2A4+/jfLVflMx4qCbEUuq6r4hrt9m+dUkvRrEV9MI1PuF4q5Xj79t8of4W0uj8m5Bysfqye23SX7Tb9SWUEWpbFWrb4pg12+TvEZWk146SuuKrf6F+XOx6fr4nPI7/1s+yIa4UKJuykH1kr/0N7w/2Sh/8M8aCYftdqoxevxtlL/PoGpBlKml0fgGcf22xu/5c1Ctinb7rfdHUBIv12+L/P0N0aG/McaFY+PD9dssf5ufZOqhdDqKpucOkpZr5XH+ZD5tTWiNccGsD7IB2IYovX/VOD/vE87zbeRurZPQU79H52eV3/kH+aSltDvqc6mJvf79T3izvo5zaCytq1CalDb8E3mc/zP+ePmnXN1wTZ0zW2rl97+N8/v8ZG1SbvMbsFXCNlwpj/Mn8ebfdzvvvPPOO+/85fxPiwjRnAV/BWkAAAAASUVORK5CYII=';
+  const SITE_BLOC73_83 = 'www.bloc73machinery.com';
+
+  function H83(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+
+  if(typeof window.headerBox69 === 'function' || typeof headerBox69 === 'function'){
+    window.headerBox69 = function(r,type){
+      return '<div class="qrhead69 qrhead83">'+
+        '<img src="'+H83(QR_BLOC73_83)+'" alt="QR-Code BLOC73 Machinery">'+
+        '<div class="qrcap69 qrcap83">'+
+          '<b>BLOC73 Machinery</b>'+
+          '<span>Maschinen, Beratung und Lösungen</span>'+
+          '<small>'+H83(SITE_BLOC73_83)+'</small>'+
+        '</div>'+
+      '</div>';
+    };
+  }
+
+  window.headerBox83 = function(){
+    return '<div class="qrhead69 qrhead83">'+
+      '<img src="'+H83(QR_BLOC73_83)+'" alt="QR-Code BLOC73 Machinery">'+
+      '<div class="qrcap69 qrcap83">'+
+        '<b>BLOC73 Machinery</b>'+
+        '<span>Maschinen, Beratung und Lösungen</span>'+
+        '<small>'+H83(SITE_BLOC73_83)+'</small>'+
+      '</div>'+
+    '</div>';
+  };
+
+  // Überschreibt die bestehende A4-Seitenfunktion gezielt, ohne Brieftexte/Briefarten zu verändern.
+  if(typeof page69 === 'function'){
+    window.page69 = function(r,type){
+      const co = (typeof company69 === 'function' ? company69(r) : (r.company || r.customer || 'Kunde')) || 'Kunde';
+      const rawAddr = (typeof addr69 === 'function' ? addr69(r) : (r.address || '')) || '';
+      const address = rawAddr.split(/\n|,\s*/).filter(Boolean).map(H83).join('<br>');
+      const paragraphs = (typeof body69 === 'function' ? body69(r,type) : []).map(function(p,i){
+        return i===0 ? '<p class="sal">'+H83(p)+'</p>' : '<p>'+H83(p)+'</p>';
+      }).join('');
+
+      const subj = typeof subject69 === 'function' ? subject69(type) : 'Vorstellung von BLOC73 Machinery und AS Technical Solutions';
+      const dateText = typeof D69 === 'function' && typeof today69 === 'function' ? D69(today69()) : new Date().toLocaleDateString('de-DE');
+
+      return '<section class="page69 page83">'+
+        '<header class="letterHeader83">'+
+          '<div class="brandBlock83">'+
+            '<div class="brand69 brand83">BLOC73 Machinery</div>'+
+            '<div class="sub69 sub83">eine Marke der AS Technical Solutions GmbH</div>'+
+          '</div>'+
+          window.headerBox83()+
+        '</header>'+
+        '<div class="addr69 addr83"><b>'+H83(co)+'</b><br>'+address+'</div>'+
+        '<div class="date69 date83">Sendenhorst, '+H83(dateText)+'</div>'+
+        '<h1 class="subject83">'+H83(subj)+'</h1>'+
+        '<main class="text69 text83">'+paragraphs+'</main>'+
+        '<div class="sig69 sig83">'+
+          '<p>Mit freundlichen Grüßen</p>'+
+          '<p><b>Robert Kutschke</b><br>Vertriebsleiter / Head of Sales<br>AS Technical Solutions GmbH</p>'+
+        '</div>'+
+        '<footer class="footer83">AS Technical Solutions GmbH · Industrieweg 13-15 · 48324 Sendenhorst · Mobil +49 160 91658700 · r.kutschke@as-technical.de · www.as-technical.de · www.bloc73machinery.com</footer>'+
+      '</section>';
+    };
+  }
+
+  // Zusätzliche CSS-Korrektur wird in die Briefdokumente eingespritzt.
+  if(typeof css69 === 'function'){
+    const oldCss69_83 = css69;
+    window.css69 = function(){
+      const base = oldCss69_83();
+      const extra = `
+        .page83{
+          padding:17mm 18mm 14mm;
+          font-family:Arial,Helvetica,sans-serif;
+        }
+        .letterHeader83{
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          gap:16mm;
+          border-bottom:2px solid #111;
+          padding-bottom:9mm;
+          margin-bottom:13mm;
+        }
+        .brand83{
+          font-size:20pt;
+          font-weight:900;
+          letter-spacing:.01em;
+          line-height:1.05;
+        }
+        .sub83{
+          font-size:9.5pt;
+          color:#444;
+          margin-top:2mm;
+        }
+        .qrhead83{
+          border:1px solid #d7d7d7;
+          padding:3.5mm;
+          min-width:50mm;
+          display:grid;
+          grid-template-columns:25mm 1fr;
+          gap:4mm;
+          align-items:center;
+          background:#fff;
+        }
+        .qrhead83 img{
+          width:25mm;
+          height:25mm;
+          display:block;
+        }
+        .qrcap83{
+          text-align:left;
+          font-size:8.2pt;
+          line-height:1.25;
+          color:#555;
+        }
+        .qrcap83 b{
+          display:block;
+          color:#111;
+          font-size:9.2pt;
+          margin-bottom:1mm;
+        }
+        .qrcap83 small{
+          display:block;
+          color:#666;
+          font-size:7.2pt;
+          word-break:break-all;
+          margin-top:1mm;
+        }
+        .addr83{
+          margin-top:0;
+          margin-bottom:10mm;
+          min-height:28mm;
+          font-size:10.7pt;
+          line-height:1.38;
+        }
+        .date83{
+          text-align:right;
+          margin-bottom:8mm;
+          font-size:10.5pt;
+        }
+        .subject83{
+          font-size:15.2pt;
+          line-height:1.24;
+          margin:0 0 7mm;
+          font-weight:900;
+        }
+        .text83 p{
+          font-size:10.8pt;
+          line-height:1.48;
+          margin:0 0 3.8mm;
+        }
+        .text83 .sal{
+          margin-bottom:4.5mm;
+        }
+        .sig83{
+          margin-top:7mm;
+        }
+        .sig83 p{
+          font-size:10.6pt;
+          margin:0 0 3.2mm;
+        }
+        .footer83{
+          position:absolute;
+          left:18mm;
+          right:18mm;
+          bottom:8mm;
+          border-top:1px solid #d5d5d5;
+          padding-top:2.5mm;
+          color:#666;
+          font-size:8.1pt;
+          line-height:1.25;
+        }
+        .stamp69{
+          display:none !important;
+        }
+      `;
+      return base + extra;
+    };
+  }
+})();
+
 </script>
 
 </body>
