@@ -2359,14 +2359,12 @@ closeGraefWeek=function(){
   };
   window.isExistingCustomerV46=function(h){return !!window.findExistingCustomerV46(h);};
 
-  // Einmalige Datenvariante: Kundenstamm leeren, aber Sicherheitskopie im Browser behalten.
+  // Bereinigt: Kundenstamm nie automatisch leeren. Alte Sicherung nur erhalten.
   try{
     if(!localStorage.getItem(FLAG)){
       const existingCustomers=Array.isArray(db.customers)?db.customers:[];
       if(existingCustomers.length){
         localStorage.setItem(BACKUP, JSON.stringify({createdAt:new Date().toISOString(), customers:existingCustomers}));
-        db.customers=[];
-        persist();
       }
       localStorage.setItem(FLAG,new Date().toISOString());
     }
@@ -2383,7 +2381,7 @@ closeGraefWeek=function(){
     }catch(err){alert('Wiederherstellung nicht möglich: '+err.message);}
   };
   window.resetV46CustomerClearFlag=function(){
-    try{localStorage.removeItem(FLAG);alert('v46-Löschmarkierung entfernt. Beim nächsten Laden wird der Kundenstamm erneut geleert.');}catch(e){}
+    try{localStorage.setItem(FLAG,new Date().toISOString());alert('Sicherheitsmodus aktiv: Der Kundenstamm wird nicht automatisch geleert.');}catch(e){}
   };
 
   const oldDuplicateDetails46=window.duplicateDetails || (typeof duplicateDetails==='function'?duplicateDetails:null);
@@ -2420,7 +2418,7 @@ closeGraefWeek=function(){
   const oldDashboardHTML46=window.dashboardHTML || (typeof dashboardHTML==='function'?dashboardHTML:null);
   window.dashboardHTML=function(){
     const base=oldDashboardHTML46?oldDashboardHTML46():'';
-    return `<div class="notice"><b>v46 Kundenstamm leer:</b> Der Kundenstamm wurde für diese Variante einmalig geleert. Touren, Leads, Kalender, GRAEF, besuchte Kunden und Funktionen bleiben erhalten. In der Tourenplanung werden Bestandskunden markiert, sobald im Kundenmodul wieder passende Kunden vorhanden sind. <button class="btn" onclick="restoreRemovedCustomersV46()">Entfernte Kunden wiederherstellen</button></div><div style="height:14px"></div>`+base;
+    return base;
   };
   try{dashboardHTML=window.dashboardHTML;}catch(e){}
 
@@ -5583,6 +5581,1948 @@ function body90(r,type){
 
   // Kleiner sichtbarer Hinweis im Browser-Console-Log, ohne UI zu stören
   try { console.info('BLOC73 CRM Speicher/Laden Fix aktiv:', FIX_VERSION); } catch(e) {}
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_auto_customer_file_on_visit) return;
+  window.__bloc73_auto_customer_file_on_visit = true;
+
+  function now(){
+    return new Date().toISOString();
+  }
+
+  function todayIso(){
+    return typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
+  }
+
+  function clean(v){
+    try {
+      return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    } catch(e){
+      return String(v || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    }
+  }
+
+  function companyOf(r){
+    return String((r && (r.company || r.customer || r.name || r.title)) || '').trim();
+  }
+
+  function addressOf(r){
+    return String((r && (r.address || [r.street, [r.zip, r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '))) || '').trim();
+  }
+
+  function rowKey(r){
+    return clean(companyOf(r) + ' ' + addressOf(r));
+  }
+
+  function companyKey(r){
+    return clean(companyOf(r)).replace(/\b(gmbh|ug|kg|ag|ohg|mbh|co|und|inh)\b/g,' ').replace(/\s+/g,' ').trim();
+  }
+
+  function addressComplete(address){
+    const a = String(address || '').trim();
+    if(!a) return false;
+    const hasZip = /\b\d{5}\b/.test(a);
+    const hasStreet = /(straße|str\.|strasse|weg|platz|allee|ring|gasse|damm|ufer|chaussee|markt)\b/i.test(a);
+    const hasNo = /\b\d+[a-z]?\b/i.test(a);
+    return hasZip && (hasStreet || hasNo);
+  }
+
+  function openMapsForAddressFix(r){
+    const query = [companyOf(r), addressOf(r)].filter(Boolean).join(' ');
+    if(!query) return;
+    try {
+      if(typeof openMapsFor === 'function') openMapsFor(query);
+      else window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query), '_blank', 'noopener');
+    } catch(e) {}
+  }
+
+  function ensureFullAddress(r){
+    if(!r) return '';
+    const current = addressOf(r);
+    if(addressComplete(current)) return current;
+
+    openMapsForAddressFix(r);
+    const entered = prompt(
+      'Adresse ist unvollständig.\n\nMaps wurde geöffnet. Bitte vollständige Adresse aus Maps kopieren und hier einfügen:\n\n' +
+      'Firma, Straße Hausnummer, PLZ Ort',
+      current || companyOf(r)
+    );
+    if(entered !== null && String(entered).trim()){
+      r.address = String(entered).trim();
+      r.addressStatus = addressComplete(r.address) ? 'vollständig manuell ergänzt' : 'Adresse manuell prüfen';
+      r.updatedAt = now();
+      return r.address;
+    }
+
+    r.addressStatus = 'Adresse unvollständig - manuell prüfen';
+    r.updatedAt = now();
+    return current;
+  }
+
+  function findCustomerFor(r){
+    db.customers = Array.isArray(db.customers) ? db.customers : [];
+    const id = String((r && (r.customerId || r.customer_id)) || '');
+    if(id){
+      const byId = db.customers.find(c => String(c.id) === id);
+      if(byId) return byId;
+    }
+
+    const k = rowKey(r);
+    if(k){
+      const byFull = db.customers.find(c => rowKey(c) === k);
+      if(byFull) return byFull;
+    }
+
+    const ck = companyKey(r);
+    if(ck && ck.length > 3){
+      const byCompany = db.customers.find(c => companyKey(c) === ck);
+      if(byCompany) return byCompany;
+    }
+
+    return null;
+  }
+
+  function upsertCustomerFileFromVisit(r, status){
+    if(typeof db === 'undefined' || !r) return null;
+    db.customers = Array.isArray(db.customers) ? db.customers : [];
+
+    ensureFullAddress(r);
+    const existing = findCustomerFor(r);
+    const data = {
+      company: companyOf(r),
+      target: r.target || (existing && existing.target) || '',
+      status: status || r.status || 'Besucht',
+      address: addressOf(r),
+      phone: r.phone || (existing && existing.phone) || '',
+      email: r.email || (existing && existing.email) || '',
+      website: r.website || (existing && existing.website) || '',
+      lastVisit: r.visitedAt || todayIso(),
+      graefInfo: r.graefInfo || (existing && existing.graefInfo) || 'Nein',
+      nextDate: r.nextDate || (existing && existing.nextDate) || '',
+      notes: [existing && existing.notes, r.notes].filter(Boolean).join('\n').trim(),
+      discussion: r.discussion || (existing && existing.discussion) || '',
+      addressStatus: addressComplete(addressOf(r)) ? 'vollständig' : 'Adresse prüfen',
+      updatedAt: now()
+    };
+
+    let customer = existing;
+    if(customer){
+      Object.assign(customer, data);
+    } else {
+      customer = Object.assign({id: (typeof uid === 'function' ? uid() : ('cust_' + Date.now())), createdAt: now()}, data);
+      db.customers.unshift(customer);
+    }
+
+    r.customerId = customer.id;
+    r.customerFileCreatedAt = r.customerFileCreatedAt || now();
+    r.customerFileStatus = 'Kundenakte automatisch zugeordnet';
+    return customer;
+  }
+
+  window.ensureCustomerFileFromVisit = function(row, status){
+    const c = upsertCustomerFileFromVisit(row, status);
+    try { if(typeof persist === 'function') persist(); } catch(e) {}
+    try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+    return c;
+  };
+
+  const baseSaveVisited = window.saveVisited || (typeof saveVisited === 'function' ? saveVisited : null);
+  if(typeof baseSaveVisited === 'function'){
+    window.saveVisited = function(h, status, extra){
+      upsertCustomerFileFromVisit(h, status || 'Besucht');
+      const result = baseSaveVisited.apply(this, arguments);
+      try {
+        const k = rowKey(h);
+        const visited = (db.visited || []).find(v => rowKey(v) === k);
+        if(visited && h.customerId){
+          visited.customerId = h.customerId;
+          visited.customerFileStatus = 'Kundenakte automatisch zugeordnet';
+          visited.addressStatus = h.addressStatus || visited.addressStatus || '';
+          if(h.address) visited.address = h.address;
+          if(typeof persist === 'function') persist();
+        }
+      } catch(e) {}
+      return result;
+    };
+    try { saveVisited = window.saveVisited; } catch(e) {}
+  }
+
+  const baseSaveVisitClose65 = window.saveVisitClose65;
+  if(typeof baseSaveVisitClose65 === 'function'){
+    window.saveVisitClose65 = function(){
+      let tour = null;
+      try {
+        const d = document.getElementById('visitCloseDialog65');
+        const id = d && d.dataset && d.dataset.tourId;
+        tour = (db.tours || []).find(t => String(t.id) === String(id));
+        if(tour){
+          const addrField = document.getElementById('v65_addr');
+          const fieldAddress = addrField ? String(addrField.value || '').trim() : '';
+          tour.address = fieldAddress || addressOf(tour);
+          if(!addressComplete(tour.address)){
+            ensureFullAddress(tour);
+            if(addrField) addrField.value = tour.address || '';
+          }
+        }
+      } catch(e) {}
+
+      const result = baseSaveVisitClose65.apply(this, arguments);
+
+      try {
+        if(tour){
+          const outcome = String((document.getElementById('v65_outcome') || {}).value || tour.status || 'Besucht');
+          upsertCustomerFileFromVisit(tour, outcome);
+          if(typeof persist === 'function') persist();
+          if(typeof renderNav === 'function') renderNav();
+        }
+      } catch(e) {}
+      return result;
+    };
+  }
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_restore_customer_master_installed) return;
+  window.__bloc73_restore_customer_master_installed = true;
+
+  const BACKUP = 'bloc73_v46_removed_customers_backup';
+  const FLAG = 'bloc73_v46_customers_cleared_once';
+
+  function normKey(r){
+    return String(((r && r.company) || '') + ' ' + ((r && r.address) || ''))
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9äöüß]+/g,' ')
+      .trim();
+  }
+
+  function readBackupCustomers(){
+    try {
+      const raw = localStorage.getItem(BACKUP);
+      if(!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed && parsed.customers) ? parsed.customers : [];
+    } catch(e){
+      return [];
+    }
+  }
+
+  function mergeCustomersFromBackup(silent){
+    if(typeof db === 'undefined') return 0;
+    const backupRows = readBackupCustomers();
+    if(!backupRows.length) return 0;
+
+    db.customers = Array.isArray(db.customers) ? db.customers : [];
+    const seen = new Set(db.customers.map(normKey).filter(Boolean));
+    let added = 0;
+
+    backupRows.forEach(function(c){
+      const k = normKey(c);
+      if(!k || seen.has(k)) return;
+      db.customers.push(c);
+      seen.add(k);
+      added++;
+    });
+
+    try { localStorage.setItem(FLAG, new Date().toISOString()); } catch(e) {}
+
+    if(added){
+      try { if(typeof persist === 'function') persist(); } catch(e) {}
+      try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+      try { if(typeof active !== 'undefined' && ['customers','tourplanner','tours','dashboard'].includes(active) && typeof renderContent === 'function') renderContent(); } catch(e) {}
+      if(!silent) alert(added + ' Kunden aus der gespeicherten Kundenstamm-Sicherung wiederhergestellt.');
+    }
+    return added;
+  }
+
+  window.restoreRemovedCustomersV46 = function(){
+    const added = mergeCustomersFromBackup(false);
+    if(!added) alert('Keine zusätzlichen Kunden in der Kundenstamm-Sicherung gefunden.');
+  };
+
+  setTimeout(function(){
+    if(typeof db === 'undefined') return;
+    if(!Array.isArray(db.customers) || db.customers.length === 0) mergeCustomersFromBackup(true);
+  }, 0);
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_customer_tour_search_installed) return;
+  window.__bloc73_customer_tour_search_installed = true;
+
+  function n(v){
+    try {
+      return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    } catch(e){
+      return String(v || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    }
+  }
+
+  function key(r){
+    return n((r && r.company || '') + ' ' + (r && r.address || ''));
+  }
+
+  function selectedTargets(){
+    const checked = Array.from(document.querySelectorAll('.tourCat74:checked')).map(x => x.value);
+    const old = document.getElementById('tourCat');
+    const vals = checked.length ? checked : (old && old.value ? [old.value] : []);
+    return vals.map(v => {
+      if(v === 'metzgerei') return ['metzgerei','fleischerei','fleischer','butcher'];
+      if(v === 'gastro') return ['gastro','restaurant','hotel','grosskueche','großküche','küche','kueche'];
+      if(v === 'pflegeheim') return ['pflegeheim','seniorenheim','altenheim','pflege'];
+      if(v === 'krankenhaus') return ['krankenhaus','klinik','klinikum','reha'];
+      if(String(v).indexOf('haendler') === 0) return ['haendler','händler','gastrobedarf','metzgereibedarf','lebensmitteltechnik','grosskuechentechnik','großküchentechnik'];
+      return [v];
+    }).flat().map(n).filter(Boolean);
+  }
+
+  function targetMatchesCustomer(c, targets){
+    if(!targets.length) return true;
+    const hay = n([c.target,c.status,c.notes,c.discussion,c.company].filter(Boolean).join(' '));
+    return targets.some(t => hay.includes(t));
+  }
+
+  function placeMatchesCustomer(c){
+    const raw = String((document.getElementById('placeQuery') || {}).value || '').trim();
+    if(!raw) return true;
+    const q = n(raw);
+    const hay = n([c.company,c.address,c.notes,c.discussion,c.phone,c.email,c.website].filter(Boolean).join(' '));
+    if(hay.includes(q)) return true;
+
+    const parts = q.split(' ').filter(x => x.length >= 3);
+    if(parts.length && parts.some(p => hay.includes(p))) return true;
+
+    const zip = raw.match(/\b\d{5}\b/);
+    if(zip && hay.includes(zip[0])) return true;
+
+    const lat = Number(c.lat || c.latitude);
+    const lon = Number(c.lon || c.lng || c.longitude);
+    const radius = Number((document.getElementById('tourRadius') || {}).value || 0);
+    if(lat && lon && radius && tourState && tourState.lat && tourState.lon && typeof distance === 'function'){
+      return distance(tourState.lat, tourState.lon, lat, lon) <= radius;
+    }
+
+    return false;
+  }
+
+  function customerBlocked(c){
+    const status = n(c.status);
+    const hide = document.getElementById('hideVisited');
+    if(!hide || !hide.checked) return false;
+    return ['besucht','kein interesse','nicht relevant','nicht vorhanden','erledigt'].some(s => status.includes(n(s)));
+  }
+
+  function customerToHit(c){
+    const lat = Number(c.lat || c.latitude || 0);
+    const lon = Number(c.lon || c.lng || c.longitude || 0);
+    let dist = 0;
+    if(lat && lon && tourState && tourState.lat && tourState.lon && typeof distance === 'function'){
+      dist = Math.round(distance(tourState.lat, tourState.lon, lat, lon));
+    }
+    return {
+      company: c.company || c.title || 'Kunde ohne Namen',
+      target: c.target || 'Kunde',
+      address: c.address || '',
+      phone: c.phone || '',
+      email: c.email || '',
+      website: c.website || '',
+      lat: lat || '',
+      lon: lon || '',
+      distanceMeters: dist || 999999999,
+      distance: dist ? (dist < 1000 ? dist + ' m' : (dist / 1000).toFixed(1).replace('.',',') + ' km') : 'Kundenstamm',
+      notes: ['Quelle: Kundenstamm', c.status ? 'Status: ' + c.status : '', c.notes || '', c.discussion || ''].filter(Boolean).join('\n'),
+      source: 'Kundenstamm',
+      customerId: c.id || ''
+    };
+  }
+
+  function mergeCustomerHits(){
+    if(!window.tourState && typeof tourState === 'undefined') return 0;
+    if(typeof db === 'undefined' || !Array.isArray(db.customers)) return 0;
+
+    const targets = selectedTargets();
+    const existing = new Set((tourState.results || []).map(key).filter(Boolean));
+    const customerHits = db.customers
+      .filter(c => c && c.company)
+      .filter(c => !customerBlocked(c))
+      .filter(c => targetMatchesCustomer(c, targets))
+      .filter(placeMatchesCustomer)
+      .map(customerToHit)
+      .filter(h => {
+        const k = key(h);
+        if(!k || existing.has(k)) return false;
+        existing.add(k);
+        return true;
+      });
+
+    if(!customerHits.length) return 0;
+    tourState.results = (tourState.results || []).concat(customerHits).sort(function(a,b){
+      return Number(a.distanceMeters || 999999999) - Number(b.distanceMeters || 999999999);
+    });
+    return customerHits.length;
+  }
+
+  window.addCustomerMasterToTourResults = function(){
+    const added = mergeCustomerHits();
+    if(added){
+      try {
+        const total = (tourState.results || []).length;
+        if(typeof setTourStatus === 'function') setTourStatus(total + ' Treffer gesamt · davon ' + added + ' aus dem gespeicherten Kundenstamm ergänzt.');
+      } catch(e) {}
+      try { if(typeof renderTourResults === 'function') renderTourResults(); } catch(e) {}
+    } else {
+      try { if(typeof setTourStatus === 'function') setTourStatus('Keine zusätzlichen passenden Kunden aus dem Kundenstamm gefunden.'); } catch(e) {}
+    }
+  };
+
+  function addCustomerSearchButton(){
+    try {
+      if(typeof active !== 'undefined' && active !== 'tourplanner') return;
+      if(document.getElementById('customerMasterTourBtn')) return;
+      const status = document.getElementById('tourStatus');
+      if(!status || !status.parentNode) return;
+      const wrap = document.createElement('div');
+      wrap.id = 'customerMasterTourBtn';
+      wrap.className = 'actions';
+      wrap.style.margin = '10px 0 0';
+      wrap.innerHTML = '<button class="btn" type="button" onclick="addCustomerMasterToTourResults()">Kundenstamm ergänzen</button>';
+      status.parentNode.insertBefore(wrap, status.nextSibling);
+    } catch(e) {}
+  }
+
+  const baseRenderContentCustomerSearch = window.renderContent;
+  window.renderContent = function(){
+    const result = typeof baseRenderContentCustomerSearch === 'function' ? baseRenderContentCustomerSearch.apply(this, arguments) : undefined;
+    setTimeout(addCustomerSearchButton, 0);
+    return result;
+  };
+  try { renderContent = window.renderContent; } catch(e) {}
+  setTimeout(addCustomerSearchButton, 500);
+})();
+</script>
+
+<script>
+(function(){
+  const BTN_ID = 'clearToursV78Btn';
+
+  function isActiveTour(t){
+    return t && !t.hidden && !t.closedAt;
+  }
+
+  window.clearActiveToursV78 = function(){
+    if(typeof db === 'undefined' || !Array.isArray(db.tours)){
+      alert('Keine Tagestouren gefunden.');
+      return;
+    }
+
+    const activeTours = db.tours.filter(isActiveTour);
+    if(!activeTours.length){
+      alert('Es gibt keine aktiven Tagestouren zum Löschen.');
+      return;
+    }
+
+    const msg = 'Alle aktiven Tagestouren wirklich löschen?\n\n'
+      + activeTours.length + ' geplante Tour-Einträge werden entfernt.\n'
+      + 'Kundenakten, besuchte Kunden, Leads, GRAEF-Infos, Angebote, Aufgaben und Kalender bleiben gespeichert.';
+    if(!confirm(msg)) return;
+
+    db.tours = db.tours.filter(t => !isActiveTour(t));
+    try { if(typeof persist === 'function') persist(); } catch(e) {}
+    try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+    try { if(typeof renderContent === 'function') renderContent(); } catch(e) {}
+  };
+
+  function ensureClearToursButtonV78(){
+    try {
+      if(typeof active === 'undefined' || active !== 'tours') return;
+      if(document.getElementById(BTN_ID)) return;
+      const panel = document.getElementById('content');
+      if(!panel) return;
+      const heading = Array.from(panel.querySelectorAll('h3')).find(h => (h.textContent || '').includes('Tagestouren'));
+      const toolbar = heading && heading.closest('.panel-head') ? heading.closest('.panel-head').querySelector('.toolbar') : panel.querySelector('.panel-head .toolbar');
+      if(!toolbar) return;
+
+      const btn = document.createElement('button');
+      btn.id = BTN_ID;
+      btn.type = 'button';
+      btn.className = 'btn danger';
+      btn.textContent = 'Tagestouren löschen';
+      btn.onclick = window.clearActiveToursV78;
+      toolbar.appendChild(btn);
+    } catch(e) {}
+  }
+
+  const baseRenderContent = window.renderContent;
+  if(typeof baseRenderContent === 'function' && !window.__clearToursV78Installed){
+    window.__clearToursV78Installed = true;
+    window.renderContent = function(){
+      const result = baseRenderContent.apply(this, arguments);
+      ensureClearToursButtonV78();
+      return result;
+    };
+    try { renderContent = window.renderContent; } catch(e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', ensureClearToursButtonV78);
+  setTimeout(ensureClearToursButtonV78, 150);
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_clean_improvements_20260621) return;
+  window.__bloc73_clean_improvements_20260621 = true;
+
+  function H(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+  function N(v){
+    try {
+      return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    } catch(e){
+      return String(v || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    }
+  }
+  function todayIso(){
+    return typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
+  }
+  function addDays(iso, days){
+    const d = new Date((iso || todayIso()) + 'T12:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+  function fmt(iso){
+    if(!iso) return '';
+    try {
+      return typeof formatDate === 'function' ? formatDate(iso) : new Date(iso + 'T12:00:00').toLocaleDateString('de-DE');
+    } catch(e){
+      return String(iso || '');
+    }
+  }
+  function company(r){
+    return String((r && (r.company || r.customer || r.name || r.title)) || '').trim();
+  }
+  function address(r){
+    return String((r && (r.address || [r.street, [r.zip,r.city].filter(Boolean).join(' ')].filter(Boolean).join(', '))) || '').trim();
+  }
+  function key(r){
+    return N(company(r) + ' ' + address(r));
+  }
+  function same(a,b){
+    const ka = key(a), kb = key(b);
+    if(ka && kb && ka === kb) return true;
+    const ca = N(company(a)), cb = N(company(b));
+    return !!(ca && cb && ca.length > 4 && cb.length > 4 && (ca === cb || ca.includes(cb) || cb.includes(ca)));
+  }
+  function rows(name){
+    return Array.isArray(db && db[name]) ? db[name] : [];
+  }
+  function lastContact(c){
+    const related = []
+      .concat(rows('visited').filter(r => same(c,r)).map(r => r.visitedAt || r.date || r.createdAt || ''))
+      .concat(rows('tours').filter(r => same(c,r)).map(r => r.visitedAt || r.tourDate || r.createdAt || ''))
+      .concat(c.lastVisit || '')
+      .filter(Boolean)
+      .map(v => String(v).slice(0,10))
+      .sort();
+    return related.length ? related[related.length - 1] : '';
+  }
+  function daysSince(iso){
+    if(!iso) return 9999;
+    const a = new Date(iso + 'T12:00:00');
+    const b = new Date(todayIso() + 'T12:00:00');
+    return Math.floor((b - a) / 86400000);
+  }
+  function inactiveCustomers(){
+    return rows('customers')
+      .filter(c => c && company(c))
+      .map(c => ({customer:c,last:lastContact(c),days:daysSince(lastContact(c))}))
+      .filter(x => x.days >= 90)
+      .sort((a,b) => b.days - a.days);
+  }
+  function openOffersFor(c){
+    return rows('offers').filter(o => same(c,o) && !/gewonnen|verloren|erledigt|storniert|abgesagt/i.test(String(o.status || '')));
+  }
+  function tasksFor(c){
+    return rows('tasks').filter(t => same(c,t) && !/erledigt/i.test(String(t.status || '')));
+  }
+  function visitsFor(c){
+    return rows('visited').filter(v => same(c,v)).sort((a,b) => String(b.visitedAt || '').localeCompare(String(a.visitedAt || '')));
+  }
+  function graefFor(c){
+    return rows('graef').filter(g => same(c,g)).sort((a,b) => String(b.informedAt || '').localeCompare(String(a.informedAt || '')));
+  }
+  function nextStep(c){
+    const t = tasksFor(c).sort((a,b) => String(a.due || '9999').localeCompare(String(b.due || '9999')))[0];
+    if(t) return 'Aufgabe: ' + (t.title || t.type || 'Nachfassen') + (t.due ? ' am ' + fmt(t.due) : '');
+    const offers = openOffersFor(c);
+    if(offers.length) return 'Offenes Angebot nachfassen';
+    const last = lastContact(c);
+    if(!last) return 'Erstkontakt planen';
+    if(daysSince(last) >= 90) return '90-Tage-Nachfassen einplanen';
+    return 'Bestand pflegen';
+  }
+
+  function backupPanel(){
+    const lastSave = localStorage.getItem('bloc73_backup_last_save') || '';
+    const lastExport = localStorage.getItem('bloc73_backup_last_export') || '';
+    const lastImport = localStorage.getItem('bloc73_backup_last_import') || '';
+    return '<div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>Backup / Sicherheit</h3></div>'
+      + '<div class="panel-body"><div class="notice"><b>Empfehlung:</b> Vor größeren Änderungen immer Backup JSON erstellen.</div>'
+      + '<div class="actions" style="margin-top:12px"><button class="btn primary" onclick="exportBackup()">Sicherung erstellen</button>'
+      + '<label class="btn">Sicherung laden<input type="file" accept="application/json" hidden onchange="importBackup(event)"></label></div>'
+      + '<div class="hint" style="margin-top:10px">Letztes Speichern: '+H(lastSave || 'nicht gespeichert')+'<br>Letzter Export: '+H(lastExport || 'kein Export')+'<br>Letzter Import: '+H(lastImport || 'kein Import')+'</div></div></div>';
+  }
+
+  function ninetyPanel(){
+    const list = inactiveCustomers().slice(0,8);
+    const body = list.length ? '<table><thead><tr><th>Kunde</th><th>Letzter Kontakt</th><th>Tage</th><th>Aktion</th></tr></thead><tbody>'
+      + list.map(x => '<tr><td><b>'+H(company(x.customer))+'</b><br><span class="muted small">'+H(address(x.customer))+'</span></td><td>'+H(x.last ? fmt(x.last) : 'kein Kontakt')+'</td><td>'+H(x.days)+'</td><td><button class="btn" onclick="openModal(\'customers\',\''+H(x.customer.id)+'\')">Öffnen</button></td></tr>').join('')
+      + '</tbody></table>' : '<div class="empty">Keine Kunden über 90 Tage ohne Kontakt.</div>';
+    return '<div class="panel" style="grid-column:span 6"><div class="panel-head"><h3>90-Tage-Nachfassen</h3><button class="btn primary" onclick="create90DayTasksStable()">Aufgaben erzeugen</button></div><div class="table-wrap">'+body+'</div></div>';
+  }
+
+  window.create90DayTasksStable = function(){
+    db.tasks = rows('tasks');
+    const due = addDays(todayIso(), 1);
+    let created = 0;
+    inactiveCustomers().forEach(function(x){
+      const c = x.customer;
+      const exists = rows('tasks').some(function(t){
+        return same(c,t) && /90.?tage|nachfassen/i.test(String(t.title || '') + ' ' + String(t.notes || '')) && !/erledigt/i.test(String(t.status || ''));
+      });
+      if(exists) return;
+      db.tasks.unshift({
+        id: typeof uid === 'function' ? uid() : 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+        title: '90-Tage-Nachfassen: ' + company(c),
+        customer: company(c),
+        type: 'Nachfassen',
+        due: due,
+        status: 'Offen',
+        notes: 'Automatisch erstellt: letzter Kontakt ' + (x.last ? fmt(x.last) : 'nicht dokumentiert') + ' (' + x.days + ' Tage).',
+        discussion: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      created++;
+    });
+    try { if(typeof persist === 'function') persist(); } catch(e) {}
+    try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+    try { if(typeof renderContent === 'function') renderContent(); } catch(e) {}
+    alert(created ? created + ' 90-Tage-Aufgabe(n) erstellt.' : 'Keine neuen 90-Tage-Aufgaben notwendig.');
+  };
+
+  const oldDashboard = window.dashboardHTML || (typeof dashboardHTML === 'function' ? dashboardHTML : null);
+  if(typeof oldDashboard === 'function'){
+    window.dashboardHTML = function(){
+      return String(oldDashboard.apply(this, arguments) || '')
+        + '<div class="grid" style="margin-top:16px">' + backupPanel() + ninetyPanel() + '</div>';
+    };
+    try { dashboardHTML = window.dashboardHTML; } catch(e) {}
+  }
+
+  function findRow(module,id){
+    const arr = rows(module);
+    return arr.find(r => String(r.id) === String(id));
+  }
+  function customerFrom(source){
+    return rows('customers').find(c => same(c, source)) || source;
+  }
+  function table(items, cols, empty){
+    if(!items.length) return '<p class="emptyline">'+H(empty)+'</p>';
+    return '<table><thead><tr>'+cols.map(c => '<th>'+H(c[1])+'</th>').join('')+'</tr></thead><tbody>'
+      + items.map(r => '<tr>'+cols.map(c => '<td>'+H(typeof c[0] === 'function' ? c[0](r) : r[c[0]] || '')+'</td>').join('')+'</tr>').join('')
+      + '</tbody></table>';
+  }
+  function customerFileHtml(module,id){
+    const source = findRow(module,id) || findRow('customers',id) || findRow('tours',id) || findRow('visited',id);
+    if(!source) return '';
+    const c = customerFrom(source);
+    const visits = visitsFor(c);
+    const graef = graefFor(c);
+    const offers = openOffersFor(c);
+    const tasks = tasksFor(c);
+    const last = lastContact(c);
+    const graefState = graef.length ? 'informiert' : (c.graefInfo || 'offen');
+    const css = '@page{size:A4;margin:14mm}body{margin:0;background:#202020;color:#111;font:12px/1.45 Arial,sans-serif}.toolbar{position:sticky;top:0;background:#111;padding:10px;text-align:center;z-index:2}.toolbar button{border:1px solid #d6b46a;background:#d6b46a;color:#111;border-radius:9px;padding:9px 13px;font-weight:800;margin:0 4px}.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:16mm;box-shadow:0 18px 55px rgba(0,0,0,.45)}header{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:12px}.eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7a5b22;font-weight:800}h1{font-size:25px;line-height:1.1;margin:4px 0 5px}h2{font-size:14px;margin:16px 0 7px;border-bottom:1px solid #ddd;padding-bottom:4px}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 12px}.facts div{border:1px solid #ddd;padding:8px;background:#fafafa}.facts b{display:block;font-size:10px;text-transform:uppercase;color:#666}.facts span{font-weight:800}.info{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px}.info p{margin:2px 0}table{width:100%;border-collapse:collapse;font-size:10.5px}th,td{border-bottom:1px solid #ddd;text-align:left;vertical-align:top;padding:5px 6px}th{background:#f0f0f0}.emptyline{border:1px dashed #ccc;color:#777;padding:10px;margin:0;background:#fafafa}.next{border:2px solid #d6b46a;background:#fff8e4;padding:10px 12px;font-weight:800}@media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:0}section{break-inside:avoid}}';
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Kundenakte · '+H(company(c))+'</title><style>'+css+'</style></head><body>'
+      + '<div class="toolbar"><button onclick="window.print()">Drucken / PDF</button><button onclick="window.close()">Schließen</button></div><main class="page">'
+      + '<header><div><div class="eyebrow">BLOC73 CRM · Kundenakte</div><h1>'+H(company(c) || 'Kunde')+'</h1><p>Übersicht für Besuch, Nachfassen, Angebot und GRAEF.</p></div><div><b>Stand</b><br>'+H(fmt(todayIso()))+'</div></header>'
+      + '<section class="facts"><div><b>Letzter Kontakt</b><span>'+H(last ? fmt(last) : 'offen')+'</span></div><div><b>Tage</b><span>'+H(last ? daysSince(last) : 'neu')+'</span></div><div><b>GRAEF</b><span>'+H(graefState)+'</span></div><div><b>Offene Angebote</b><span>'+H(offers.length)+'</span></div></section>'
+      + '<section><div class="next">Nächster Schritt: '+H(nextStep(c))+'</div></section>'
+      + '<section><h2>Stammdaten</h2><div class="info"><p><b>Adresse:</b> '+H(address(c) || address(source))+'</p><p><b>Telefon:</b> '+H(c.phone || source.phone || '')+'</p><p><b>E-Mail:</b> '+H(c.email || source.email || '')+'</p><p><b>Website:</b> '+H(c.website || source.website || '')+'</p><p><b>Zielgruppe:</b> '+H(c.target || source.target || '')+'</p><p><b>Status:</b> '+H(c.status || source.status || '')+'</p></div></section>'
+      + '<section><h2>Besuchshistorie</h2>'+table(visits, [[r => fmt(r.visitedAt || r.tourDate),'Datum'],[r => r.status || r.result || 'Besuch','Status'],[r => r.discussion || r.notes,'Gespräch / Notiz']], 'Noch keine Besuche dokumentiert.')+'</section>'
+      + '<section><h2>Offene Aufgaben</h2>'+table(tasks, [['title','Aufgabe'],[r => fmt(r.due),'Fällig'],['status','Status'],['notes','Notiz']], 'Keine offenen Aufgaben.')+'</section>'
+      + '<section><h2>Offene Angebote</h2>'+table(offers, [['title','Angebot'],['product','Produkt'],['value','Wert'],[r => fmt(r.followDate || r.offerDate),'Datum / Nachfassen'],['status','Status']], 'Keine offenen Angebote.')+'</section>'
+      + '<section><h2>GRAEF</h2>'+table(graef, [[r => fmt(r.informedAt || r.visitedAt),'Datum'],['week','KW'],[r => r.discussion || r.notes,'Notiz']], 'Noch nicht als GRAEF informiert gespeichert.')+'</section>'
+      + '</main></body></html>';
+  }
+
+  window.openCustomerFile68 = function(module,id){
+    const html = customerFileHtml(module,id);
+    if(!html) return alert('Kundenakte konnte nicht geöffnet werden: Datensatz nicht gefunden.');
+    const w = window.open('', '_blank');
+    if(!w){
+      const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'BLOC73_Kundenakte.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const oldRenderContent = window.renderContent;
+  if(typeof oldRenderContent === 'function'){
+    window.renderContent = function(){
+      const result = oldRenderContent.apply(this, arguments);
+      if(typeof active !== 'undefined' && active === 'dashboard'){
+        const c = document.getElementById('content');
+        if(c && !document.getElementById('stableImprovePanel')) c.insertAdjacentHTML('beforeend', '<div id="stableImprovePanel" class="grid" style="margin-top:16px">'+backupPanel()+ninetyPanel()+'</div>');
+      }
+      return result;
+    };
+    try { renderContent = window.renderContent; } catch(e) {}
+  }
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_calendar_call_buttons_20260621) return;
+  window.__bloc73_calendar_call_buttons_20260621 = true;
+
+  function H(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+  function todayIso(){
+    return typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
+  }
+  function nowIso(){
+    return new Date().toISOString();
+  }
+  function newId(){
+    return typeof uid === 'function' ? uid() : 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  }
+  function ensureArrays(){
+    ['calendar','tasks','visited','customers','calls'].forEach(function(k){
+      if(!Array.isArray(db[k])) db[k] = [];
+    });
+  }
+  function persistAndRender(target){
+    try { if(typeof persist === 'function') persist(); } catch(e) {}
+    try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+    try {
+      if(target && typeof setActive === 'function') setActive(target);
+      else if(typeof renderContent === 'function') renderContent();
+    } catch(e) {}
+  }
+  function findCustomerByName(name){
+    const n = String(name || '').trim().toLowerCase();
+    if(!n) return null;
+    return (db.customers || []).find(function(c){
+      return String(c.company || '').trim().toLowerCase() === n;
+    }) || null;
+  }
+  function updateCustomerContact(name, phone, notes, date){
+    if(!name) return;
+    const c = findCustomerByName(name);
+    if(!c) return;
+    if(phone && !c.phone) c.phone = phone;
+    c.lastVisit = date || todayIso();
+    c.status = c.status || 'Kontakt';
+    if(notes){
+      c.discussion = notes;
+      c.notes = [c.notes || '', 'Telefonat ' + (date || todayIso()) + ': ' + notes].filter(Boolean).join('\n');
+    }
+    c.updatedAt = nowIso();
+  }
+
+  function syncCallFollowup(call){
+    ensureArrays();
+    if(!call || !call.nextDate) return false;
+    const label = call.company || call.phone || 'Anruf';
+    const title = 'Rückruf: ' + label;
+    const notes = call.notes || ('Anruf-Ergebnis: ' + (call.result || ''));
+    const callId = call.id || '';
+
+    const existingTask = db.tasks.find(function(t){
+      return (callId && String(t.callId || '') === String(callId)) ||
+        (String(t.customer || '') === String(call.company || '') && String(t.due || '') === String(call.nextDate) && String(t.title || '') === title);
+    });
+    const taskData = {
+      title:title,
+      customer:call.company || '',
+      type:'Rückruf',
+      due:call.nextDate,
+      status:'Offen',
+      notes:notes,
+      discussion:call.notes || '',
+      callId:callId,
+      source:'Anruf-Wiedervorlage',
+      updatedAt:nowIso()
+    };
+    if(existingTask) Object.assign(existingTask, taskData);
+    else db.tasks.unshift(Object.assign({id:newId(),createdAt:nowIso()}, taskData));
+
+    const existingCalendar = db.calendar.find(function(e){
+      return (callId && String(e.callId || '') === String(callId)) ||
+        (String(e.customer || '') === String(call.company || '') && String(e.date || '') === String(call.nextDate) && String(e.title || '') === title);
+    });
+    const calendarData = {
+      title:title,
+      date:call.nextDate,
+      time:'09:00',
+      customer:call.company || '',
+      type:'Rückruf',
+      notes:notes,
+      discussion:call.notes || '',
+      callId:callId,
+      source:'Anruf-Wiedervorlage',
+      updatedAt:nowIso()
+    };
+    if(existingCalendar) Object.assign(existingCalendar, calendarData);
+    else db.calendar.unshift(Object.assign({id:newId(),createdAt:nowIso()}, calendarData));
+    return true;
+  }
+
+  function ensureCalendarDialog(){
+    let d = document.getElementById('quickCalendarDialogStable');
+    if(d) return d;
+    d = document.createElement('dialog');
+    d.id = 'quickCalendarDialogStable';
+    d.innerHTML =
+      '<div class="modal-head"><h3>Termin direkt hinzufügen</h3><button class="x" type="button" onclick="closeQuickCalendarStable()">×</button></div>'+
+      '<div class="modal-body"><div class="form-grid">'+
+        '<div class="field wide"><label>Termin</label><input class="input" id="qcTitle" placeholder="z. B. Besuch / Rückruf / Angebot nachfassen"></div>'+
+        '<div class="field"><label>Datum</label><input class="input" type="date" id="qcDate"></div>'+
+        '<div class="field"><label>Uhrzeit</label><input class="input" type="time" id="qcTime" value="09:00"></div>'+
+        '<div class="field"><label>Kunde</label><input class="input" id="qcCustomer" placeholder="Firma / Ansprechpartner"></div>'+
+        '<div class="field"><label>Typ</label><select class="select" id="qcType"><option>Besuch</option><option>Rückruf</option><option>Angebot</option><option>Service</option><option>Intern</option></select></div>'+
+        '<div class="field wide"><label>Notiz</label><textarea id="qcNotes" placeholder="Kurznotiz zum Termin"></textarea></div>'+
+      '</div></div>'+
+      '<div class="modal-foot"><button class="btn" type="button" onclick="closeQuickCalendarStable()">Abbrechen</button><button class="btn primary" type="button" onclick="saveQuickCalendarStable()">Termin speichern</button></div>';
+    document.body.appendChild(d);
+    return d;
+  }
+  window.openQuickCalendarStable = function(date){
+    const d = ensureCalendarDialog();
+    document.getElementById('qcTitle').value = '';
+    document.getElementById('qcDate').value = date || todayIso();
+    document.getElementById('qcTime').value = '09:00';
+    document.getElementById('qcCustomer').value = '';
+    document.getElementById('qcType').value = 'Besuch';
+    document.getElementById('qcNotes').value = '';
+    d.showModal();
+  };
+  window.closeQuickCalendarStable = function(){
+    const d = document.getElementById('quickCalendarDialogStable');
+    if(d) d.close();
+  };
+  window.saveQuickCalendarStable = function(){
+    ensureArrays();
+    const title = String(document.getElementById('qcTitle').value || '').trim();
+    const date = String(document.getElementById('qcDate').value || '').trim();
+    if(!title) return alert('Bitte Termin eintragen.');
+    if(!date) return alert('Bitte Datum eintragen.');
+    const customer = String(document.getElementById('qcCustomer').value || '').trim();
+    db.calendar.unshift({
+      id:newId(),
+      title:title,
+      date:date,
+      time:String(document.getElementById('qcTime').value || '').trim(),
+      customer:customer,
+      type:String(document.getElementById('qcType').value || 'Besuch').trim(),
+      notes:String(document.getElementById('qcNotes').value || '').trim(),
+      discussion:'',
+      createdAt:nowIso(),
+      updatedAt:nowIso()
+    });
+    closeQuickCalendarStable();
+    persistAndRender('calendar');
+  };
+
+  function ensureCallDialog(){
+    let d = document.getElementById('callCaptureDialogStable');
+    if(d) return d;
+    d = document.createElement('dialog');
+    d.id = 'callCaptureDialogStable';
+    d.innerHTML =
+      '<div class="modal-head"><h3>Anruf erfassen</h3><button class="x" type="button" onclick="closeCallCaptureStable()">×</button></div>'+
+      '<div class="modal-body"><div class="form-grid">'+
+        '<div class="field"><label>Kunde / Firma</label><input class="input" id="callCustomer" placeholder="Firma"></div>'+
+        '<div class="field"><label>Telefon</label><input class="input" id="callPhone" placeholder="+49 ..."></div>'+
+        '<div class="field"><label>Datum</label><input class="input" type="date" id="callDate"></div>'+
+        '<div class="field"><label>Uhrzeit</label><input class="input" type="time" id="callTime"></div>'+
+        '<div class="field"><label>Ergebnis</label><select class="select" id="callResult"><option>Erreicht</option><option>Nicht erreicht</option><option>Rückruf vereinbart</option><option>Interesse vorhanden</option><option>Kein Interesse</option><option>Angebot erforderlich</option></select></div>'+
+        '<div class="field"><label>Wiedervorlage</label><input class="input" type="date" id="callNextDate"></div>'+
+        '<div class="field wide"><label>Was wurde besprochen?</label><textarea id="callNotes" placeholder="Gespräch, Bedarf, Einwand, nächster Schritt"></textarea></div>'+
+      '</div></div>'+
+      '<div class="modal-foot"><button class="btn" type="button" onclick="closeCallCaptureStable()">Abbrechen</button><button class="btn primary" type="button" onclick="saveCallCaptureStable()">Anruf speichern</button></div>';
+    document.body.appendChild(d);
+    return d;
+  }
+  window.openCallCaptureStable = function(customer, phone){
+    const d = ensureCallDialog();
+    const current = new Date();
+    document.getElementById('callCustomer').value = customer || '';
+    document.getElementById('callPhone').value = phone || '';
+    document.getElementById('callDate').value = todayIso();
+    document.getElementById('callTime').value = String(current.getHours()).padStart(2,'0') + ':' + String(current.getMinutes()).padStart(2,'0');
+    document.getElementById('callResult').value = 'Erreicht';
+    document.getElementById('callNextDate').value = '';
+    document.getElementById('callNotes').value = '';
+    d.showModal();
+  };
+  window.closeCallCaptureStable = function(){
+    const d = document.getElementById('callCaptureDialogStable');
+    if(d) d.close();
+  };
+  window.saveCallCaptureStable = function(){
+    ensureArrays();
+    const customer = String(document.getElementById('callCustomer').value || '').trim();
+    const phone = String(document.getElementById('callPhone').value || '').trim();
+    const date = String(document.getElementById('callDate').value || todayIso()).trim();
+    const time = String(document.getElementById('callTime').value || '').trim();
+    const result = String(document.getElementById('callResult').value || 'Erreicht').trim();
+    const nextDate = String(document.getElementById('callNextDate').value || '').trim();
+    const notes = String(document.getElementById('callNotes').value || '').trim();
+    if(!customer && !phone) return alert('Bitte Kunde/Firma oder Telefonnummer eintragen.');
+
+    const call = {
+      id:newId(),
+      company:customer,
+      phone:phone,
+      date:date,
+      time:time,
+      result:result,
+      nextDate:nextDate,
+      notes:notes,
+      createdAt:nowIso(),
+      updatedAt:nowIso()
+    };
+    db.calls.unshift(call);
+
+    db.visited.unshift({
+      id:newId(),
+      company:customer || phone,
+      target:'',
+      status:'Telefonat',
+      visitedAt:date,
+      address:'',
+      phone:phone,
+      website:'',
+      notes:'Telefonat: ' + result,
+      discussion:notes,
+      source:'Anruf erfassen',
+      createdAt:nowIso(),
+      updatedAt:nowIso()
+    });
+
+    updateCustomerContact(customer, phone, notes, date);
+
+    syncCallFollowup(call);
+
+    closeCallCaptureStable();
+    persistAndRender();
+    alert('Anruf wurde erfasst.');
+  };
+
+  if(typeof modules !== 'undefined' && !modules.calls){
+    modules.calls = {
+      title:'Anrufe',
+      sub:'Erfasste Telefonate und Rückrufbedarf.',
+      label:'Anruf',
+      fields:[
+        ['company','Kunde / Firma','text'],
+        ['phone','Telefon','tel'],
+        ['date','Datum','date',true],
+        ['time','Uhrzeit','time'],
+        ['result','Ergebnis','select',false,['Erreicht','Nicht erreicht','Rückruf vereinbart','Interesse vorhanden','Kein Interesse','Angebot erforderlich']],
+        ['nextDate','Wiedervorlage','date'],
+        ['notes','Notizen','textarea']
+      ]
+    };
+    try {
+      if(Array.isArray(navOrder) && !navOrder.includes('calls')){
+        const idx = navOrder.indexOf('tasks');
+        navOrder.splice(idx >= 0 ? idx + 1 : navOrder.length, 0, 'calls');
+      }
+    } catch(e) {}
+  }
+
+  const oldSaveRecordForCalls = window.saveRecord || (typeof saveRecord === 'function' ? saveRecord : null);
+  if(typeof oldSaveRecordForCalls === 'function'){
+    window.saveRecord = async function(e){
+      const wasCalls = typeof modalModule !== 'undefined' && modalModule === 'calls';
+      const callEditId = wasCalls && typeof modalId !== 'undefined' ? String(modalId || '') : '';
+      const result = await oldSaveRecordForCalls.apply(this, arguments);
+      if(wasCalls){
+        try {
+          ensureArrays();
+          const call = (db.calls || []).find(function(c){ return callEditId && String(c.id) === callEditId; }) || (db.calls || [])[0];
+          if(call && call.nextDate){
+            syncCallFollowup(call);
+            if(typeof persist === 'function') persist();
+            if(typeof renderNav === 'function') renderNav();
+            if(typeof renderContent === 'function') renderContent();
+          }
+        } catch(err) {}
+      }
+      return result;
+    };
+    try { saveRecord = window.saveRecord; } catch(e) {}
+  }
+
+  const oldTableHead = window.tableHead || (typeof tableHead === 'function' ? tableHead : null);
+  if(typeof oldTableHead === 'function'){
+    window.tableHead = function(m){
+      if(m === 'calls') return '<tr><th>Datum</th><th>Kunde</th><th>Telefon</th><th>Ergebnis</th><th>Wiedervorlage</th><th>Notiz</th><th>Aktion</th></tr>';
+      return oldTableHead.apply(this, arguments);
+    };
+    try { tableHead = window.tableHead; } catch(e) {}
+  }
+  const oldRowHTML = window.rowHTML || (typeof rowHTML === 'function' ? rowHTML : null);
+  if(typeof oldRowHTML === 'function'){
+    window.rowHTML = function(m,r){
+      if(m === 'calls'){
+        return '<tr><td>'+H(r.date || '')+' '+H(r.time || '')+'</td><td><b>'+H(r.company || '')+'</b></td><td>'+H(r.phone || '')+'</td><td>'+H(r.result || '')+'</td><td>'+H(r.nextDate || '')+'</td><td>'+H(String(r.notes || '').slice(0,140))+'</td><td><div class="row-actions"><button class="btn" onclick="openModal(\'calls\',\''+H(r.id)+'\')">Bearbeiten</button><button class="btn danger" onclick="deleteRecord(\'calls\',\''+H(r.id)+'\')">Löschen</button></div></td></tr>';
+      }
+      return oldRowHTML.apply(this, arguments);
+    };
+    try { rowHTML = window.rowHTML; } catch(e) {}
+  }
+
+  function addButtons(){
+    try {
+      const top = document.querySelector('.top .actions');
+      if(top && !document.getElementById('callCaptureTopBtn')){
+        const b = document.createElement('button');
+        b.id = 'callCaptureTopBtn';
+        b.type = 'button';
+        b.className = 'btn primary';
+        b.textContent = 'Anruf erfassen';
+        b.onclick = function(){ openCallCaptureStable(); };
+        top.insertBefore(b, top.firstChild);
+      }
+      if(top && !document.getElementById('quickCalendarTopBtn')){
+        const b = document.createElement('button');
+        b.id = 'quickCalendarTopBtn';
+        b.type = 'button';
+        b.className = 'btn';
+        b.textContent = 'Termin direkt';
+        b.onclick = function(){ openQuickCalendarStable(); };
+        top.insertBefore(b, top.firstChild);
+      }
+      if(typeof active !== 'undefined' && active === 'calendar'){
+        const head = document.querySelector('#content .panel-head');
+        if(head && !document.getElementById('quickCalendarPanelBtn')){
+          const b = document.createElement('button');
+          b.id = 'quickCalendarPanelBtn';
+          b.type = 'button';
+          b.className = 'btn primary';
+          b.textContent = '+ Termin direkt';
+          b.onclick = function(){ openQuickCalendarStable(); };
+          head.appendChild(b);
+        }
+      }
+    } catch(e) {}
+  }
+
+  const oldRenderContentCalls = window.renderContent;
+  if(typeof oldRenderContentCalls === 'function'){
+    window.renderContent = function(){
+      const result = oldRenderContentCalls.apply(this, arguments);
+      setTimeout(addButtons, 0);
+      return result;
+    };
+    try { renderContent = window.renderContent; } catch(e) {}
+  }
+  const oldRenderNavCalls = window.renderNav;
+  if(typeof oldRenderNavCalls === 'function'){
+    window.renderNav = function(){
+      const result = oldRenderNavCalls.apply(this, arguments);
+      setTimeout(addButtons, 0);
+      return result;
+    };
+    try { renderNav = window.renderNav; } catch(e) {}
+  }
+  setTimeout(function(){
+    ensureArrays();
+    try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+    addButtons();
+  }, 300);
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_calls_pdf_summary_20260621) return;
+  window.__bloc73_calls_pdf_summary_20260621 = true;
+
+  function H(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+  function todayIso(){
+    return typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
+  }
+  function addDays(iso, days){
+    const d = new Date((iso || todayIso()) + 'T12:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+  function mondayOf(iso){
+    try {
+      if(typeof mondayOfDateString === 'function') return mondayOfDateString(iso || todayIso());
+    } catch(e) {}
+    const d = new Date((iso || todayIso()) + 'T12:00:00');
+    const day = d.getDay() || 7;
+    d.setDate(d.getDate() - day + 1);
+    return d.toISOString().slice(0,10);
+  }
+  function fmt(iso){
+    if(!iso) return '';
+    try {
+      return typeof formatDate === 'function' ? formatDate(iso) : new Date(iso + 'T12:00:00').toLocaleDateString('de-DE');
+    } catch(e){
+      return String(iso || '');
+    }
+  }
+  function calls(){
+    return Array.isArray(db && db.calls) ? db.calls : [];
+  }
+  function callDate(c){
+    return String(c.date || c.visitedAt || c.createdAt || '').slice(0,10);
+  }
+  function inRange(c, from, to){
+    const d = callDate(c);
+    if(!d) return false;
+    return (!from || d >= from) && (!to || d <= to);
+  }
+
+  function ensureCallsPdfDialog(){
+    let d = document.getElementById('callsPdfDialogStable');
+    if(d) return d;
+    d = document.createElement('dialog');
+    d.id = 'callsPdfDialogStable';
+    d.innerHTML =
+      '<div class="modal-head"><h3>Anruf-Zusammenfassung PDF</h3><button class="x" type="button" onclick="closeCallsPdfDialogStable()">×</button></div>'+
+      '<div class="modal-body"><div class="form-grid">'+
+        '<div class="field"><label>Von</label><input class="input" type="date" id="callsPdfFrom"></div>'+
+        '<div class="field"><label>Bis</label><input class="input" type="date" id="callsPdfTo"></div>'+
+        '<div class="field wide"><label>Titel / Notiz</label><input class="input" id="callsPdfTitle" value="Anruf-Zusammenfassung"></div>'+
+      '</div><div class="notice"><b>Hinweis:</b> Die Vorschau öffnet als druckfertige Seite. Im Browser „Als PDF speichern“ wählen.</div></div>'+
+      '<div class="modal-foot"><button class="btn" type="button" onclick="closeCallsPdfDialogStable()">Abbrechen</button><button class="btn primary" type="button" onclick="openCallsPdfSummaryStable()">PDF-Vorschau öffnen</button></div>';
+    document.body.appendChild(d);
+    return d;
+  }
+
+  window.openCallsPdfDialogStable = function(){
+    const d = ensureCallsPdfDialog();
+    const monday = mondayOf(todayIso());
+    document.getElementById('callsPdfFrom').value = monday;
+    document.getElementById('callsPdfTo').value = addDays(monday, 6);
+    document.getElementById('callsPdfTitle').value = 'Anruf-Zusammenfassung';
+    d.showModal();
+  };
+
+  window.closeCallsPdfDialogStable = function(){
+    const d = document.getElementById('callsPdfDialogStable');
+    if(d) d.close();
+  };
+
+  function resultCounts(rows){
+    const out = {};
+    rows.forEach(function(c){
+      const key = c.result || 'Ohne Ergebnis';
+      out[key] = (out[key] || 0) + 1;
+    });
+    return out;
+  }
+
+  function buildCallsPdf(rows, from, to, title){
+    const counts = resultCounts(rows);
+    const countKeys = Object.keys(counts).sort();
+    const withFollow = rows.filter(c => c.nextDate).length;
+    const reached = rows.filter(c => /erreicht|interesse|angebot/i.test(String(c.result || ''))).length;
+    const css =
+      '@page{size:A4;margin:12mm}body{margin:0;background:#202020;color:#111;font:11px/1.42 Arial,sans-serif}.toolbar{position:sticky;top:0;background:#111;color:#fff;padding:10px;text-align:center}.toolbar button{border:1px solid #d6b46a;background:#d6b46a;color:#111;border-radius:9px;padding:9px 13px;font-weight:800;margin:0 4px}.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:15mm;box-shadow:0 18px 55px rgba(0,0,0,.45)}header{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px}.eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7a5b22;font-weight:800}h1{font-size:24px;line-height:1.1;margin:4px 0 5px}.period{text-align:right;color:#555}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.kpi{border:1px solid #ddd;background:#fafafa;padding:9px}.kpi b{display:block;font-size:20px}.kpi span{font-size:10px;color:#666;text-transform:uppercase}.summary{border:1px solid #ddd;background:#fff8e4;padding:10px 12px;margin:10px 0 14px}table{width:100%;border-collapse:collapse;font-size:9.8px}th,td{border-bottom:1px solid #ddd;text-align:left;vertical-align:top;padding:5px 6px}th{background:#f0f0f0;color:#333}.note{max-width:80mm;white-space:pre-wrap}.muted{color:#666}.empty{border:1px dashed #ccc;color:#777;padding:12px;background:#fafafa}footer{margin-top:12px;border-top:1px solid #ddd;padding-top:7px;color:#666;font-size:9px}@media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:0}tr{break-inside:avoid}}';
+    const rowsHtml = rows.length ? rows.map(function(c){
+      return '<tr><td>'+H(fmt(callDate(c)))+'<br><span class="muted">'+H(c.time || '')+'</span></td><td><b>'+H(c.company || '')+'</b><br><span class="muted">'+H(c.phone || '')+'</span></td><td>'+H(c.result || '')+'</td><td>'+H(c.nextDate ? fmt(c.nextDate) : '')+'</td><td class="note">'+H(c.notes || '')+'</td></tr>';
+    }).join('') : '<tr><td colspan="5"><div class="empty">Keine Anrufe im gewählten Zeitraum.</div></td></tr>';
+    const countText = countKeys.length ? countKeys.map(k => H(k) + ': <b>' + H(counts[k]) + '</b>').join(' · ') : 'Keine Ergebnisse';
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><title>'+H(title)+'</title><style>'+css+'</style></head><body>'+
+      '<div class="toolbar"><button onclick="window.print()">Als PDF speichern / drucken</button><button onclick="window.close()">Schließen</button></div>'+
+      '<main class="page"><header><div><div class="eyebrow">BLOC73 CRM · Telefonate</div><h1>'+H(title || 'Anruf-Zusammenfassung')+'</h1><p class="muted">Auswertung der erfassten Telefonate und Rückrufbedarfe.</p></div><div class="period"><b>Zeitraum</b><br>'+H(fmt(from))+' bis '+H(fmt(to))+'<br><span>erstellt am '+H(fmt(todayIso()))+'</span></div></header>'+
+      '<section class="kpis"><div class="kpi"><b>'+H(rows.length)+'</b><span>Anrufe gesamt</span></div><div class="kpi"><b>'+H(reached)+'</b><span>positiv / erreicht</span></div><div class="kpi"><b>'+H(withFollow)+'</b><span>mit Wiedervorlage</span></div><div class="kpi"><b>'+H(countKeys.length)+'</b><span>Ergebnisarten</span></div></section>'+
+      '<section class="summary"><b>Ergebnisse:</b> '+countText+'</section>'+
+      '<section><table><thead><tr><th>Datum</th><th>Kunde / Telefon</th><th>Ergebnis</th><th>Wiedervorlage</th><th>Gespräch / Notiz</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></section>'+
+      '<footer>AS Technical Solutions GmbH · BLOC73 Machinery · Anruf-Zusammenfassung</footer></main></body></html>';
+  }
+
+  window.openCallsPdfSummaryStable = function(){
+    const from = String(document.getElementById('callsPdfFrom').value || '').trim();
+    const to = String(document.getElementById('callsPdfTo').value || '').trim();
+    const title = String(document.getElementById('callsPdfTitle').value || 'Anruf-Zusammenfassung').trim();
+    const rows = calls().filter(c => inRange(c, from, to)).sort(function(a,b){
+      return String(callDate(a) + ' ' + (a.time || '')).localeCompare(String(callDate(b) + ' ' + (b.time || '')));
+    });
+    const html = buildCallsPdf(rows, from, to, title);
+    const w = window.open('', '_blank');
+    if(!w){
+      alert('PDF-Vorschau konnte nicht geöffnet werden. Bitte Popups erlauben.');
+      return;
+    }
+    closeCallsPdfDialogStable();
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    try { w.focus(); } catch(e) {}
+  };
+
+  function addCallsPdfButtons(){
+    try {
+      const top = document.querySelector('.top .actions');
+      if(top && !document.getElementById('callsPdfTopBtn')){
+        const b = document.createElement('button');
+        b.id = 'callsPdfTopBtn';
+        b.type = 'button';
+        b.className = 'btn';
+        b.textContent = 'Anrufe PDF';
+        b.onclick = function(){ openCallsPdfDialogStable(); };
+        top.appendChild(b);
+      }
+      if(typeof active !== 'undefined' && active === 'calls'){
+        const toolbar = document.querySelector('#content .panel-head .toolbar') || document.querySelector('#content .panel-head');
+        if(toolbar && !document.getElementById('callsPdfListBtn')){
+          const b = document.createElement('button');
+          b.id = 'callsPdfListBtn';
+          b.type = 'button';
+          b.className = 'btn primary';
+          b.textContent = 'PDF-Zusammenfassung';
+          b.onclick = function(){ openCallsPdfDialogStable(); };
+          toolbar.appendChild(b);
+        }
+      }
+    } catch(e) {}
+  }
+
+  const oldRenderContentCallsPdf = window.renderContent;
+  if(typeof oldRenderContentCallsPdf === 'function'){
+    window.renderContent = function(){
+      const result = oldRenderContentCallsPdf.apply(this, arguments);
+      setTimeout(addCallsPdfButtons, 0);
+      return result;
+    };
+    try { renderContent = window.renderContent; } catch(e) {}
+  }
+  setTimeout(addCallsPdfButtons, 500);
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_followup_to_lead_offer_20260621) return;
+  window.__bloc73_followup_to_lead_offer_20260621 = true;
+
+  function H(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+  function newId(){
+    return typeof uid === 'function' ? uid() : 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  }
+  function todayIso(){
+    return typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
+  }
+  function ensureArrays(){
+    ['leads','offers','tasks','calendar','calls','customers'].forEach(function(k){
+      if(!Array.isArray(db[k])) db[k] = [];
+    });
+    if(typeof modules !== 'undefined' && !modules.leads){
+      modules.leads = {
+        title:'Leads',
+        sub:'Aus Wiedervorlagen, Anrufen, Touren und Aufgaben erstellte Verkaufschancen.',
+        label:'Lead',
+        fields:[
+          ['company','Firma','text',true],
+          ['target','Zielgruppe','select',false,['Metzgerei','Gastro','Pflegeheim','Krankenhaus','Großküche','Industrie','Händler','Sonstiges']],
+          ['status','Status','select',false,['Neu','Kontakt aufnehmen','Wiedervorlage','Angebot nötig','Kein Interesse','Erledigt']],
+          ['source','Quelle','text'],
+          ['address','Adresse','textarea'],
+          ['phone','Telefon','tel'],
+          ['email','E-Mail','email'],
+          ['website','Website','url'],
+          ['nextDate','Wiedervorlage','date'],
+          ['notes','Notizen','textarea'],
+          ['discussion','Was wurde besprochen?','textarea']
+        ]
+      };
+      try {
+        if(Array.isArray(navOrder) && !navOrder.includes('leads')){
+          const idx = navOrder.indexOf('offers');
+          navOrder.splice(idx >= 0 ? idx : navOrder.length, 0, 'leads');
+        }
+      } catch(e) {}
+    }
+  }
+  function find(module,id){
+    const arr = Array.isArray(db[module]) ? db[module] : [];
+    return arr.find(function(r){ return String(r.id) === String(id); });
+  }
+  function nameOf(r){
+    return String((r && (r.company || r.customer || r.name || r.title)) || '').replace(/^Rückruf:\s*/i,'').replace(/^Wiedervorlage:\s*/i,'').replace(/^90-Tage-Nachfassen:\s*/i,'').trim();
+  }
+  function phoneOf(r){
+    return String((r && r.phone) || '').trim();
+  }
+  function notesOf(r){
+    return String((r && (r.discussion || r.notes)) || '').trim();
+  }
+  function nextDateOf(r){
+    return String((r && (r.nextDate || r.due || r.date)) || '').slice(0,10);
+  }
+  function sourceLabel(module){
+    if(module === 'tasks') return 'Wiedervorlage / Aufgabe';
+    if(module === 'calendar') return 'Kalender-Wiedervorlage';
+    if(module === 'calls') return 'Anruf-Wiedervorlage';
+    return module || 'Wiedervorlage';
+  }
+  function matchingLead(module,id,r){
+    return db.leads.find(function(l){
+      return String(l.sourceModule || '') === String(module) && String(l.sourceId || '') === String(id);
+    }) || db.leads.find(function(l){
+      return nameOf(l) && nameOf(l).toLowerCase() === nameOf(r).toLowerCase() && /wiedervorlage|anruf|aufgabe|kalender/i.test(String(l.source || ''));
+    });
+  }
+  function markSource(r, module, type, targetId){
+    r.updatedAt = new Date().toISOString();
+    if(type === 'lead'){
+      r.leadId = targetId;
+      r.status = r.status && r.status !== 'Offen' ? r.status : 'Lead erstellt';
+    }
+    if(type === 'offer'){
+      r.offerId = targetId;
+      r.status = r.status && r.status !== 'Offen' ? r.status : 'Angebot erstellt';
+    }
+    r.convertedFromFollowup = true;
+    r.convertedModule = module;
+  }
+  function saveAndRefresh(target){
+    try { if(typeof persist === 'function') persist(); } catch(e) {}
+    try { if(typeof renderNav === 'function') renderNav(); } catch(e) {}
+    try {
+      if(target && typeof setActive === 'function') setActive(target);
+      else if(typeof renderContent === 'function') renderContent();
+    } catch(e) {}
+  }
+
+  window.createLeadFromFollowupStable = function(module,id){
+    ensureArrays();
+    const r = find(module,id);
+    if(!r) return alert('Wiedervorlage nicht gefunden.');
+    const company = nameOf(r);
+    if(!company) return alert('Kein Kunde/Firma in der Wiedervorlage vorhanden.');
+    const existing = matchingLead(module,id,r);
+    if(existing){
+      markSource(r, module, 'lead', existing.id);
+      saveAndRefresh('leads');
+      return;
+    }
+    const lead = {
+      id:newId(),
+      company:company,
+      target:r.target || '',
+      status:'Neu',
+      source:sourceLabel(module),
+      sourceModule:module,
+      sourceId:id,
+      address:r.address || '',
+      phone:phoneOf(r),
+      email:r.email || '',
+      website:r.website || '',
+      nextDate:nextDateOf(r),
+      notes:notesOf(r),
+      discussion:notesOf(r),
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    };
+    db.leads.unshift(lead);
+    markSource(r, module, 'lead', lead.id);
+    saveAndRefresh('leads');
+  };
+
+  window.createOfferFromFollowupStable = function(module,id){
+    ensureArrays();
+    const r = find(module,id);
+    if(!r) return alert('Wiedervorlage nicht gefunden.');
+    const company = nameOf(r);
+    if(!company) return alert('Kein Kunde/Firma in der Wiedervorlage vorhanden.');
+    let lead = matchingLead(module,id,r);
+    if(!lead){
+      lead = {
+        id:newId(),
+        company:company,
+        target:r.target || '',
+        status:'Angebot nötig',
+        source:sourceLabel(module),
+        sourceModule:module,
+        sourceId:id,
+        address:r.address || '',
+        phone:phoneOf(r),
+        email:r.email || '',
+        website:r.website || '',
+        nextDate:nextDateOf(r),
+        notes:notesOf(r),
+        discussion:notesOf(r),
+        createdAt:new Date().toISOString(),
+        updatedAt:new Date().toISOString()
+      };
+      db.leads.unshift(lead);
+    }
+    const offer = {
+      id:newId(),
+      title:'Angebot nach Wiedervorlage: ' + company,
+      customer:company,
+      product:r.product || '',
+      value:'',
+      status:'Entwurf',
+      offerDate:todayIso(),
+      followDate:nextDateOf(r),
+      icloudLink:'',
+      leadId:lead.id,
+      source:sourceLabel(module),
+      sourceModule:module,
+      sourceId:id,
+      notes:notesOf(r),
+      discussion:notesOf(r),
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    };
+    db.offers.unshift(offer);
+    lead.status = 'Angebot nötig';
+    lead.updatedAt = new Date().toISOString();
+    markSource(r, module, 'offer', offer.id);
+    saveAndRefresh('offers');
+  };
+
+  function conversionButtons(module,r){
+    if(!r || !r.id) return '';
+    const id = H(r.id);
+    return '<button class="btn primary" onclick="createLeadFromFollowupStable(\''+H(module)+'\',\''+id+'\')">Lead</button>'
+      + '<button class="btn warn" onclick="createOfferFromFollowupStable(\''+H(module)+'\',\''+id+'\')">Angebot</button>';
+  }
+
+  const prevRow = window.rowHTML || (typeof rowHTML === 'function' ? rowHTML : null);
+  if(typeof prevRow === 'function'){
+    window.rowHTML = function(m,r){
+      if(m === 'tasks'){
+        const base = prevRow.apply(this, arguments);
+        if(!/wiedervorlage|rückruf|nachfassen|angebot/i.test(String(r.title || '') + ' ' + String(r.type || '') + ' ' + String(r.notes || ''))) return base;
+        return base.replace('</div></td></tr>', conversionButtons('tasks', r) + '</div></td></tr>');
+      }
+      if(m === 'calls'){
+        const base = prevRow.apply(this, arguments);
+        return base.replace('</div></td></tr>', conversionButtons('calls', r) + '</div></td></tr>');
+      }
+      return prevRow.apply(this, arguments);
+    };
+    try { rowHTML = window.rowHTML; } catch(e) {}
+  }
+
+  function calendarFollowupPanel(){
+    const rows = (Array.isArray(db.calendar) ? db.calendar : []).filter(function(e){
+      return /wiedervorlage|rückruf|nachfassen|angebot/i.test(String(e.title || '') + ' ' + String(e.type || '') + ' ' + String(e.notes || ''));
+    }).slice(0,30);
+    if(!rows.length) return '';
+    return '<div class="panel" style="margin-top:16px"><div class="panel-head"><div><h3>Kalender-Wiedervorlagen</h3><div class="muted">Aus jedem gespeicherten Termin kann direkt ein Lead oder Angebot werden.</div></div></div><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Kunde</th><th>Termin</th><th>Aktion</th></tr></thead><tbody>'
+      + rows.map(function(r){
+        return '<tr><td>'+H(r.date || '')+' '+H(r.time || '')+'</td><td><b>'+H(r.customer || nameOf(r))+'</b></td><td>'+H(r.title || '')+'<br><span class="muted small">'+H(String(r.notes || '').slice(0,120))+'</span></td><td><div class="row-actions">'+conversionButtons('calendar', r)+'</div></td></tr>';
+      }).join('')
+      + '</tbody></table></div></div>';
+  }
+
+  const prevRender = window.renderContent;
+  if(typeof prevRender === 'function'){
+    window.renderContent = function(){
+      const result = prevRender.apply(this, arguments);
+      try {
+        if(typeof active !== 'undefined' && active === 'calendar'){
+          const c = document.getElementById('content');
+          if(c && !document.getElementById('calendarFollowupConversionPanel')){
+            const wrap = document.createElement('div');
+            wrap.id = 'calendarFollowupConversionPanel';
+            wrap.innerHTML = calendarFollowupPanel();
+            if(wrap.innerHTML) c.appendChild(wrap);
+          }
+        }
+      } catch(e) {}
+      return result;
+    };
+    try { renderContent = window.renderContent; } catch(e) {}
+  }
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_marketing_reference_prompts_20260621) return;
+  window.__bloc73_marketing_reference_prompts_20260621 = true;
+
+  function H(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+  function val(id){ return (document.getElementById(id) || {}).value || ''; }
+  function labelOf(id){
+    const el = document.getElementById(id);
+    if(!el) return '';
+    const opt = el.options && el.selectedIndex >= 0 ? el.options[el.selectedIndex] : null;
+    return opt ? opt.textContent.trim() : el.value;
+  }
+  const platformData = {
+    instagram_feed: {
+      label: 'Instagram Feed 1080 x 1080',
+      placement: 'quadratisches Werbebild, Maschine gross und klar im Mittelpunkt, links oder oben freie Textflaeche fuer kurze Headline'
+    },
+    instagram_story: {
+      label: 'Instagram Story / WhatsApp Status 1080 x 1920',
+      placement: 'vertikales Story-Bild, Maschine im unteren oder mittleren Bereich, oben freie Textflaeche, wichtige Details nicht abschneiden'
+    },
+    facebook_linkedin: {
+      label: 'Facebook / LinkedIn 1200 x 628',
+      placement: 'breites Business-Werbebild, Maschine rechts oder zentral, links saubere Textflaeche fuer Headline und kurzen Nutzen'
+    },
+    whatsapp_kanal: {
+      label: 'WhatsApp Kanal 1080 x 1350',
+      placement: 'hochformatiges Kanalbild, Maschine gross sichtbar, starke Lesbarkeit, ruhiger Hintergrund, Platz fuer Verkaufsbotschaft'
+    },
+    website_hero: {
+      label: 'Website Hero 1920 x 900',
+      placement: 'breites Website-Hero-Bild, Maschine klar sichtbar, viel ruhiger negativer Raum fuer Ueberschrift und Button'
+    }
+  };
+  const topicLinks = {
+    graef: 'https://bloc73machinery.com/uebersicht-graef/',
+    zermat: 'https://bloc73machinery.com/zermat-vakuumiergeraete/',
+    food: 'https://bloc73machinery.com/foodlogistik-uebersicht/',
+    gaser: 'https://bloc73machinery.com/gaser/',
+    rex: 'https://bloc73machinery.com/dueker-rex-startseite/',
+    atosa: 'https://bloc73machinery.com/atosa-uebersicht/',
+    clips: 'https://bloc73machinery.com/clips-uebersicht/',
+    frozen: 'https://bloc73machinery.com/gefrieblockschneider/',
+    smoke: 'https://bloc73machinery.com/rauchanlagen-startseite/',
+    service: 'https://www.as-technical.de/',
+    dguv: 'https://www.as-technical.de/',
+    used: 'https://bloc73machinery.com/gebraucht-technik/',
+    tour: 'https://bloc73machinery.com/'
+  };
+  const variationData = {
+    auto: {
+      label: 'Automatisch wechseln',
+      text: ''
+    },
+    studio_dark: {
+      label: 'Premium Studio dunkel',
+      text: 'dunkles Premium-Studio, ruhiger technischer Hintergrund, kontrollierte Edelstahlreflexionen, Maschine leicht seitlich von vorne'
+    },
+    production_clean: {
+      label: 'Saubere Produktion',
+      text: 'saubere Lebensmittelproduktion, hygienische Umgebung, Maschine realistisch im Arbeitsbereich, helle Arbeitslichter'
+    },
+    closeup_detail: {
+      label: 'Detail / Bedienfeld',
+      text: 'naher Ausschnitt mit sichtbarem Bedienfeld und charakteristischen Maschinendetails, keine abgeschnittene Hauptform'
+    },
+    showroom: {
+      label: 'Showroom',
+      text: 'professioneller Showroom, Maschine freigestellt mit dezentem Bodenreflex, hochwertige Verkaufspräsentation'
+    },
+    action_process: {
+      label: 'Im Prozess',
+      text: 'Maschine realistisch im Arbeitsprozess mit Produktbezug, hygienisch, keine übertriebene Action, keine Menschen im Fokus'
+    }
+  };
+
+  function selectedPlatform(){
+    return platformData[val('mPlatformStable') || val('mFormat36') || 'instagram_feed'] || platformData.instagram_feed;
+  }
+  function selectedTopicKey(){ return val('mTopic36') || 'graef'; }
+  function defaultTopicLink(){ return topicLinks[selectedTopicKey()] || 'https://bloc73machinery.com/'; }
+  function currentWebsite(){
+    const input = document.getElementById('mWebsiteStable');
+    return (input && input.value.trim()) || defaultTopicLink();
+  }
+  function readableFromUrl(url){
+    try {
+      const u = new URL(url);
+      const slug = u.pathname.split('/').filter(Boolean).pop() || u.hostname.replace(/^www\./,'');
+      return slug.replace(/[-_]+/g,' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+    } catch(e){
+      return labelOf('mTopic36') || 'Maschine';
+    }
+  }
+  function machineText(){
+    const topic = labelOf('mTopic36') || 'professionelle Lebensmittelmaschine';
+    const target = labelOf('mTarget36') || 'professionelle Lebensmittelbetriebe';
+    const url = currentWebsite();
+    const productName = readableFromUrl(url);
+    const note = val('mCustom36').trim();
+    return [
+      'Maschinentext / fachlicher Bezug',
+      '',
+      'Quelle: ' + url,
+      'Maschine / Produktbereich: ' + topic + (productName && productName !== topic ? ' (' + productName + ')' : ''),
+      'Zielgruppe: ' + target,
+      note ? 'Aktueller Anlass: ' + note : '',
+      '',
+      'Textregel: Der finale Marketingtext muss aus dem Inhalt dieser Website bzw. Produktseite abgeleitet werden. Technische Angaben, Leistungswerte, Modellnamen, Optionen und Einsatzbereiche nur verwenden, wenn sie auf der verlinkten Seite oder im echten Maschinenmaterial stehen. Keine frei erfundenen Leistungsdaten, keine erfundenen Funktionen, keine falschen Modellbezeichnungen.',
+      '',
+      'Marketingausrichtung: kurz, fachlich sauber und verkaufsstark. Fokus auf Nutzen im Betrieb, passende Zielgruppe, technische Einordnung und klare Anfrage-Aufforderung.'
+    ].filter(Boolean).join('\n');
+  }
+  function imageHeadline(){
+    const manual = val('mImageTextStable').trim();
+    if(manual) return manual;
+    const topic = labelOf('mTopic36') || 'Maschine';
+    const target = labelOf('mTarget36') || 'Lebensmittelbetriebe';
+    return topic + ' fuer ' + target;
+  }
+  function selectedVariation(){
+    const key = val('mVariationStable') || 'auto';
+    if(key !== 'auto') return variationData[key] || variationData.studio_dark;
+    const keys = ['studio_dark','production_clean','closeup_detail','showroom','action_process'];
+    const seed = [
+      selectedTopicKey(),
+      val('mFormat36'),
+      val('mTarget36'),
+      val('mCustom36'),
+      val('mImageTextStable'),
+      new Date().toISOString().slice(0,10)
+    ].join('|');
+    let n = 0;
+    for(let i=0;i<seed.length;i++) n = (n + seed.charCodeAt(i) * (i + 3)) % 9973;
+    return variationData[keys[n % keys.length]];
+  }
+  function actionPriceText(){
+    if(!document.getElementById('mActionPriceEnabledStable')?.checked) return '';
+    const price = val('mActionPriceStable').trim();
+    const label = val('mActionLabelStable').trim() || 'Aktionspreis';
+    if(!price) return '';
+    return label + ': ' + price;
+  }
+  function imageCreateTask(){
+    return [
+      'BILD ERSTELLEN:',
+      'Erzeuge aus Referenzbild, Website-Link, Text im Bild und Vorgaben ein fertiges Marketingbild.',
+      'Kein reiner Textentwurf. Kein Platzhalter. Das Ergebnis soll ein fertiges Werbebild fuer die gewaehlte Plattform sein.'
+    ].join('\n');
+  }
+  function promptText(){
+    const platform = selectedPlatform();
+    const topic = labelOf('mTopic36') || 'professionelle Lebensmittelmaschine';
+    const target = labelOf('mTarget36') || 'professionelle Lebensmittelbetriebe';
+    const url = currentWebsite();
+    const note = val('mCustom36').trim();
+    const variation = selectedVariation();
+    const price = actionPriceText();
+    return [
+      imageCreateTask(),
+      '',
+      'Nutze das hochgeladene Referenzbild als verbindliche technische Vorlage.',
+      'Nutze den Website-Link als fachliche Quelle fuer Maschine, Modellreihe, Einsatzbereich und Maschinentext: ' + url,
+      '',
+      'Die Maschine muss klar dieselbe Maschine bleiben: Form, Proportionen, Edelstahlgehaeuse, Tueren, Klappen, Bedienfeld, Griffe, Fuesse, Rollen, Gestell, Einzug, Auslauf, Schneidbereich, Kammer oder Arbeitsbereich duerfen nicht frei erfunden oder technisch veraendert werden.',
+      '',
+      'Thema / Maschine: ' + topic + '.',
+      'Zielgruppe: ' + target + '.',
+      'Plattformformat: ' + platform.label + '.',
+      'Komposition: ' + platform.placement + '.',
+      'Bildvariante: ' + variation.label + ' - ' + variation.text + '. Jede neue Erstellung soll eine andere Perspektive, Lichtstimmung oder Umgebung nutzen, aber dieselbe echte Maschine beibehalten.',
+      'Text im Bild: "' + imageHeadline() + '". Der Text muss sichtbar, sauber gesetzt und gut lesbar sein. Kurze deutsche Headline, maximal eine kurze Subline, keine zufaelligen Buchstaben, keine erfundenen Logos, keine verzerrte Schrift.',
+      price ? 'Optionaler Preisbadge im Bild: "' + price + '". Nur dezent einsetzen, klar lesbar, nicht ueber die Maschine legen, nur wenn Aktionspreis aktiviert ist.' : 'Kein Preisbadge im Bild einbauen.',
+      note ? 'Aktueller Anlass / Hinweis: ' + note + '.' : '',
+      '',
+      'Keine Fantasie-Maschine. Keine zusaetzlichen Bauteile. Keine falschen Logos. Keine veraenderte Bauart. Keine unrealistischen Funktionen. Keine verzerrten Proportionen. Keine erfundenen Anzeigen oder Bedienelemente.',
+      '',
+      'Erlaubt sind nur: professionelle Werbeinszenierung, bessere Beleuchtung, sauberer Hintergrund, hochwertige Edelstahlreflexionen, dezente Tiefenschaerfe, realistische Produktionsumgebung und sauber integrierter Marketingtext im Bild.',
+      '',
+      'Stil: Premium food-processing machinery, brushed stainless steel, realistic industrial proportions, clean hygienic environment, dark elegant background, soft overhead lighting, realistic reflections, 50mm lens, high-end commercial advertising quality.',
+      '',
+      'Wichtig: Die Maschine muss technisch erkennbar auf dem Referenzbild basieren. Wenn kein Referenzbild vorhanden ist, kein fertiges Maschinenbild erzeugen, sondern zuerst ein echtes Maschinenfoto oder Herstellerbild als Referenz verwenden.'
+    ].filter(Boolean).join('\n');
+  }
+  function injectMarketingControls(){
+    const format = document.getElementById('mFormat36');
+    if(format && !format.dataset.platformStable){
+      format.dataset.platformStable = '1';
+      format.innerHTML =
+        '<option value="instagram_feed">Instagram Feed 1080 x 1080</option>' +
+        '<option value="instagram_story">Instagram Story / WhatsApp Status 1080 x 1920</option>' +
+        '<option value="facebook_linkedin">Facebook / LinkedIn 1200 x 628</option>' +
+        '<option value="whatsapp_kanal">WhatsApp Kanal 1080 x 1350</option>' +
+        '<option value="website_hero">Website Hero 1920 x 900</option>' +
+        '<option value="reel">Instagram Reel</option>';
+      format.value = 'instagram_feed';
+    }
+    const brief = document.getElementById('mBrief36');
+    if(brief){
+      brief.style.minHeight = '260px';
+      const label = brief.closest('.field') && brief.closest('.field').querySelector('label');
+      if(label) label.textContent = 'Bildprompt mit Maschinen-Referenz';
+    }
+    const custom = document.getElementById('mCustom36');
+    if(custom && !document.getElementById('mWebsiteStable')){
+      const wrap = document.createElement('div');
+      wrap.className = 'field wide';
+      wrap.innerHTML = '<label>Website-Link / Produktseite als Quelle</label><input id="mWebsiteStable" class="input" type="url" placeholder="https://..." value="'+H(defaultTopicLink())+'"><div class="muted small">Dieser Link wird als fachliche Quelle fuer Maschinentext und Bildprompt verwendet.</div>';
+      custom.closest('.field').insertAdjacentElement('afterend', wrap);
+      const input = document.getElementById('mWebsiteStable');
+      if(input){
+        input.dataset.autoLink = '1';
+        input.addEventListener('input', function(){ input.dataset.autoLink = '0'; enhanceMarketingPrompt(); });
+      }
+    }
+    const hashtags = document.getElementById('mHashtags36');
+    if(hashtags && !document.getElementById('mMachineTextStable')){
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      wrap.innerHTML = '<label>Maschinentext aus Website-Link</label><textarea id="mMachineTextStable" style="min-height:170px"></textarea>';
+      hashtags.closest('.field').insertAdjacentElement('afterend', wrap);
+    }
+    const machine = document.getElementById('mMachineTextStable');
+    if(machine && !document.getElementById('mImageTextStable')){
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      wrap.innerHTML = '<label>Text im Bild</label><input id="mImageTextStable" class="input" type="text" placeholder="z. B. GASER Formtechnik fuer Metzgereien"><div class="muted small">Dieser Text wird direkt im Bild eingeplant. Kurz halten, damit es lesbar bleibt.</div>';
+      machine.closest('.field').insertAdjacentElement('afterend', wrap);
+      const input = document.getElementById('mImageTextStable');
+      if(input) input.addEventListener('input', enhanceMarketingPrompt);
+    }
+    const imageText = document.getElementById('mImageTextStable');
+    if(imageText && !document.getElementById('mVariationStable')){
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      wrap.innerHTML = '<label>Bildvariante</label><select id="mVariationStable" class="input"><option value="auto">Automatisch wechseln</option><option value="studio_dark">Premium Studio dunkel</option><option value="production_clean">Saubere Produktion</option><option value="closeup_detail">Detail / Bedienfeld</option><option value="showroom">Showroom</option><option value="action_process">Im Prozess</option></select><div class="muted small">Sorgt dafuer, dass Bilder nicht immer gleich aussehen.</div>';
+      imageText.closest('.field').insertAdjacentElement('afterend', wrap);
+      const select = document.getElementById('mVariationStable');
+      if(select) select.addEventListener('change', enhanceMarketingPrompt);
+    }
+    const variation = document.getElementById('mVariationStable');
+    if(variation && !document.getElementById('mActionPriceEnabledStable')){
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      wrap.innerHTML = '<label><input type="checkbox" id="mActionPriceEnabledStable"> Aktionspreis im Bild nutzen</label><input id="mActionPriceStable" class="input" type="text" placeholder="z. B. ab 12.900 EUR netto"><input id="mActionLabelStable" class="input" type="text" placeholder="Label, z. B. Aktionspreis oder Sofort verfuegbar" style="margin-top:8px"><div class="muted small">Nur aktivieren, wenn wirklich ein Preis ins Bild soll.</div>';
+      variation.closest('.field').insertAdjacentElement('afterend', wrap);
+      ['mActionPriceEnabledStable','mActionPriceStable','mActionLabelStable'].forEach(function(id){
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', enhanceMarketingPrompt);
+        if(el) el.addEventListener('change', enhanceMarketingPrompt);
+      });
+    }
+    const briefBtn = document.querySelector('button[onclick="copyMarketing36(\'brief\')"]');
+    if(briefBtn && !document.getElementById('copyMachineTextStableBtn')){
+      const btn = document.createElement('button');
+      btn.id = 'copyMachineTextStableBtn';
+      btn.type = 'button';
+      btn.className = 'btn';
+      btn.textContent = 'Maschinentext';
+      btn.setAttribute('onclick', "copyMarketing36('machine')");
+      briefBtn.insertAdjacentElement('beforebegin', btn);
+    }
+    if(briefBtn && !document.getElementById('copyImageOrderStableBtn')){
+      const btn = document.createElement('button');
+      btn.id = 'copyImageOrderStableBtn';
+      btn.type = 'button';
+      btn.className = 'btn primary';
+      btn.textContent = 'Bildauftrag kopieren';
+      btn.setAttribute('onclick', "copyMarketing36('image')");
+      briefBtn.insertAdjacentElement('afterend', btn);
+    }
+    const allBtn = document.querySelector('button[onclick="copyMarketing36(\'all\')"]');
+    if(allBtn) allBtn.textContent = 'Alles inkl. Maschinentext kopieren';
+    const note = document.querySelector('.ig-note');
+    if(note && !note.dataset.referenceStable){
+      note.dataset.referenceStable = '1';
+      note.innerHTML = '<b>Regel:</b> Immer mit echtem Maschinen-Referenzbild und Website-Link arbeiten. Der Prompt schuetzt Form, Proportionen, Bedienfeld und Bauart; der Maschinentext nimmt den fachlichen Bezug aus der Produktseite.';
+    }
+  }
+  function enhanceMarketingPrompt(){
+    injectMarketingControls();
+    const website = document.getElementById('mWebsiteStable');
+    if(website && (!website.value.trim() || website.dataset.autoLink === '1')){
+      website.value = defaultTopicLink();
+      website.dataset.autoLink = '1';
+    }
+    const machine = document.getElementById('mMachineTextStable');
+    if(machine) machine.value = machineText();
+    const brief = document.getElementById('mBrief36');
+    if(brief) brief.value = promptText();
+    const alt = document.getElementById('mAlt36');
+    if(alt) alt.value = 'Marketingbild auf Basis eines echten Maschinen-Referenzbildes: ' + (labelOf('mTopic36') || 'professionelle Lebensmitteltechnik') + ' fuer ' + (labelOf('mTarget36') || 'Lebensmittelbetriebe') + '.';
+  }
+
+  const oldGenerate = window.generateMarketing36;
+  if(typeof oldGenerate === 'function'){
+    window.generateMarketing36 = function(){
+      const result = oldGenerate.apply(this, arguments);
+      enhanceMarketingPrompt();
+      return result;
+    };
+    try { generateMarketing36 = window.generateMarketing36; } catch(e) {}
+  }
+  const oldCopy = window.copyMarketing36;
+  if(typeof oldCopy === 'function'){
+    window.copyMarketing36 = function(part){
+      enhanceMarketingPrompt();
+      if(part === 'machine') return copyStable(machineText(), 'Maschinentext');
+      if(part === 'image') return copyStable(val('mBrief36'), 'Bildauftrag');
+      if(part === 'all') return copyStable([val('mCaption36'), '', val('mHashtags36'), '', val('mMachineTextStable'), '', 'Bildprompt:', val('mBrief36')].join('\n'), 'Marketing komplett');
+      return oldCopy.apply(this, arguments);
+    };
+    try { copyMarketing36 = window.copyMarketing36; } catch(e) {}
+  }
+  async function copyStable(text,label){
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      alert((label || 'Text') + ' kopiert.');
+    } catch(e){
+      prompt('Bitte manuell kopieren:', text);
+    }
+  }
+  const oldRender = window.renderContent;
+  if(typeof oldRender === 'function'){
+    window.renderContent = function(){
+      const result = oldRender.apply(this, arguments);
+      try {
+        if(typeof active !== 'undefined' && active === 'marketing'){
+          setTimeout(enhanceMarketingPrompt, 0);
+        }
+      } catch(e) {}
+      return result;
+    };
+    try { renderContent = window.renderContent; } catch(e) {}
+  }
+  setTimeout(function(){
+    try {
+      if(typeof active !== 'undefined' && active === 'marketing') enhanceMarketingPrompt();
+    } catch(e) {}
+  }, 0);
+})();
+</script>
+
+<script>
+(function(){
+  if(window.__bloc73_modal_pdf_links_20260621) return;
+  window.__bloc73_modal_pdf_links_20260621 = true;
+
+  function H(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(s){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];
+    });
+  }
+  function N(v){
+    try {
+      return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    } catch(e){
+      return String(v || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g,' ').trim();
+    }
+  }
+  function row(module,id){
+    const arr = Array.isArray(db && db[module]) ? db[module] : [];
+    return arr.find(function(x){ return String(x.id) === String(id); });
+  }
+  function relatedOffersForLead(lead){
+    if(!lead) return [];
+    return (Array.isArray(db.offers) ? db.offers : []).filter(function(o){
+      return (o.leadId && String(o.leadId) === String(lead.id)) ||
+        (lead.company && N(o.customer) === N(lead.company));
+    });
+  }
+  function pdfButtonForOffer(o){
+    const id = H(o.id || '');
+    const link = String(o.icloudLink || '').trim();
+    return '<button type="button" class="btn primary" onclick="openOfferPdf(\''+id+'\')">PDF öffnen</button>' +
+      (link ? '<button type="button" class="btn" onclick="openUrl(\''+H(link)+'\')">iCloud öffnen</button>' : '') +
+      '<button type="button" class="btn" onclick="openModal(\'offers\',\''+id+'\')">Angebot öffnen</button>';
+  }
+  function offerPdfPanel(offer){
+    if(!offer || !offer.id) return '';
+    return '<div class="notice" id="modalPdfPanelStable" style="margin-top:14px">' +
+      '<b>Angebots-PDF</b><br>' +
+      '<span class="small">PDF oder iCloud-Link direkt aus dieser Maske öffnen.</span>' +
+      '<div class="actions" style="margin-top:10px">' + pdfButtonForOffer(offer) + '</div>' +
+      '</div>';
+  }
+  function leadPdfPanel(lead){
+    const offers = relatedOffersForLead(lead);
+    const offerRows = offers.length ? offers.map(function(o){
+      return '<div class="result" style="margin-top:8px"><b>'+H(o.title || 'Angebot')+'</b>' +
+        '<div class="muted small">'+H(o.status || 'Entwurf')+(o.value ? ' · '+H(o.value)+' EUR' : '')+(o.followDate ? ' · Nachfassen '+H(o.followDate) : '')+'</div>' +
+        '<div class="actions" style="margin-top:8px">'+pdfButtonForOffer(o)+'</div></div>';
+    }).join('') : '<div class="empty" style="margin-top:8px">Noch kein Angebot/PDF zu diesem Lead vorhanden.</div>';
+    return '<div class="notice" id="modalPdfPanelStable" style="margin-top:14px">' +
+      '<b>PDFs / Angebote zu diesem Lead</b><br>' +
+      '<span class="small">Zugehörige Angebote direkt aus der Lead-Maske öffnen.</span>' +
+      '<div class="actions" style="margin-top:10px"><button type="button" class="btn primary" onclick="createOfferFromLead45(\''+H(lead.id || '')+'\')">+ Angebot erstellen</button></div>' +
+      offerRows +
+      '</div>';
+  }
+  function injectPdfPanel(module,id){
+    try {
+      if(!id || !['offers','leads'].includes(module)) return;
+      const body = document.getElementById('modalBody');
+      if(!body || document.getElementById('modalPdfPanelStable')) return;
+      const data = row(module,id);
+      if(!data) return;
+      const html = module === 'offers' ? offerPdfPanel(data) : leadPdfPanel(data);
+      if(html) body.insertAdjacentHTML('beforeend', html);
+    } catch(e) {}
+  }
+
+  const oldOpenModalPdfStable = window.openModal || (typeof openModal === 'function' ? openModal : null);
+  if(typeof oldOpenModalPdfStable === 'function'){
+    window.openModal = function(m,id){
+      const result = oldOpenModalPdfStable.apply(this, arguments);
+      setTimeout(function(){ injectPdfPanel(m, id || ''); }, 0);
+      return result;
+    };
+    try { openModal = window.openModal; } catch(e) {}
+  }
 })();
 </script>
 
