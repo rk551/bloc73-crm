@@ -8369,5 +8369,162 @@ function body90(r,type){
 })();
 </script>
 
+<script>
+/* === BLOC73 PATCH v108: Wochenverteiler auf GitHub immer nutzbar === */
+(function(){
+  'use strict';
+  if(window.__bloc73_week_distributor_v108) return;
+  window.__bloc73_week_distributor_v108 = true;
+
+  function msg108(t){ try{ if(typeof setTourStatus === 'function') setTourStatus(t); }catch(e){} }
+  function today108(){ try{ if(typeof today === 'function') return today(); }catch(e){} return new Date().toISOString().slice(0,10); }
+  function iso108(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function add108(iso,days){ var d=new Date((iso||today108())+'T12:00:00'); d.setDate(d.getDate()+Number(days||0)); return iso108(d); }
+  function monday108(iso){ var d=new Date((iso||today108())+'T12:00:00'); var day=d.getDay()||7; d.setDate(d.getDate()+1-day); return iso108(d); }
+  function week108(start){
+    try{ if(typeof weekKeyFromStart === 'function') return weekKeyFromStart(start); }catch(e){}
+    try{ if(typeof isoWeekKey === 'function') return isoWeekKey(new Date((start||today108())+'T12:00:00')); }catch(e){}
+    return '';
+  }
+  function key108(r){
+    try{ if(typeof hitKey === 'function') return hitKey(r); }catch(e){}
+    return String((r && r.company || '') + ' ' + (r && r.address || '')).toLowerCase().replace(/[^a-z0-9äöüß]+/gi,' ').trim();
+  }
+  function selectedDate108(){
+    try{ if(typeof plannerSelectedTourDate === 'function') return plannerSelectedTourDate(); }catch(e){}
+    var ids = ['tourDateTop104','tourDate','tourWeekStart'];
+    for(var i=0;i<ids.length;i++){
+      var el=document.getElementById(ids[i]);
+      if(el && /^\d{4}-\d{2}-\d{2}$/.test(el.value || '')) return el.value;
+    }
+    try{ var v=localStorage.getItem('bloc73_selected_tour_date_v104') || ''; if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v; }catch(e){}
+    return today108();
+  }
+  function limit108(){
+    var n = Number((document.getElementById('tourLimit') || {}).value || 15);
+    return Math.min(15, Math.max(1, n || 15));
+  }
+  function rows108(){
+    var rows = ((window.tourState && Array.isArray(tourState.results)) ? tourState.results : []).slice();
+    var hide = document.getElementById('hideVisited');
+    if(hide && hide.checked){
+      rows = rows.filter(function(h){
+        try{ return typeof isProcessed === 'function' ? !isProcessed(h) : !(typeof isVisited === 'function' && isVisited(h)); }
+        catch(e){ return true; }
+      });
+    }
+    return rows;
+  }
+  function makeRow108(h,date,weekStart,week,order){
+    return {
+      id:(typeof uid === 'function' ? uid() : 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2)),
+      tourDate:date,
+      weekStart:weekStart,
+      weekKey:week,
+      order:order,
+      company:h.company || '',
+      target:h.target || '',
+      address:h.address || '',
+      phone:h.phone || '',
+      website:h.website || '',
+      status:'Geplant',
+      graefInfo:(typeof isGraef === 'function' && isGraef(h)) ? 'Ja' : 'Nein',
+      visitedAt:'',
+      notes:h.notes || '',
+      discussion:h.discussion || '',
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    };
+  }
+
+  window.createWorkWeekTour = function(){
+    if(!window.db) return alert('CRM-Datenbank nicht geladen.');
+    if(!Array.isArray(db.tours)) db.tours = [];
+    var candidates = rows108();
+    if(!candidates.length){
+      alert('Keine sichtbaren Suchtreffer vorhanden. Bitte zuerst Tourensuche starten oder den Haken bei bearbeitet/besucht ausblenden entfernen.');
+      return;
+    }
+    var weekStart = monday108(selectedDate108());
+    var week = week108(weekStart);
+    var perDay = limit108();
+    var cursor = 0, created = 0, report = [];
+
+    for(var off=0; off<5; off++){
+      var date = add108(weekStart, off);
+      var existingRows = db.tours.filter(function(t){ return String(t.tourDate || '') === date; });
+      var existingKeys = {};
+      existingRows.forEach(function(t){ existingKeys[key108(t)] = true; });
+      var capacity = Math.max(0, perDay - existingRows.length);
+      var order = existingRows.reduce(function(m,t){ return Math.max(m, Number(t.order) || 0); },0) + 1;
+      var dayCount = 0;
+
+      while(capacity > 0 && cursor < candidates.length){
+        var h = candidates[cursor++];
+        var k = key108(h);
+        if(k && existingKeys[k]) continue;
+        db.tours.push(makeRow108(h,date,weekStart,week,order++));
+        if(k) existingKeys[k] = true;
+        dayCount++;
+        created++;
+        capacity--;
+      }
+      report.push(['Mo','Di','Mi','Do','Fr'][off] + ': ' + dayCount);
+    }
+
+    if(!created){
+      alert('Keine neuen Treffer verteilt. In dieser KW sind die sichtbaren Treffer vermutlich schon eingeplant.');
+      return;
+    }
+    try{ if(typeof persist === 'function') persist(); }catch(e){}
+    msg108(created + ' Betriebe in ' + week + ' verteilt · ' + report.join(' · '));
+    try{ if(typeof renderNav === 'function') renderNav(); }catch(e){}
+    try{ if(typeof setActive === 'function') setActive('tours'); else if(typeof renderContent === 'function') renderContent(); }catch(e){}
+  };
+  try{ createWorkWeekTour = window.createWorkWeekTour; }catch(e){}
+  window.createWeekTour105 = window.createWorkWeekTour;
+
+  function ensureButton108(){
+    if(typeof active !== 'undefined' && active !== 'tourplanner') return;
+    if(document.getElementById('weekDistributorBtn108')) return;
+    var dayBtn = Array.prototype.slice.call(document.querySelectorAll('button')).find(function(b){
+      return /Tagestour speichern|Gefundene als Tagestour speichern|Nur gewählten Tag speichern/i.test(b.textContent || '') ||
+        String(b.getAttribute('onclick') || '').indexOf('createDayTour') >= 0;
+    });
+    if(!dayBtn || !dayBtn.parentNode) return;
+    var btn = document.createElement('button');
+    btn.id = 'weekDistributorBtn108';
+    btn.className = 'btn ok';
+    btn.type = 'button';
+    btn.textContent = 'Als KW Mo-Fr verteilen';
+    btn.onclick = window.createWorkWeekTour;
+    dayBtn.parentNode.insertBefore(btn, dayBtn.nextSibling);
+  }
+
+  var oldAfter108 = window.afterRender || (typeof afterRender === 'function' ? afterRender : null);
+  window.afterRender = function(){
+    var r = oldAfter108 ? oldAfter108.apply(this, arguments) : undefined;
+    setTimeout(ensureButton108, 0);
+    return r;
+  };
+  try{ afterRender = window.afterRender; }catch(e){}
+
+  var oldTourHTML108 = window.tourHTML || (typeof tourHTML === 'function' ? tourHTML : null);
+  if(typeof oldTourHTML108 === 'function'){
+    window.tourHTML = function(){
+      var html = oldTourHTML108.apply(this, arguments);
+      if(html && html.indexOf('createWorkWeekTour') < 0 && html.indexOf('createWeekTour105') < 0){
+        html = html.replace(/(<button class="btn ok" onclick="createDayTour\(\)">[^<]*<\/button>)/,
+          '$1<button class="btn ok" id="weekDistributorBtn108" onclick="createWorkWeekTour()">Als KW Mo-Fr verteilen</button>');
+      }
+      return html;
+    };
+    try{ tourHTML = window.tourHTML; }catch(e){}
+  }
+
+  setTimeout(ensureButton108, 250);
+})();
+</script>
+
 </body>
 </html>
