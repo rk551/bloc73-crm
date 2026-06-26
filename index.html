@@ -8526,5 +8526,548 @@ function body90(r,type){
 })();
 </script>
 
+<script>
+/* === BLOC73 PATCH v109: KW-Auswahl in Tourenübersicht auf PC und iPad identisch === */
+(function(){
+  'use strict';
+  if(window.__bloc73_ipad_kw_tours_v109) return;
+  window.__bloc73_ipad_kw_tours_v109 = true;
+
+  function H109(v){
+    try{ if(typeof esc === 'function') return esc(v); }catch(e){}
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});
+  }
+  function today109(){ try{ if(typeof today === 'function') return today(); }catch(e){} return new Date().toISOString().slice(0,10); }
+  function iso109(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function add109(iso,days){ var d=new Date((iso||today109())+'T12:00:00'); d.setDate(d.getDate()+Number(days||0)); return iso109(d); }
+  function monday109(iso){ var d=new Date((iso||today109())+'T12:00:00'); var day=d.getDay()||7; d.setDate(d.getDate()+1-day); return iso109(d); }
+  function fmt109(d){ try{ if(typeof formatDate === 'function') return formatDate(d); }catch(e){} return d || ''; }
+  function week109(start){
+    try{ if(typeof weekKeyFromStart === 'function') return weekKeyFromStart(start); }catch(e){}
+    try{ if(typeof isoWeekKey === 'function') return isoWeekKey(new Date((start||today109())+'T12:00:00')); }catch(e){}
+    return '';
+  }
+  function label109(start){ return week109(start) + ' · ' + fmt109(start) + ' bis ' + fmt109(add109(start,6)); }
+  function active109(r){
+    return r && !r.closed && !r.hidden && !r.closedAt &&
+      ['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'].indexOf(r.status || '') === -1;
+  }
+  function selected109(){
+    var v = '';
+    try{ v = localStorage.getItem('bloc73_tours_kw_v109') || ''; }catch(e){}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) v = monday109(today109());
+    return monday109(v);
+  }
+  function set109(start){
+    start = monday109(start || today109());
+    try{ localStorage.setItem('bloc73_tours_kw_v109', start); }catch(e){}
+    return start;
+  }
+  function weeks109(){
+    var set = {};
+    set[selected109()] = true;
+    set[monday109(today109())] = true;
+    ((window.db && Array.isArray(db.tours)) ? db.tours : []).forEach(function(t){
+      if(t && t.tourDate) set[monday109(t.tourDate)] = true;
+    });
+    return Object.keys(set).sort().reverse();
+  }
+  function rows109(start){
+    var end = add109(start,6);
+    return ((window.db && Array.isArray(db.tours)) ? db.tours : [])
+      .filter(function(r){ return active109(r) && String(r.tourDate || '') >= start && String(r.tourDate || '') <= end; })
+      .sort(function(a,b){
+        return String(a.tourDate || '').localeCompare(String(b.tourDate || '')) ||
+          Number(a.order || 0) - Number(b.order || 0) ||
+          String(a.company || '').localeCompare(String(b.company || ''));
+      });
+  }
+  function dayHtml109(start, allRows){
+    var days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+    var q = String((document.getElementById('kwTourSearch109') || {}).value || '').toLowerCase();
+    if(q) allRows = allRows.filter(function(r){ return JSON.stringify(r).toLowerCase().indexOf(q) > -1; });
+    var html = '';
+    for(var i=0;i<7;i++){
+      var date = add109(start,i);
+      var dayRows = allRows.filter(function(r){ return String(r.tourDate || '') === date; });
+      html += '<div class="panel kw-day109" style="box-shadow:none;margin:0 0 14px">'
+        + '<div class="panel-head"><div><h3>'+days[i]+' · '+H109(fmt109(date))+'</h3><div class="muted">'+dayRows.length+' geplante Besuche</div></div>'
+        + '<button class="btn" onclick="window.exportTourDayFromKw109 && window.exportTourDayFromKw109(\''+date+'\')">Tag exportieren</button></div>';
+      if(dayRows.length){
+        html += '<div class="table-wrap"><table><thead>'+tableHead('tours')+'</thead><tbody>'+dayRows.map(function(r){ return rowHTML('tours',r); }).join('')+'</tbody></table></div>';
+      } else {
+        html += '<div class="panel-body"><div class="empty">Für diesen Tag keine Tour geplant.</div></div>';
+      }
+      html += '</div>';
+    }
+    return html;
+  }
+
+  window.setTourWeek109=function(start){ set109(start); if(typeof renderContent === 'function') renderContent(); };
+  window.shiftTourWeek109=function(dir){ window.setTourWeek109(add109(selected109(), Number(dir || 0) * 7)); };
+  window.currentTourWeek109=function(){ window.setTourWeek109(monday109(today109())); };
+  window.exportTourDayFromKw109=function(date){
+    var rows = ((window.db && Array.isArray(db.tours)) ? db.tours : []).filter(function(r){ return active109(r) && String(r.tourDate || '') === date; });
+    if(!rows.length){ alert('Keine Touren für ' + fmt109(date)); return; }
+    var headers = ['Datum','Nr.','Firma','Zielgruppe','Adresse','Telefon','Website','Status','GRAEF informiert','Besprochen','Notizen'];
+    var csv = [headers].concat(rows.map(function(r){ return [fmt109(r.tourDate),r.order,r.company,r.target,r.address,r.phone,r.website,r.status,r.graefInfo,r.discussion,r.notes]; }))
+      .map(function(row){ return row.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';'); }).join('\n');
+    try{ if(typeof download === 'function') return download(csv,'BLOC73_Tagestour_'+date+'.csv','text/csv;charset=utf-8'); }catch(e){}
+  };
+
+  var oldList109 = window.listHTML || (typeof listHTML === 'function' ? listHTML : null);
+  window.listHTML=function(m){
+    if(m !== 'tours') return oldList109 ? oldList109.apply(this, arguments) : '';
+    var start = selected109();
+    var all = rows109(start);
+    var totalActive = ((window.db && Array.isArray(db.tours)) ? db.tours : []).filter(active109).length;
+    var closed = ((window.db && Array.isArray(db.tours)) ? db.tours : []).length - totalActive;
+    var opts = weeks109().map(function(w){ return '<option value="'+H109(w)+'" '+(w===start?'selected':'')+'>'+H109(label109(w))+'</option>'; }).join('');
+    return '<div class="panel"><div class="panel-head"><div><h3>Tagestouren nach KW</h3><div class="muted">PC und iPad nutzen dieselbe Kalenderwochen-Ansicht.</div></div>'
+      + '<div class="toolbar"><button class="btn primary" onclick="setActive(\'tourplanner\')">Tour suchen</button><button class="btn" onclick="openModal(\'tours\')">+ Tour-Eintrag</button><button class="btn" onclick="setActive(\'visited\')">Besuchshistorie</button></div></div>'
+      + '<div class="panel-body kwbar109"><div class="weekbox"><div class="field"><label>Kalenderwoche auswählen</label><select id="tourWeekSelect109" class="select" onchange="setTourWeek109(this.value)">'+opts+'</select><div class="hint" id="tourWeekLabel109">'+H109(label109(start))+'</div></div><button class="btn" onclick="shiftTourWeek109(-1)">Vor-KW</button><button class="btn" onclick="shiftTourWeek109(1)">Nächste KW</button></div>'
+      + '<div class="actions" style="margin-top:10px"><button class="btn ghost" onclick="currentTourWeek109()">Aktuelle KW</button><input class="input" style="max-width:280px" id="kwTourSearch109" placeholder="In dieser KW suchen ..." oninput="renderContent()"></div>'
+      + '<div class="hint" style="margin-top:10px">Aktive Touren in dieser KW: '+all.length+' · aktive gesamt: '+totalActive+' · abgeschlossene/ausgeblendete Einträge: '+closed+'</div></div>'
+      + '<div class="panel-body">'+dayHtml109(start, all)+'</div></div>';
+  };
+  try{ listHTML = window.listHTML; }catch(e){}
+
+  var css = document.createElement('style');
+  css.textContent = '.kwbar109 .weekbox{display:grid!important;grid-template-columns:minmax(220px,1fr) auto auto!important;gap:8px!important;align-items:end!important}.kwbar109 select{display:block!important;min-height:44px!important}@media(max-width:980px){.kwbar109 .weekbox{grid-template-columns:1fr!important}.kwbar109 .weekbox .btn{width:100%!important}.kwbar109 .actions{display:grid!important;grid-template-columns:1fr!important}.kwbar109 .input{max-width:none!important;width:100%!important}}';
+  document.head.appendChild(css);
+
+  if(typeof active !== 'undefined' && active === 'tours' && typeof renderContent === 'function') renderContent();
+})();
+</script>
+
+<script>
+/* === BLOC73 PATCH v110: Tagesübersicht wiederhergestellt === */
+(function(){
+  'use strict';
+  if(window.__bloc73_day_tours_v110) return;
+  window.__bloc73_day_tours_v110 = true;
+
+  function H110(v){
+    try{ if(typeof esc === 'function') return esc(v); }catch(e){}
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});
+  }
+  function today110(){ try{ if(typeof today === 'function') return today(); }catch(e){} return new Date().toISOString().slice(0,10); }
+  function iso110(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function add110(iso,days){ var d=new Date((iso || today110()) + 'T12:00:00'); d.setDate(d.getDate()+Number(days || 0)); return iso110(d); }
+  function fmt110(d){ try{ if(typeof formatDate === 'function') return formatDate(d); }catch(e){} return d || ''; }
+  function active110(r){
+    return r && !r.closed && !r.hidden && !r.closedAt &&
+      ['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'].indexOf(r.status || '') === -1;
+  }
+  function selectedDay110(){
+    var v = '';
+    try{ v = localStorage.getItem('bloc73_selected_day_v110') || localStorage.getItem('bloc73_selected_tour_date_v104') || ''; }catch(e){}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) v = today110();
+    return v;
+  }
+  function setDay110(v){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v || '')) v = today110();
+    try{ localStorage.setItem('bloc73_selected_day_v110', v); localStorage.setItem('bloc73_selected_tour_date_v104', v); }catch(e){}
+    return v;
+  }
+  function rowsForDay110(day){
+    var q = String((document.getElementById('dayTourSearch110') || {}).value || '').toLowerCase();
+    var rows = ((window.db && Array.isArray(db.tours)) ? db.tours : [])
+      .filter(function(r){ return active110(r) && String(r.tourDate || '') === day; })
+      .sort(function(a,b){ return Number(a.order || 0) - Number(b.order || 0) || String(a.company || '').localeCompare(String(b.company || '')); });
+    if(q) rows = rows.filter(function(r){ return JSON.stringify(r).toLowerCase().indexOf(q) > -1; });
+    return rows;
+  }
+  function countActive110(){
+    return ((window.db && Array.isArray(db.tours)) ? db.tours : []).filter(active110).length;
+  }
+  function daysWithTours110(){
+    var set = {};
+    ((window.db && Array.isArray(db.tours)) ? db.tours : []).forEach(function(t){
+      if(active110(t) && t.tourDate) set[String(t.tourDate)] = true;
+    });
+    set[selectedDay110()] = true;
+    set[today110()] = true;
+    return Object.keys(set).sort();
+  }
+
+  window.setTourDay110=function(v){ setDay110(v); if(typeof renderContent === 'function') renderContent(); };
+  window.shiftTourDay110=function(n){ window.setTourDay110(add110(selectedDay110(), Number(n || 0))); };
+  window.currentTourDay110=function(){ window.setTourDay110(today110()); };
+  window.exportTourDay110=function(){
+    var day = selectedDay110();
+    var rows = rowsForDay110(day);
+    if(!rows.length){ alert('Keine Tagestour für ' + fmt110(day)); return; }
+    var headers = ['Datum','Nr.','Firma','Zielgruppe','Adresse','Telefon','Website','Status','GRAEF informiert','Besprochen','Notizen'];
+    var csv = [headers].concat(rows.map(function(r){ return [fmt110(r.tourDate),r.order,r.company,r.target,r.address,r.phone,r.website,r.status,r.graefInfo,r.discussion,r.notes]; }))
+      .map(function(row){ return row.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';'); }).join('\n');
+    try{ if(typeof download === 'function') return download(csv,'BLOC73_Tagestour_'+day+'.csv','text/csv;charset=utf-8'); }catch(e){}
+  };
+
+  var oldList110 = window.listHTML || (typeof listHTML === 'function' ? listHTML : null);
+  window.listHTML=function(m){
+    if(m !== 'tours') return oldList110 ? oldList110.apply(this, arguments) : '';
+    var day = selectedDay110();
+    var rows = rowsForDay110(day);
+    var allActive = countActive110();
+    var closed = ((window.db && Array.isArray(db.tours)) ? db.tours : []).length - allActive;
+    var opts = daysWithTours110().map(function(d){ return '<option value="'+H110(d)+'" '+(d===day?'selected':'')+'>'+H110(fmt110(d))+'</option>'; }).join('');
+    return '<div class="panel"><div class="panel-head"><div><h3>Tagestouren · Tagesübersicht</h3><div class="muted">Ein Tag, eine sichtbare Tourliste. PC und iPad gleich.</div></div>'
+      + '<div class="toolbar"><button class="btn primary" onclick="setActive(\'tourplanner\')">Tour suchen</button><button class="btn" onclick="openModal(\'tours\')">+ Tour-Eintrag</button><button class="btn" onclick="setActive(\'visited\')">Besuchshistorie</button></div></div>'
+      + '<div class="panel-body daybar110"><div class="weekbox"><div class="field"><label>Tourtag auswählen</label><input id="tourDayInput110" class="input" type="date" value="'+H110(day)+'" onchange="setTourDay110(this.value)"><div class="hint">Ausgewählter Tag: '+H110(fmt110(day))+'</div></div><button class="btn" onclick="shiftTourDay110(-1)">Vortag</button><button class="btn" onclick="shiftTourDay110(1)">Nächster Tag</button></div>'
+      + '<div class="actions" style="margin-top:10px"><button class="btn ghost" onclick="currentTourDay110()">Heute</button><select class="select" style="max-width:260px" onchange="setTourDay110(this.value)">'+opts+'</select><input class="input" style="max-width:280px" id="dayTourSearch110" placeholder="In diesem Tag suchen ..." oninput="renderContent()"><button class="btn primary" onclick="exportTourDay110()">Tag exportieren</button></div>'
+      + '<div class="hint" style="margin-top:10px">Touren an diesem Tag: '+rows.length+' · aktive gesamt: '+allActive+' · abgeschlossene/ausgeblendete Einträge: '+closed+'</div></div>'
+      + '<div class="table-wrap"><table><thead>'+tableHead('tours')+'</thead><tbody id="tableBody">'+(rows.length ? rows.map(function(r){ return rowHTML('tours',r); }).join('') : '<tr><td colspan="7"><div class="empty">Für diesen Tag keine aktive Tour geplant.</div></td></tr>')+'</tbody></table></div></div>';
+  };
+  try{ listHTML = window.listHTML; }catch(e){}
+
+  var css = document.createElement('style');
+  css.textContent = '.daybar110 .weekbox{display:grid!important;grid-template-columns:minmax(220px,1fr) auto auto!important;gap:8px!important;align-items:end!important}.daybar110 input[type=date]{display:block!important;min-height:44px!important}@media(max-width:980px){.daybar110 .weekbox{grid-template-columns:1fr!important}.daybar110 .weekbox .btn{width:100%!important}.daybar110 .actions{display:grid!important;grid-template-columns:1fr!important}.daybar110 .input,.daybar110 .select{max-width:none!important;width:100%!important}}';
+  document.head.appendChild(css);
+
+  if(typeof active !== 'undefined' && active === 'tours' && typeof renderContent === 'function') renderContent();
+})();
+</script>
+
+<script>
+/* === BLOC73 PATCH v111: geplante Touren in Tagesübersicht nicht verstecken === */
+(function(){
+  'use strict';
+  if(window.__bloc73_day_tours_visible_v111) return;
+  window.__bloc73_day_tours_visible_v111 = true;
+
+  function H111(v){
+    try{ if(typeof esc === 'function') return esc(v); }catch(e){}
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});
+  }
+  function today111(){ try{ if(typeof today === 'function') return today(); }catch(e){} return new Date().toISOString().slice(0,10); }
+  function iso111(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function add111(iso,days){ var d=new Date((iso || today111()) + 'T12:00:00'); d.setDate(d.getDate()+Number(days || 0)); return iso111(d); }
+  function fmt111(d){ try{ if(typeof formatDate === 'function') return formatDate(d); }catch(e){} return d || ''; }
+  function active111(r){
+    return r && !r.closed && !r.hidden && !r.closedAt &&
+      ['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'].indexOf(r.status || '') === -1;
+  }
+  function allRows111(){
+    return ((window.db && Array.isArray(db.tours)) ? db.tours : [])
+      .filter(active111)
+      .sort(function(a,b){
+        return String(a.tourDate || '').localeCompare(String(b.tourDate || '')) ||
+          Number(a.order || 0) - Number(b.order || 0) ||
+          String(a.company || '').localeCompare(String(b.company || ''));
+      });
+  }
+  function days111(){
+    var set = {};
+    allRows111().forEach(function(t){ if(t.tourDate) set[String(t.tourDate)] = true; });
+    set[today111()] = true;
+    return Object.keys(set).sort();
+  }
+  function firstPlannedDay111(){
+    var ds = days111().filter(function(d){ return allRows111().some(function(r){ return String(r.tourDate || '') === d; }); });
+    if(!ds.length) return today111();
+    var today = today111();
+    for(var i=0;i<ds.length;i++){ if(ds[i] >= today) return ds[i]; }
+    return ds[0];
+  }
+  function selectedDay111(){
+    var mode = '';
+    try{ mode = localStorage.getItem('bloc73_tour_view_mode_v111') || ''; }catch(e){}
+    if(mode === 'all') return 'all';
+    var v = '';
+    try{ v = localStorage.getItem('bloc73_selected_day_v110') || localStorage.getItem('bloc73_selected_tour_date_v104') || ''; }catch(e){}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) v = firstPlannedDay111();
+    if(!allRows111().some(function(r){ return String(r.tourDate || '') === v; }) && allRows111().length) v = firstPlannedDay111();
+    return v;
+  }
+  function setDay111(v){
+    try{ localStorage.setItem('bloc73_tour_view_mode_v111', v === 'all' ? 'all' : 'day'); }catch(e){}
+    if(v !== 'all'){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(v || '')) v = firstPlannedDay111();
+      try{ localStorage.setItem('bloc73_selected_day_v110', v); localStorage.setItem('bloc73_selected_tour_date_v104', v); }catch(e){}
+    }
+    return v;
+  }
+  function rows111(sel){
+    var q = String((document.getElementById('dayTourSearch111') || {}).value || '').toLowerCase();
+    var rows = sel === 'all' ? allRows111() : allRows111().filter(function(r){ return String(r.tourDate || '') === sel; });
+    if(q) rows = rows.filter(function(r){ return JSON.stringify(r).toLowerCase().indexOf(q) > -1; });
+    return rows;
+  }
+  function grouped111(rows){
+    var html = '';
+    var current = null;
+    rows.forEach(function(r){
+      if(String(r.tourDate || '') !== current){
+        if(current !== null) html += '</tbody></table></div>';
+        current = String(r.tourDate || '');
+        html += '<div class="panel" style="box-shadow:none;margin:0 0 14px"><div class="panel-head"><h3>'+H111(fmt111(current))+'</h3><div class="muted">Tagesübersicht</div></div><table><thead>'+tableHead('tours')+'</thead><tbody>';
+      }
+      html += rowHTML('tours', r);
+    });
+    if(current !== null) html += '</tbody></table></div>';
+    return html;
+  }
+
+  window.setTourDay111=function(v){ setDay111(v); if(typeof renderContent === 'function') renderContent(); };
+  window.shiftTourDay111=function(n){
+    var sel = selectedDay111();
+    if(sel === 'all') sel = firstPlannedDay111();
+    window.setTourDay111(add111(sel, Number(n || 0)));
+  };
+  window.currentTourDay111=function(){ window.setTourDay111(today111()); };
+  window.allTourDays111=function(){ window.setTourDay111('all'); };
+  window.firstPlannedTourDay111=function(){ window.setTourDay111(firstPlannedDay111()); };
+
+  var oldList111 = window.listHTML || (typeof listHTML === 'function' ? listHTML : null);
+  window.listHTML=function(m){
+    if(m !== 'tours') return oldList111 ? oldList111.apply(this, arguments) : '';
+    var sel = selectedDay111();
+    var rows = rows111(sel);
+    var total = allRows111().length;
+    var closed = ((window.db && Array.isArray(db.tours)) ? db.tours : []).length - total;
+    var ds = days111();
+    var opts = ds.map(function(d){ return '<option value="'+H111(d)+'" '+(d===sel?'selected':'')+'>'+H111(fmt111(d))+'</option>'; }).join('');
+    var title = sel === 'all' ? 'Alle geplanten Touren' : 'Tagestour ' + fmt111(sel);
+    return '<div class="panel"><div class="panel-head"><div><h3>Tagestouren · Tagesübersicht</h3><div class="muted">'+H111(title)+' · geplante Kontakte bleiben sichtbar.</div></div>'
+      + '<div class="toolbar"><button class="btn primary" onclick="setActive(\'tourplanner\')">Tour suchen</button><button class="btn" onclick="openModal(\'tours\')">+ Tour-Eintrag</button><button class="btn" onclick="setActive(\'visited\')">Besuchshistorie</button></div></div>'
+      + '<div class="panel-body daybar111"><div class="weekbox"><div class="field"><label>Tourtag auswählen</label><input id="tourDayInput111" class="input" type="date" value="'+H111(sel === 'all' ? firstPlannedDay111() : sel)+'" onchange="setTourDay111(this.value)"><div class="hint">'+H111(title)+'</div></div><button class="btn" onclick="shiftTourDay111(-1)">Vortag</button><button class="btn" onclick="shiftTourDay111(1)">Nächster Tag</button></div>'
+      + '<div class="actions" style="margin-top:10px"><button class="btn ghost" onclick="currentTourDay111()">Heute</button><button class="btn ok" onclick="firstPlannedTourDay111()">Nächste geplante</button><button class="btn primary" onclick="allTourDays111()">Alle geplanten</button><select class="select" style="max-width:260px" onchange="setTourDay111(this.value)">'+opts+'</select><input class="input" style="max-width:280px" id="dayTourSearch111" placeholder="In geplanten Touren suchen ..." oninput="renderContent()"></div>'
+      + '<div class="hint" style="margin-top:10px">Sichtbar: '+rows.length+' · geplante gesamt: '+total+' · abgeschlossene/ausgeblendete Einträge: '+closed+'</div></div>'
+      + '<div class="table-wrap">'+(rows.length ? (sel === 'all' ? grouped111(rows) : '<table><thead>'+tableHead('tours')+'</thead><tbody id="tableBody">'+rows.map(function(r){ return rowHTML('tours',r); }).join('')+'</tbody></table>') : '<div class="empty">Keine aktive Tour geplant.</div>')+'</div></div>';
+  };
+  try{ listHTML = window.listHTML; }catch(e){}
+
+  var css = document.createElement('style');
+  css.textContent = '.daybar111 .weekbox{display:grid!important;grid-template-columns:minmax(220px,1fr) auto auto!important;gap:8px!important;align-items:end!important}.daybar111 input[type=date]{display:block!important;min-height:44px!important}@media(max-width:980px){.daybar111 .weekbox{grid-template-columns:1fr!important}.daybar111 .weekbox .btn{width:100%!important}.daybar111 .actions{display:grid!important;grid-template-columns:1fr!important}.daybar111 .input,.daybar111 .select{max-width:none!important;width:100%!important}}';
+  document.head.appendChild(css);
+
+  if(typeof active !== 'undefined' && active === 'tours' && typeof renderContent === 'function') renderContent();
+})();
+</script>
+
+<script>
+/* === BLOC73 PATCH v112: absolute Tourdaten-Sicht, nichts wird ausgeblendet === */
+(function(){
+  'use strict';
+  if(window.__bloc73_show_all_tours_v112) return;
+  window.__bloc73_show_all_tours_v112 = true;
+
+  function H112(v){
+    try{ if(typeof esc === 'function') return esc(v); }catch(e){}
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});
+  }
+  function today112(){ try{ if(typeof today === 'function') return today(); }catch(e){} return new Date().toISOString().slice(0,10); }
+  function fmt112(d){ try{ if(typeof formatDate === 'function') return formatDate(d); }catch(e){} return d || 'Ohne Datum'; }
+  function iso112(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function add112(iso,days){ var d=new Date((iso || today112()) + 'T12:00:00'); d.setDate(d.getDate()+Number(days || 0)); return iso112(d); }
+  function all112(){
+    return ((window.db && Array.isArray(db.tours)) ? db.tours : []).slice().sort(function(a,b){
+      return String(a.tourDate || '9999-99-99').localeCompare(String(b.tourDate || '9999-99-99')) ||
+        Number(a.order || 0) - Number(b.order || 0) ||
+        String(a.company || '').localeCompare(String(b.company || ''));
+    });
+  }
+  function days112(){
+    var set = {};
+    all112().forEach(function(t){ if(t.tourDate) set[String(t.tourDate)] = true; });
+    set[today112()] = true;
+    return Object.keys(set).sort();
+  }
+  function first112(){
+    var rows = all112().filter(function(r){ return r.tourDate; });
+    if(!rows.length) return today112();
+    var today = today112();
+    for(var i=0;i<rows.length;i++){ if(String(rows[i].tourDate) >= today) return String(rows[i].tourDate); }
+    return String(rows[0].tourDate);
+  }
+  function selected112(){
+    var mode = '';
+    try{ mode = localStorage.getItem('bloc73_tour_mode_v112') || 'all'; }catch(e){ mode = 'all'; }
+    if(mode === 'day'){
+      var d = '';
+      try{ d = localStorage.getItem('bloc73_tour_day_v112') || ''; }catch(e){}
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) d = first112();
+      return d;
+    }
+    return 'all';
+  }
+  function rows112(){
+    var sel = selected112();
+    var q = String((document.getElementById('tourSearch112') || {}).value || '').toLowerCase();
+    var rows = all112();
+    if(sel !== 'all') rows = rows.filter(function(r){ return String(r.tourDate || '') === sel; });
+    if(q) rows = rows.filter(function(r){ return JSON.stringify(r).toLowerCase().indexOf(q) > -1; });
+    return rows;
+  }
+  function setMode112(mode,day){
+    try{ localStorage.setItem('bloc73_tour_mode_v112', mode); if(day) localStorage.setItem('bloc73_tour_day_v112', day); }catch(e){}
+    if(typeof renderContent === 'function') renderContent();
+  }
+  function grouped112(rows){
+    var html = '', cur = null;
+    rows.forEach(function(r){
+      var d = String(r.tourDate || '');
+      if(d !== cur){
+        if(cur !== null) html += '</tbody></table></div>';
+        cur = d;
+        html += '<div class="panel" style="box-shadow:none;margin:0 0 14px"><div class="panel-head"><div><h3>'+H112(fmt112(cur))+'</h3><div class="muted">Alle Tour-Einträge dieses Tages</div></div></div><div class="table-wrap"><table><thead>'+tableHead('tours')+'</thead><tbody>';
+      }
+      html += rowHTML('tours', r);
+    });
+    if(cur !== null) html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  window.showAllTours112=function(){ setMode112('all'); };
+  window.showTourDay112=function(day){ setMode112('day', day || first112()); };
+  window.shiftTourDay112=function(n){
+    var d = selected112();
+    if(d === 'all') d = first112();
+    setMode112('day', add112(d, Number(n || 0)));
+  };
+  window.todayTourDay112=function(){ setMode112('day', today112()); };
+
+  var oldList112 = window.listHTML || (typeof listHTML === 'function' ? listHTML : null);
+  window.listHTML=function(m){
+    if(m !== 'tours') return oldList112 ? oldList112.apply(this, arguments) : '';
+    var sel = selected112();
+    var rows = rows112();
+    var total = all112().length;
+    var day = sel === 'all' ? first112() : sel;
+    var opts = days112().map(function(d){ return '<option value="'+H112(d)+'" '+(d===day?'selected':'')+'>'+H112(fmt112(d))+'</option>'; }).join('');
+    return '<div class="panel"><div class="panel-head"><div><h3>Tagestouren · alle Tourdaten</h3><div class="muted">Sicherheitsansicht: Es wird nichts nach Status ausgeblendet.</div></div>'
+      + '<div class="toolbar"><button class="btn primary" onclick="setActive(\'tourplanner\')">Tour suchen</button><button class="btn" onclick="openModal(\'tours\')">+ Tour-Eintrag</button><button class="btn" onclick="setActive(\'visited\')">Besuchshistorie</button></div></div>'
+      + '<div class="panel-body allbar112"><div class="weekbox"><div class="field"><label>Tourtag auswählen</label><input class="input" type="date" value="'+H112(day)+'" onchange="showTourDay112(this.value)"><div class="hint">'+(sel==='all'?'Alle gespeicherten Tour-Einträge sichtbar':'Tag: '+H112(fmt112(day)))+'</div></div><button class="btn" onclick="shiftTourDay112(-1)">Vortag</button><button class="btn" onclick="shiftTourDay112(1)">Nächster Tag</button></div>'
+      + '<div class="actions" style="margin-top:10px"><button class="btn primary" onclick="showAllTours112()">Alle Tourdaten anzeigen</button><button class="btn ghost" onclick="todayTourDay112()">Heute</button><select class="select" style="max-width:260px" onchange="showTourDay112(this.value)">'+opts+'</select><input class="input" style="max-width:280px" id="tourSearch112" placeholder="Alle Tourdaten suchen ..." oninput="renderContent()"></div>'
+      + '<div class="hint" style="margin-top:10px">Sichtbar: '+rows.length+' · gespeichert gesamt: '+total+'. Diese Ansicht blendet Besucht, Lead, Wiedervorlage, abgeschlossen oder hidden nicht aus.</div></div>'
+      + (rows.length ? grouped112(rows) : '<div class="panel-body"><div class="empty">Keine Tourdaten gespeichert. Dann sind im Browser aktuell keine Einträge in db.tours vorhanden.</div></div>')
+      + '</div>';
+  };
+  try{ listHTML = window.listHTML; }catch(e){}
+
+  var css = document.createElement('style');
+  css.textContent = '.allbar112 .weekbox{display:grid!important;grid-template-columns:minmax(220px,1fr) auto auto!important;gap:8px!important;align-items:end!important}@media(max-width:980px){.allbar112 .weekbox{grid-template-columns:1fr!important}.allbar112 .weekbox .btn{width:100%!important}.allbar112 .actions{display:grid!important;grid-template-columns:1fr!important}.allbar112 .input,.allbar112 .select{max-width:none!important;width:100%!important}}';
+  document.head.appendChild(css);
+
+  if(typeof active !== 'undefined' && active === 'tours' && typeof renderContent === 'function') renderContent();
+})();
+</script>
+
+<script>
+/* === BLOC73 PATCH v113: KW-Auswahl zurück, ohne Status-Ausblendung === */
+(function(){
+  'use strict';
+  if(window.__bloc73_kw_back_v113) return;
+  window.__bloc73_kw_back_v113 = true;
+
+  function H113(v){
+    try{ if(typeof esc === 'function') return esc(v); }catch(e){}
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s];});
+  }
+  function today113(){ try{ if(typeof today === 'function') return today(); }catch(e){} return new Date().toISOString().slice(0,10); }
+  function iso113(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function add113(iso,days){ var d=new Date((iso || today113()) + 'T12:00:00'); d.setDate(d.getDate()+Number(days || 0)); return iso113(d); }
+  function monday113(iso){ var d=new Date((iso || today113()) + 'T12:00:00'); var day=d.getDay() || 7; d.setDate(d.getDate()+1-day); return iso113(d); }
+  function fmt113(d){ try{ if(typeof formatDate === 'function') return formatDate(d); }catch(e){} return d || 'Ohne Datum'; }
+  function week113(start){
+    try{ if(typeof weekKeyFromStart === 'function') return weekKeyFromStart(start); }catch(e){}
+    try{ if(typeof isoWeekKey === 'function') return isoWeekKey(new Date((start || today113()) + 'T12:00:00')); }catch(e){}
+    return '';
+  }
+  function label113(start){ return week113(start) + ' · ' + fmt113(start) + ' bis ' + fmt113(add113(start,6)); }
+  function all113(){
+    return ((window.db && Array.isArray(db.tours)) ? db.tours : []).slice().sort(function(a,b){
+      return String(a.tourDate || '9999-99-99').localeCompare(String(b.tourDate || '9999-99-99')) ||
+        Number(a.order || 0) - Number(b.order || 0) ||
+        String(a.company || '').localeCompare(String(b.company || ''));
+    });
+  }
+  function weeks113(){
+    var set = {};
+    set[monday113(today113())] = true;
+    all113().forEach(function(t){ if(t.tourDate) set[monday113(t.tourDate)] = true; });
+    return Object.keys(set).sort().reverse();
+  }
+  function selected113(){
+    var mode = '';
+    try{ mode = localStorage.getItem('bloc73_tour_mode_v113') || 'kw'; }catch(e){ mode = 'kw'; }
+    if(mode === 'all') return 'all';
+    var w = '';
+    try{ w = localStorage.getItem('bloc73_tour_kw_v113') || ''; }catch(e){}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(w)){
+      var ws = weeks113();
+      w = ws.length ? ws[0] : monday113(today113());
+    }
+    return monday113(w);
+  }
+  function rows113(sel){
+    var q = String((document.getElementById('tourSearch113') || {}).value || '').toLowerCase();
+    var rows = all113();
+    if(sel !== 'all'){
+      var end = add113(sel,6);
+      rows = rows.filter(function(r){ var d=String(r.tourDate || ''); return d >= sel && d <= end; });
+    }
+    if(q) rows = rows.filter(function(r){ return JSON.stringify(r).toLowerCase().indexOf(q) > -1; });
+    return rows;
+  }
+  function setMode113(mode,kw){
+    try{
+      localStorage.setItem('bloc73_tour_mode_v113', mode);
+      if(kw) localStorage.setItem('bloc73_tour_kw_v113', monday113(kw));
+    }catch(e){}
+    if(typeof renderContent === 'function') renderContent();
+  }
+  function grouped113(rows){
+    var html = '', cur = null;
+    rows.forEach(function(r){
+      var d = String(r.tourDate || '');
+      if(d !== cur){
+        if(cur !== null) html += '</tbody></table></div></div>';
+        cur = d;
+        html += '<div class="panel" style="box-shadow:none;margin:0 0 14px"><div class="panel-head"><div><h3>'+H113(fmt113(cur))+'</h3><div class="muted">Alle Tour-Einträge dieses Tages, kein Statusfilter</div></div></div><div class="table-wrap"><table><thead>'+tableHead('tours')+'</thead><tbody>';
+      }
+      html += rowHTML('tours', r);
+    });
+    if(cur !== null) html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  window.setTourWeek113=function(start){ setMode113('kw', start); };
+  window.shiftTourWeek113=function(n){
+    var sel = selected113();
+    if(sel === 'all') sel = monday113(today113());
+    setMode113('kw', add113(sel, Number(n || 0) * 7));
+  };
+  window.currentTourWeek113=function(){ setMode113('kw', monday113(today113())); };
+  window.showAllTours113=function(){ setMode113('all'); };
+
+  var oldList113 = window.listHTML || (typeof listHTML === 'function' ? listHTML : null);
+  window.listHTML=function(m){
+    if(m !== 'tours') return oldList113 ? oldList113.apply(this, arguments) : '';
+    var sel = selected113();
+    var rows = rows113(sel);
+    var total = all113().length;
+    var currentKw = sel === 'all' ? monday113(today113()) : sel;
+    var opts = weeks113().map(function(w){ return '<option value="'+H113(w)+'" '+(w===currentKw?'selected':'')+'>'+H113(label113(w))+'</option>'; }).join('');
+    var title = sel === 'all' ? 'Alle Tourdaten' : label113(sel);
+    return '<div class="panel"><div class="panel-head"><div><h3>Tagestouren nach KW</h3><div class="muted">'+H113(title)+' · ohne Status-Ausblendung.</div></div>'
+      + '<div class="toolbar"><button class="btn primary" onclick="setActive(\'tourplanner\')">Tour suchen</button><button class="btn" onclick="openModal(\'tours\')">+ Tour-Eintrag</button><button class="btn" onclick="setActive(\'visited\')">Besuchshistorie</button></div></div>'
+      + '<div class="panel-body kwbar113"><div class="weekbox"><div class="field"><label>Kalenderwoche auswählen</label><select id="tourWeekSelect113" class="select" onchange="setTourWeek113(this.value)">'+opts+'</select><div class="hint">'+H113(title)+'</div></div><button class="btn" onclick="shiftTourWeek113(-1)">Vor-KW</button><button class="btn" onclick="shiftTourWeek113(1)">Nächste KW</button></div>'
+      + '<div class="actions" style="margin-top:10px"><button class="btn ghost" onclick="currentTourWeek113()">Aktuelle KW</button><button class="btn primary" onclick="showAllTours113()">Alle Tourdaten</button><input class="input" style="max-width:280px" id="tourSearch113" placeholder="In Tourdaten suchen ..." oninput="renderContent()"></div>'
+      + '<div class="hint" style="margin-top:10px">Sichtbar: '+rows.length+' · gespeichert gesamt: '+total+'. Kein Eintrag wird wegen Besucht, Lead, Wiedervorlage, abgeschlossen oder hidden ausgeblendet.</div></div>'
+      + (rows.length ? grouped113(rows) : '<div class="panel-body"><div class="empty">Keine Tourdaten in dieser KW. Über „Alle Tourdaten“ prüfen, ob Einträge in einer anderen KW liegen.</div></div>')
+      + '</div>';
+  };
+  try{ listHTML = window.listHTML; }catch(e){}
+
+  var css = document.createElement('style');
+  css.textContent = '.kwbar113 .weekbox{display:grid!important;grid-template-columns:minmax(220px,1fr) auto auto!important;gap:8px!important;align-items:end!important}.kwbar113 select{display:block!important;min-height:44px!important}@media(max-width:980px){.kwbar113 .weekbox{grid-template-columns:1fr!important}.kwbar113 .weekbox .btn{width:100%!important}.kwbar113 .actions{display:grid!important;grid-template-columns:1fr!important}.kwbar113 .input,.kwbar113 .select{max-width:none!important;width:100%!important}}';
+  document.head.appendChild(css);
+
+  if(typeof active !== 'undefined' && active === 'tours' && typeof renderContent === 'function') renderContent();
+})();
+</script>
+
 </body>
 </html>
