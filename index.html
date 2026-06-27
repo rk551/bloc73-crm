@@ -8663,13 +8663,13 @@ function body90(r,type){
   function fmt119(value){try{return typeof formatDate==='function'?formatDate(value):value;}catch(e){return value;}}
   function h119(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function active119(){
-    var closed=['Besucht','Lead erstellt','Wiedervorlage','Kein Interesse','Nicht vorhanden','Nicht relevant'];
-    return (Array.isArray(db&&db.tours)?db.tours:[]).filter(function(t){return !t.closed&&!t.hidden&&closed.indexOf(t.status||'')<0;});
+    return Array.isArray(db&&db.tours)?db.tours:[];
   }
   function selected119(){
     var saved=''; try{saved=localStorage.getItem(KEY119)||'';}catch(e){}
-    if(/^\d{4}-\d{2}-\d{2}$/.test(saved)) return monday119(saved);
-    var newest=active119().filter(function(t){return /^\d{4}-\d{2}-\d{2}$/.test(t.tourDate||'');}).sort(function(a,b){
+    var dated=active119().filter(function(t){return /^\d{4}-\d{2}-\d{2}$/.test(t.tourDate||'');});
+    if(/^\d{4}-\d{2}-\d{2}$/.test(saved)&&dated.some(function(t){return monday119(t.tourDate)===monday119(saved);})) return monday119(saved);
+    var newest=dated.sort(function(a,b){
       return String(b.createdAt||b.updatedAt||b.tourDate||'').localeCompare(String(a.createdAt||a.updatedAt||a.tourDate||''));
     })[0];
     return monday119(newest?newest.tourDate:today119());
@@ -8710,14 +8710,14 @@ function body90(r,type){
 
   window.listHTML=function(module){
     if(module!=='tours') return previousList119 ? previousList119.apply(this,arguments) : '';
-    var start=selected119(),rows=rows119(start,''),all=Array.isArray(db&&db.tours)?db.tours:[],closed=all.length-active119().length;
+    var start=selected119(),rows=rows119(start,''),all=Array.isArray(db&&db.tours)?db.tours:[];
     var options=weeks119(start).map(function(value){return '<option value="'+h119(value)+'" '+(value===start?'selected':'')+'>'+h119(week119(value))+' · '+h119(fmt119(value))+' bis '+h119(fmt119(add119(value,6)))+'</option>';}).join('');
     return '<div class="panel">'
       +'<div class="panel-head"><div><h3>Tagestouren · '+h119(week119(start))+'</h3><div class="muted">'+h119(fmt119(start))+' bis '+h119(fmt119(add119(start,6)))+' · <span id="toursWeekCount119">'+rows.length+'</span> aktive Touren</div></div>'
       +'<div class="toolbar"><select class="input" id="toursWeekSelect119" onchange="setToursWeek119(this.value)">'+options+'</select><button class="btn" onclick="shiftToursWeek119(-1)">Vorwoche</button><button class="btn" onclick="currentToursWeek119()">Diese Woche</button><button class="btn" onclick="shiftToursWeek119(1)">Nächste Woche</button></div></div>'
       +'<div class="panel-body"><div class="actions" id="toursWeekSummary119">'+summary119(rows,start)+'</div><div class="toolbar" style="margin-top:12px"><input class="input" id="toursWeekSearch119" placeholder="Touren dieser KW suchen ..." oninput="renderToursWeek119()"><button class="btn primary" onclick="openModal(\'tours\')">+ Tour-Eintrag</button><button class="btn" onclick="setActive(\'visited\')">Besuchshistorie</button><button class="btn" onclick="setActive(\'leads\')">Leads</button><button class="btn" onclick="exportToursWeekCSV120()">CSV gewählte KW</button></div>'
       +'<div class="actions" style="margin-top:12px"><button class="btn primary" onclick="exportTomTomDay48()">TomTom Tag GPX</button><button class="btn" onclick="exportTomTomWeek48()">TomTom Woche GPX</button><button class="btn" onclick="copyTomTomStops48()">Stops kopieren</button><button class="btn" onclick="copyTomTomDayForApp49()">Tagesziele für App kopieren</button><button class="btn" onclick="openTomTomPlan48()">Plan.TomTom öffnen</button></div>'
-      +'<div class="hint" style="margin-top:10px">Ausgeblendete abgeschlossene Tour-Einträge: '+closed+'. Die Auswahl betrifft nur die Ansicht Tagestouren.</div></div>'
+      +'<div class="hint" style="margin-top:10px">Alle '+rows.length+' gespeicherten Tour-Einträge dieser KW werden angezeigt, unabhängig vom Bearbeitungsstatus. Die Auswahl betrifft nur Tagestouren.</div></div>'
       +'<div class="table-wrap"><table><thead>'+tableHead('tours')+'</thead><tbody id="tableBody">'+tableRows('tours',rows)+'</tbody></table></div></div>';
   };
   try{listHTML=window.listHTML;}catch(e){}
